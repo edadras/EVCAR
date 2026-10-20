@@ -13,7 +13,7 @@ class Connector extends Model
     protected $fillable = [
         'uuid', 'charger_id', 'connector_number', 'ocpp_status',
         'operational_status', 'max_power_kw', 'qr_token_uuid',
-        'status_updated_at', 'meta',
+        'status_updated_at', 'meta', 'error_code',
     ];
 
     protected function casts(): array

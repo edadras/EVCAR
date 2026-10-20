@@ -11,6 +11,7 @@ use App\Models\Vehicle;
 use App\Models\Wallet;
 use App\Models\WalletTransaction;
 use App\Services\Edge\EdgeCommandService;
+use App\Services\Ocpp\CloudOcppCommander;
 use App\Support\ChargeEstimator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -29,12 +30,19 @@ class CloudChargingSessionService
         $connector->loadMissing('charger.station.edgeStation');
         $station = $connector->charger->station;
         $edge = $station?->edgeStation;
-
-        if (! $edge && ! config('safircharge.charging.allow_without_edge')) {
-            throw new \RuntimeException('این ایستگاه هنوز به کنترلر محلی (Edge) متصل نیست و شروع شارژ از راه دور ممکن نیست.');
-        }
-
         $startSoc ??= ChargeEstimator::DEFAULT_START_SOC;
+
+        // ایستگاه بدون Edge: شارژر مستقیم به سرور OCPP ابری وصل است.
+        if ($connector->charger->connectsDirectly()) {
+            $direct = app(DirectChargingService::class);
+            $connected = app(CloudOcppCommander::class)->isConnected($connector->charger);
+            if ($connected || ! config('safircharge.charging.allow_without_edge')) {
+                return $direct->start($user, $connector, $authMethod, $tariff, $vehicle, $targetSoc, $startSoc);
+            }
+            $edge = null; // فقط محیط توسعه: جلسهٔ شبیه‌سازی‌شده بدون شارژر واقعی
+        } elseif (! $edge) {
+            throw new \RuntimeException('این ایستگاه برای اتصال از طریق Edge تنظیم شده ولی کنترلر Edge آن ثبت نشده است.');
+        }
 
         return DB::transaction(function () use ($user, $connector, $authMethod, $tariff, $vehicle, $targetSoc, $startSoc, $station, $edge) {
             $session = ChargingSession::create([
@@ -86,6 +94,10 @@ class CloudChargingSessionService
      */
     public function requestStop(ChargingSession $session, User $user): ChargingSession
     {
+        if ($session->meta['direct_ocpp'] ?? false) {
+            return app(DirectChargingService::class)->stop($session);
+        }
+
         if (! $this->isEdgeBacked($session)) {
             return $this->stop($session, $user);
         }
@@ -154,9 +166,12 @@ class CloudChargingSessionService
         return $count;
     }
 
+    /** انرژی/هزینهٔ این جلسه از کنتور واقعی شارژر می‌آید (از طریق Edge یا OCPP مستقیم). */
     public function isEdgeBacked(ChargingSession $session): bool
     {
-        return (bool) ($session->meta['edge_backed'] ?? false) || $session->synced_from_edge;
+        return (bool) ($session->meta['edge_backed'] ?? false)
+            || (bool) ($session->meta['direct_ocpp'] ?? false)
+            || $session->synced_from_edge;
     }
 
     private function closeWithoutCharge(ChargingSession $session, string $reason): ChargingSession
@@ -191,23 +206,17 @@ class CloudChargingSessionService
             return (float) $session->cost_amount;
         }
 
-        $tariff = $session->tariff_id
-            ? Tariff::find($session->tariff_id)
-            : Tariff::where('is_default', true)->where('status', 'active')->first()
-                ?? Tariff::where('status', 'active')->first();
+        $tariff = $this->tariffFor($session);
+        $secs = $session->started_at ? (int) $session->started_at->diffInSeconds($session->stopped_at ?? now(), true) : 0;
 
-        if ($tariff?->pricing_model === 'per_minute' && $tariff->price_per_minute) {
-            $mins = max(1, (int) ceil(($session->duration_seconds ?? 0) / 60));
+        return app(TariffCalculator::class)->cost($tariff, $energyKwh, $secs, $session->started_at, (int) ($session->meta['idle_seconds'] ?? 0));
+    }
 
-            return round($mins * (float) $tariff->price_per_minute + (float) ($tariff->session_fee ?? 0), 2);
-        }
-
-        $perKwh = (float) ($tariff?->price_per_kwh ?? 0);
-        if ($perKwh <= 0) {
-            return 0;
-        }
-
-        return round($energyKwh * $perKwh + (float) ($tariff->session_fee ?? 0), 2);
+    public function tariffFor(ChargingSession $session): ?Tariff
+    {
+        return ($session->tariff_id ? Tariff::with('rules')->find($session->tariff_id) : null)
+            ?? Tariff::with('rules')->where('is_default', true)->where('status', 'active')->first()
+            ?? Tariff::with('rules')->where('status', 'active')->first();
     }
 
     /** @return array{pct:int,energy:float,cost:int,secs:int,power:int,goal:int,eta:?int,state:string,battery_kwh:float} */

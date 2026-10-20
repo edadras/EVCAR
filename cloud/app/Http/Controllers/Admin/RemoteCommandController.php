@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Connector;
 use App\Models\Station;
 use App\Services\Edge\EdgeCommandService;
+use App\Services\Ocpp\CloudCommandExecutor;
 use App\Services\Stations\RemoteStationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -32,6 +33,26 @@ class RemoteCommandController extends Controller
                 ->where('id', $data['connector_id'])
                 ->whereHas('charger', fn ($q) => $q->where('station_id', $station->id))
                 ->firstOrFail();
+        }
+
+        // ایستگاه بدون Edge: دستور مستقیم روی سرور OCPP ابری اجرا می‌شود.
+        $directCharger = $connector?->charger ?? $station->chargers()->first();
+        if (! $station->edgeStation && $directCharger?->connectsDirectly()) {
+            $cmd = app(CloudCommandExecutor::class)->run(
+                $station,
+                $data['command_type'],
+                $connector,
+                ($data['payload'] ?? []) + ['charge_point_id' => $directCharger->charge_point_id],
+                $request->user(),
+            );
+
+            return response()->json([
+                'ok' => $cmd->status === 'completed',
+                'uuid' => $cmd->uuid,
+                'status' => $cmd->status,
+                'error' => $cmd->error_message,
+                'message' => $cmd->status === 'completed' ? 'دستور مستقیم روی شارژر اجرا شد.' : ($cmd->error_message ?? 'اجرای دستور ناموفق بود.'),
+            ], $cmd->status === 'completed' ? 200 : 422);
         }
 
         try {

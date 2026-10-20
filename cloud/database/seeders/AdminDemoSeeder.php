@@ -219,6 +219,15 @@ class AdminDemoSeeder extends Seeder
                 }
             }
 
+            // فقط دو ایستگاه دمو کنترلر محلی (Edge) دارند؛ بقیه شارژرهایشان مستقیم به
+            // سرور OCPP ابری وصل می‌شوند (ws://<cloud>:9100/ocpp/<ChargePointId>).
+            if ($i > 1) {
+                EdgeStation::where('station_id', $station->id)->delete();
+                $stations->push($station);
+
+                continue;
+            }
+
             $edgeToken = match ($i) {
                 0 => 'dev-sync-token',
                 1 => 'dev-sync-token-2',

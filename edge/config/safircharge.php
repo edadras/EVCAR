@@ -2,6 +2,10 @@
 
 return [
 
+    // ساعت محلی برای قوانین تعرفه (اوج/کم‌باری) — ساعت سرور UTC است.
+    'timezone' => env('SC_LOCAL_TIMEZONE', 'Asia/Tehran'),
+
+
     'auth' => [
         // کدهای ثابت تست فقط خارج از محیط production فعال‌اند.
         'test_otp_codes' => env('SC_TEST_OTP_CODES', env('APP_ENV', 'production') === 'production' ? '' : '111111,222222,333333'),

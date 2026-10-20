@@ -108,6 +108,27 @@ services:
     depends_on:
       - cloud-app
 
+  cloud-ocpp:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    container_name: sc_cloud_ocpp
+    restart: unless-stopped
+    working_dir: /var/www/html
+    volumes:
+      - ./cloud:/var/www/html
+    environment: *cloud-app-env
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        cd /var/www/html
+        if [ ! -d vendor ]; then composer install --no-interaction --prefer-dist; fi
+        php artisan ocpp:serve
+    ports:
+      - "${CLOUD_OCPP_PORT:-9100}:9100"
+    depends_on:
+      - cloud-app
+
   cloud-nginx:
     image: nginx:alpine
     container_name: sc_cloud_nginx
@@ -119,6 +140,7 @@ services:
       - ./docker/nginx/cloud.conf:/etc/nginx/conf.d/default.conf:ro
     depends_on:
       - cloud-app
+      - cloud-ocpp
 
   # ─── Edge Station ────────────────────────────────────────────
   edge-mysql:

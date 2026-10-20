@@ -2,6 +2,10 @@
 
 return [
 
+    // ساعت محلی برای قوانین تعرفه (اوج/کم‌باری) — ساعت سرور UTC است.
+    'timezone' => env('SC_LOCAL_TIMEZONE', 'Asia/Tehran'),
+
+
     /*
   |--------------------------------------------------------------------------
   | Edge probe URLs (comma-separated in env)
@@ -20,6 +24,27 @@ return [
     | برای Edge همان ایستگاه صف می‌شود و Edge آن را با OCPP روی شارژر اجرا می‌کند.
     | allow_without_edge فقط برای دمو/توسعه است (جلسهٔ شبیه‌سازی‌شده بدون شارژر واقعی).
     */
+    /*
+    |--------------------------------------------------------------------------
+    | OCPP 1.6J ابری — برای ایستگاه‌های بدون کنترلر محلی (Edge)
+    |--------------------------------------------------------------------------
+    | php artisan ocpp:serve — شارژر به ws://<cloud-host>:9100/ocpp/<ChargePointId> وصل می‌شود.
+    | شارژرهای ایستگاه‌های دارای Edge باید به Edge همان ایستگاه وصل شوند.
+    */
+    'ocpp' => [
+        'listen_host' => env('OCPP_LISTEN_HOST', '0.0.0.0'),
+        'listen_port' => (int) env('OCPP_LISTEN_PORT', 9100),
+        'heartbeat_interval' => (int) env('OCPP_HEARTBEAT_INTERVAL', 60),
+        'require_basic_auth' => (bool) env('OCPP_REQUIRE_BASIC_AUTH', false),
+        'call_timeout' => (int) env('OCPP_CALL_TIMEOUT', 30),
+        'remote_start_wait' => (int) env('OCPP_REMOTE_START_WAIT', 20),
+        'remote_stop_wait' => (int) env('OCPP_REMOTE_STOP_WAIT', 10),
+        'start_timeout_minutes' => (int) env('OCPP_START_TIMEOUT_MINUTES', 3),
+        'min_wallet_balance' => (float) env('SC_MIN_WALLET_BALANCE', 10000),
+        'log_messages' => (bool) env('OCPP_LOG_MESSAGES', true),
+        'log_retention_days' => (int) env('OCPP_LOG_RETENTION_DAYS', 14),
+    ],
+
     'charging' => [
         'allow_without_edge' => (bool) env('SC_ALLOW_CHARGING_WITHOUT_EDGE', env('APP_ENV', 'production') !== 'production'),
         'remote_start_timeout_minutes' => (int) env('SC_REMOTE_START_TIMEOUT_MINUTES', 3),

@@ -16,6 +16,7 @@ class Charger extends Model
         'uuid', 'station_id', 'charge_point_id', 'vendor', 'model',
         'serial_number', 'firmware_version', 'max_power_kw', 'connector_type',
         'is_online', 'last_heartbeat_at', 'status', 'meta',
+        'connection_mode', 'connected_at', 'last_boot_at', 'ocpp_status', 'error_code',
     ];
 
     protected function casts(): array
@@ -23,8 +24,23 @@ class Charger extends Model
         return [
             'is_online' => 'boolean',
             'last_heartbeat_at' => 'datetime',
+            'connected_at' => 'datetime',
+            'last_boot_at' => 'datetime',
             'meta' => 'array',
         ];
+    }
+
+    /**
+     * آیا این شارژر مستقیم به سرور OCPP ابری وصل می‌شود؟
+     * auto: اگر ایستگاه Edge ندارد مستقیم، وگرنه از طریق Edge.
+     */
+    public function connectsDirectly(): bool
+    {
+        return match ($this->connection_mode ?? 'auto') {
+            'direct' => true,
+            'edge' => false,
+            default => ! $this->station?->edgeStation()->exists(),
+        };
     }
 
     public function station(): BelongsTo
