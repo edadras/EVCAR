@@ -41,6 +41,7 @@ Route::prefix('v1')->group(function () {
             Route::post('register', [MobileApiController::class, 'register']);
             Route::post('login', [MobileApiController::class, 'login']);
         });
+        Route::get('legal/{key}', [MobileApiController::class, 'legal']);
 
         Route::middleware(['auth:sanctum', MobileJsonResponses::class])->group(function () {
             Route::post('auth/logout', [MobileApiController::class, 'logout']);
@@ -84,7 +85,6 @@ Route::prefix('v1')->group(function () {
             Route::get('settings', [MobileApiController::class, 'settings']);
             Route::post('settings', [ActionController::class, 'updateSettings']);
             Route::get('offers', [MobileApiController::class, 'offers']);
-            Route::get('legal/{key}', [MobileApiController::class, 'legal']);
             Route::get('context', [MobileApiController::class, 'context']);
             Route::get('arrival', [ApiController::class, 'arrival']);
             Route::post('arrival/confirm', [ApiController::class, 'confirmArrival']);

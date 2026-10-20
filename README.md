@@ -194,6 +194,18 @@ docker compose exec cloud-app php artisan ocpp:simulate-charger <CP-ID> --url=ws
 | نصب وب‌اپ روی گوشی (PWA) | «افزودن به صفحهٔ اصلی» در مرورگر (نیازمند HTTPS) |
 | پشتیبان روزانهٔ دیتابیس Edge | `edge:backup` — در `edge/storage/app/backups` |
 
+## اپ موبایل مشتری (Flutter — اندروید و iOS)
+
+پوشهٔ [`mobile/`](mobile/README.md) نسخهٔ بومی همان وب‌اپ مشتری است (همهٔ صفحات، همان طراحی RTL و وزیرمتن).
+اپ با توکن Sanctum به API ‏`/api/v1/mobile/*` سرور ابری وصل می‌شود؛ اکشن‌ها به همان کنترلرهای وب‌اپ می‌روند
+تا منطق شارژ، کیف پول، رزرو و … بین وب و اپ یکسان باشد.
+
+```bash
+cd mobile && flutter pub get
+flutter run --dart-define=API_BASE_URL=http://10.0.2.2:8180   # شبیه‌ساز اندروید + Docker محلی
+flutter build apk --release --dart-define=API_BASE_URL=https://<سرور>
+```
+
 ## پروژه‌های مرجع خارجی
 
 - شارژر (OCPP): `C:\Project\Charger` — اختیاری؛ با `OCPP_DRIVER=gateway`. پیش‌فرض، سرور OCPP داخلی Edge است.

@@ -57,7 +57,10 @@ class MobileAppPresenter
 
     public function headerDate(?string $city = null): string
     {
-        $line = now()->translatedFormat('l j F');
+        // تاریخ شمسی مانند «سه‌شنبه ۲۸ مهر»؛ بدون افزونهٔ intl به تاریخ میلادی برمی‌گردد.
+        $line = class_exists(\IntlDateFormatter::class)
+            ? (string) (new \IntlDateFormatter('fa_IR@calendar=persian', \IntlDateFormatter::FULL, \IntlDateFormatter::NONE, 'Asia/Tehran', \IntlDateFormatter::TRADITIONAL, 'EEEE d MMMM'))->format(now())
+            : now()->translatedFormat('l j F');
         if ($city) {
             $line .= ' · '.$city;
         }

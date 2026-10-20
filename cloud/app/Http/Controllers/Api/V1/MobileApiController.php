@@ -6,6 +6,8 @@ use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Models\Campaign;
 use App\Models\ChargingSession;
+use App\Models\EvCatalogVehicle;
+use App\Models\QrToken;
 use App\Models\Reservation;
 use App\Models\RfidCard;
 use App\Models\SupportTicket;
@@ -132,11 +134,16 @@ class MobileApiController extends Controller
 
     public function charger(Request $request, ChargingAuthorizationService $auth): JsonResponse
     {
-        $grant = $auth->tryGrantFromQrToken($request->query('qr'));
-        $d = $this->app->charger(
-            $request->query('station'),
-            $request->query('connector') ? (int) $request->query('connector') : null,
-        );
+        $qr = $request->query('qr');
+        $stationCode = $request->query('station');
+        $connectorId = $request->query('connector') ? (int) $request->query('connector') : null;
+        // QR فیزیکی ممکن است فقط توکن را داشته باشد؛ ایستگاه و کانکتور از خود توکن خوانده می‌شود.
+        if ($qr && ! $stationCode && ($token = QrToken::with('station')->where('token', $qr)->first())) {
+            $stationCode = $token->station?->code;
+            $connectorId ??= $token->connector_id;
+        }
+        $grant = $auth->tryGrantFromQrToken($qr);
+        $d = $this->app->charger($stationCode, $connectorId);
         $station = $d['station'];
         if (! $station) {
             return response()->json(['message' => 'ایستگاه یافت نشد.'], 404);
@@ -161,6 +168,11 @@ class MobileApiController extends Controller
                 'lng' => $station->longitude ? (float) $station->longitude : null,
                 'max_power_kw' => (int) $station->chargers->max('max_power_kw'),
                 'chargers_count' => $station->chargers->count(),
+                'rating' => $station->meta['rating'] ?? null,
+                'reviews' => $station->meta['reviews'] ?? null,
+                'amenities' => array_values((array) ($station->meta['amenities'] ?? [])),
+                'hours' => is_array($station->operating_hours) && ! empty($station->operating_hours['label'])
+                    ? $station->operating_hours['label'] : '۲۴ ساعته',
             ],
             'connectors' => $connectors,
             'free_count' => $d['freeCount'],
@@ -257,9 +269,14 @@ class MobileApiController extends Controller
     public function vehicles(Request $request): JsonResponse
     {
         $d = $this->app->vehicles($request->user());
+        $models = EvCatalogVehicle::query()->where('is_active', true)->orderBy('name')->pluck('name')
+            ->merge($d['vehicles']->map(fn (Vehicle $v) => trim("{$v->brand} {$v->model}")))
+            ->unique()->filter()->values();
 
         return response()->json([
             'vehicles' => $d['vehicles']->map(fn (Vehicle $v) => $this->vehiclePayload($v))->values(),
+            'model_options' => $models,
+            'plate_letters' => ['الف', 'ب', 'ج', 'د', 'س', 'ص', 'ط', 'ق', 'ل', 'م', 'ن', 'و', 'ه', 'ی', 'معلولین'],
             'audit' => $d['auditRows'],
         ]);
     }
@@ -292,6 +309,7 @@ class MobileApiController extends Controller
                 'id' => $r->id,
                 'uuid' => $r->uuid,
                 'station' => $r->station?->name,
+                'station_id' => $r->station_id,
                 'status' => $r->status,
                 'from' => $r->reserved_from?->toIso8601String(),
                 'until' => $r->reserved_until?->toIso8601String(),

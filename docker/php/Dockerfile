@@ -7,6 +7,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libpng-dev \
     libonig-dev \
     libxml2-dev \
+    libicu-dev \
     default-mysql-client \
     && docker-php-ext-install \
         pdo_mysql \
@@ -15,6 +16,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         pcntl \
         zip \
         opcache \
+        intl \
     && pecl install redis \
     && docker-php-ext-enable redis \
     && rm -rf /var/lib/apt/lists/*

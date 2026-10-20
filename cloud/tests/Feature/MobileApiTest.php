@@ -108,7 +108,7 @@ class MobileApiTest extends TestCase
             ->assertStatus(422)->assertJsonValidationErrors('charging');
 
         // اسکن QR → مجوز (به کاربر گره خورده، نه به نشست مرورگر) → شروع مستقیم از طریق OCPP ابری
-        $this->getJson('/api/v1/mobile/charger?station=ST-M&connector='.$this->connector->id.'&qr=QR-M1', $auth)
+        $this->getJson('/api/v1/mobile/charger?qr=QR-M1', $auth)
             ->assertOk()->assertJsonPath('qr_grant.type', 'qr')->assertJsonPath('connectors.0.authorized', true);
 
         CloudOcppCommander::markInsideServer();
