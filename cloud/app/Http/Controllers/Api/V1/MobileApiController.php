@@ -20,6 +20,7 @@ use App\Models\UserNotification;
 use App\Models\Vehicle;
 use App\Services\App\ChargingAuthorizationService;
 use App\Services\App\ConnectivityService;
+use App\Services\App\CustomerEngagementService;
 use App\Services\App\MobileAppPresenter;
 use App\Services\App\MobileAppService;
 use App\Services\Auth\CustomerAuthService;
@@ -137,7 +138,7 @@ class MobileApiController extends Controller
         ]);
     }
 
-    public function charger(Request $request, ChargingAuthorizationService $auth): JsonResponse
+    public function charger(Request $request, ChargingAuthorizationService $auth, CustomerEngagementService $engagement): JsonResponse
     {
         $qr = $request->query('qr');
         $stationCode = $request->query('station');
@@ -195,6 +196,9 @@ class MobileApiController extends Controller
             'charge_target_soc' => (int) ($user->meta['app_prefs']['charge_target_soc'] ?? 80),
             'vehicle' => $defaultVehicle ? $this->vehiclePayload($defaultVehicle) : null,
             'has_active_session' => ChargingSession::where('user_id', $user->id)->where('status', 'active')->exists(),
+            'watching' => $engagement->isWatching($user, $station),
+            'reviews' => $engagement->stationReviews($station, 3),
+            'problems' => CustomerEngagementService::PROBLEMS,
         ]);
     }
 

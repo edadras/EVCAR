@@ -351,6 +351,9 @@ Product facts:
 - If the phone is on the station's WiFi, the app can charge through the station's local controller even without internet; the bill syncs later.
 - Wallet top-up is done from the Wallet tab through the bank gateway. Failed bank payments that were debited are returned by the bank within 72 hours.
 - Reservations hold a connector for 15 minutes after the reserved time.
+- Every session has a receipt (History → tap a session) with the cost breakdown and power chart; customers can rate the station there.
+- On a station page customers can report a broken charger ("گزارش خرابی") and, when every connector is busy, tap "خبرم کن" to get a notification as soon as one is free (valid for 3 hours).
+- "تحلیل هزینه و مصرف" (from History or Account) shows six months of spending, energy and savings versus petrol.
 - Phone support: {$contact['phone']}.
 
 Frequently asked questions:

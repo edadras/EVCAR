@@ -7,6 +7,7 @@ use App\Models\Campaign;
 use App\Models\Payment;
 use App\Models\SupportTicket;
 use App\Services\App\ChargingAuthorizationService;
+use App\Services\App\CustomerEngagementService;
 use App\Services\App\MobileAppService;
 use Illuminate\View\View;
 
@@ -88,13 +89,20 @@ class PageController extends Controller
     {
         $auth = app(ChargingAuthorizationService::class);
         $qrGrant = $auth->tryGrantFromQrToken(request('qr'));
+        $data = $this->app->charger(
+            request('station'),
+            request('connector') ? (int) request('connector') : null,
+        );
+        $engagement = app(CustomerEngagementService::class);
+        $station = $data['station'] ?? null;
 
         return view('app.charger', array_merge(
-            $this->app->charger(
-                request('station'),
-                request('connector') ? (int) request('connector') : null,
-            ),
+            $data,
             [
+                'reviewsData' => $station ? $engagement->stationReviews($station, 3) : null,
+                'watching' => $station ? $engagement->isWatching($this->user(), $station) : false,
+                'favorite' => $station && in_array($station->code, (array) ($this->user()->meta['favorite_stations'] ?? []), true),
+                'problems' => CustomerEngagementService::PROBLEMS,
                 'qrGrant' => $qrGrant,
                 'entryAuth' => $qrGrant ? 'qr' : request('auth'),
             ],

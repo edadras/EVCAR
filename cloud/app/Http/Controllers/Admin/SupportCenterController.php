@@ -7,12 +7,15 @@ use App\Http\Controllers\Controller;
 use App\Models\AiConversation;
 use App\Models\Charger;
 use App\Models\ChargingSession;
+use App\Models\Station;
+use App\Models\StationReview;
 use App\Models\SupportTicket;
 use App\Models\SystemSetting;
 use App\Models\TicketMessage;
 use App\Models\User;
 use App\Models\Wallet;
 use App\Models\WalletTransaction;
+use App\Services\App\CustomerEngagementService;
 use App\Services\Audit\AuditService;
 use App\Services\Notifications\UserNotifier;
 use App\Services\Support\AiSupportService;
@@ -37,7 +40,7 @@ class SupportCenterController extends Controller
 
     public const PRIORITIES = ['low' => 'پایین', 'normal' => 'عادی', 'high' => 'بالا', 'critical' => 'بحرانی'];
 
-    public const SOURCES = ['app' => 'اپ', 'web' => 'وب‌اپ', 'ai' => 'دستیار هوشمند', 'staff' => 'کارشناس'];
+    public const SOURCES = ['app' => 'اپ', 'web' => 'وب‌اپ', 'ai' => 'دستیار هوشمند', 'staff' => 'کارشناس', 'review' => 'امتیاز پایین'];
 
     private const DEFAULT_CANNED = [
         ['title' => 'دریافت درخواست', 'text' => 'سلام، درخواست شما دریافت شد و در حال بررسی است. نتیجه را در همین گفتگو اطلاع می‌دهیم.'],
@@ -258,6 +261,61 @@ class SupportCenterController extends Controller
         SystemSetting::updateOrCreate(['group' => 'app', 'key' => 'ai_support_instructions'], ['value' => ['fa' => (string) ($data['instructions'] ?? '')]]);
 
         return back()->with('success', 'دستورالعمل دستیار هوشمند ذخیره شد.');
+    }
+
+    public function reviews(Request $request): View
+    {
+        $q = StationReview::with(['user', 'station', 'session'])->latest();
+        match ($request->query('filter')) {
+            'low' => $q->where('rating', '<=', 2),
+            'unanswered' => $q->whereNull('reply')->whereNotNull('comment'),
+            'hidden' => $q->where('is_hidden', true),
+            default => null,
+        };
+        if ($station = $request->query('station')) {
+            $q->whereHas('station', fn ($s) => $s->where('code', $station));
+        }
+        $all = StationReview::where('is_hidden', false);
+
+        return view('admin.support-reviews', [
+            'reviews' => $q->paginate(25)->withQueryString(),
+            'filter' => $request->query('filter', 'all'),
+            'stats' => [
+                'count' => (clone $all)->count(),
+                'avg' => round((float) (clone $all)->avg('rating'), 1),
+                'low' => (clone $all)->where('rating', '<=', 2)->where('created_at', '>=', now()->subMonth())->count(),
+                'week' => (clone $all)->where('created_at', '>=', now()->subWeek())->count(),
+            ],
+            'stations' => Station::whereIn('id', StationReview::select('station_id'))->get()->map(fn (Station $st) => [
+                'station' => $st, 'rating' => $st->meta['rating'] ?? null, 'reviews' => (int) ($st->meta['reviews'] ?? 0),
+            ])->sortBy('rating')->values()->take(8),
+            'tags' => CustomerEngagementService::REVIEW_TAGS,
+        ]);
+    }
+
+    public function updateReview(Request $request, StationReview $review, CustomerEngagementService $engagement): RedirectResponse
+    {
+        $data = $request->validate([
+            'reply' => ['nullable', 'string', 'max:600'],
+            'is_hidden' => ['sometimes', 'boolean'],
+        ]);
+        $hadReply = (bool) $review->reply;
+        if (array_key_exists('reply', $data)) {
+            $review->reply = $data['reply'] ?: null;
+            $review->replied_at = $data['reply'] ? now() : null;
+        }
+        if (array_key_exists('is_hidden', $data)) {
+            $review->is_hidden = (bool) $data['is_hidden'];
+        }
+        $review->save();
+        $engagement->refreshStationRating($review->station_id);
+
+        if (! $hadReply && $review->reply && $review->user) {
+            $this->notifier->notify($review->user, 'review_reply', 'پاسخ به نظر شما دربارهٔ '.($review->station?->name ?? 'ایستگاه'),
+                Str::limit($review->reply, 140), ['station' => $review->station?->code]);
+        }
+
+        return back()->with('success', 'نظر به‌روزرسانی شد.');
     }
 
     /** @return list<array{title:string,text:string}> */

@@ -181,6 +181,7 @@ class MobileAppPresenter
             };
 
             return [
+                'uuid' => $s->uuid,
                 'n' => $s->station?->name ?? '—',
                 'date' => $s->started_at ? Persian::digits($s->started_at->format('Y/m/d H:i')) : '—',
                 'en' => Persian::kwh($s->energy_kwh).' kWh',
@@ -204,7 +205,7 @@ class MobileAppPresenter
         return [
             'sessions' => $sessions->count(),
             'energy' => Persian::kwh($energy),
-            'cost' => Persian::money($cost / 1_000_000).' م',
+            'cost' => $cost >= 1_000_000 ? Persian::money($cost / 1_000_000, 1).' م' : Persian::money($cost),
             'co2_kg' => Persian::digits((int) round($energy * 0.68)),
             'trees' => Persian::digits(max(1, (int) round($energy * 0.03))),
         ];

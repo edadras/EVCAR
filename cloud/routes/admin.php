@@ -102,6 +102,8 @@ Route::middleware(['auth', 'staff'])->group(function () {
     Route::post('support/tickets/{ticket}/credit', [SupportCenterController::class, 'credit'])->name('support.credit');
     Route::post('support/tickets/{ticket}/draft', [SupportCenterController::class, 'draft'])->name('support.draft');
     Route::post('support/canned', [SupportCenterController::class, 'storeCanned'])->name('support.canned.store');
+    Route::get('support/reviews', [SupportCenterController::class, 'reviews'])->name('support.reviews');
+    Route::post('support/reviews/{review}', [SupportCenterController::class, 'updateReview'])->name('support.reviews.update');
     Route::delete('support/canned/{index}', [SupportCenterController::class, 'destroyCanned'])->name('support.canned.destroy')->whereNumber('index');
     Route::get('support/ai', [SupportCenterController::class, 'conversations'])->name('support.ai');
     Route::get('support/ai/{conversation:uuid}', [SupportCenterController::class, 'conversation'])->name('support.ai.show');

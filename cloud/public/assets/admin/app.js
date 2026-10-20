@@ -17,6 +17,7 @@
     card: '<path d="M2 7a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2zM2 10h20"/>',
     chip: '<rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9 2v3M15 2v3M9 19v3M15 19v3M2 9h3M2 15h3M19 9h3M19 15h3"/>',
     users: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>',
+    chat: '<path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/><path d="M9 11h.01M12 11h.01M15 11h.01"/>',
     headset: '<path d="M3 14v-2a9 9 0 0 1 18 0v2M21 14a2 2 0 0 1-2 2h-1v-5h1a2 2 0 0 1 2 2zM3 14a2 2 0 0 0 2 2h1v-5H5a2 2 0 0 0-2 2zM21 16v1a4 4 0 0 1-4 4h-5"/>',
     alert: '<path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0zM12 9v4M12 17h.01"/>',
     sliders: '<path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/>',
@@ -104,6 +105,7 @@
       { id: "users", t: "کاربران و سازمان‌ها", ic: "users", path: "users" },
       { id: "partners", t: "شرکا و مالکان شارژر", ic: "building", path: "partners" },
       { id: "support", t: "پشتیبانی و خطاها", ic: "headset", path: "support", stat: "support" },
+      { id: "reviews", t: "امتیاز و نظرات مشتریان", ic: "chat", path: "support/reviews", stat: "reviews" },
     ]},
     { group: "انبار و دارایی", items: [
       { id: "inventory", t: "انبار و دستگاه‌ها", ic: "box", path: "inventory" },
