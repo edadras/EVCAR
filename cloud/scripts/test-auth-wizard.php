@@ -2,15 +2,25 @@
 
 require __DIR__.'/../vendor/autoload.php';
 $app = require __DIR__.'/../bootstrap/app.php';
-$app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
+$app->make(Kernel::class)->bootstrap();
 
 use App\Models\User;
 use App\Services\Auth\CustomerAuthService;
+use Illuminate\Contracts\Console\Kernel;
 
 $fail = 0;
 $results = [];
-function ok(string $m): void { global $results; $results[] = "OK   $m"; }
-function bad(string $m): void { global $results, $fail; $results[] = "FAIL $m"; $fail++; }
+function ok(string $m): void
+{
+    global $results;
+    $results[] = "OK   $m";
+}
+function bad(string $m): void
+{
+    global $results, $fail;
+    $results[] = "FAIL $m";
+    $fail++;
+}
 
 echo "=== Auth Wizard Tests ===\n";
 
@@ -33,14 +43,14 @@ try {
     $svc->register('09999888777', 'Test@12345', $ver['registration_token']);
     ok('register new user');
     User::where('phone', '09999888777')->delete();
-} catch (\Throwable $e) {
+} catch (Throwable $e) {
     bad('register: '.$e->getMessage());
 }
 
 try {
     $svc->login($user->phone, 'Demo@123456');
     ok('login demo user');
-} catch (\Throwable $e) {
+} catch (Throwable $e) {
     bad('login: '.$e->getMessage());
 }
 

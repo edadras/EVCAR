@@ -2,17 +2,27 @@
 
 require __DIR__.'/../vendor/autoload.php';
 $app = require __DIR__.'/../bootstrap/app.php';
-$app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
+$app->make(Kernel::class)->bootstrap();
 
 use App\Models\User;
 use App\Services\App\ConnectivityService;
+use Illuminate\Contracts\Console\Kernel;
 
 $base = getenv('APP_TEST_URL') ?: 'http://sc_cloud_nginx';
 $edge = getenv('EDGE_TEST_URL') ?: 'http://sc_edge_nginx';
 $fail = 0;
 
-function ok(string $m): void { global $results; $results[] = "OK   $m"; }
-function bad(string $m): void { global $results, $fail; $results[] = "FAIL $m"; $fail++; }
+function ok(string $m): void
+{
+    global $results;
+    $results[] = "OK   $m";
+}
+function bad(string $m): void
+{
+    global $results, $fail;
+    $results[] = "FAIL $m";
+    $fail++;
+}
 
 $results = [];
 echo "=== Connectivity Tests ===\n";

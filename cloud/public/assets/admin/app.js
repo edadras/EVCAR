@@ -90,7 +90,7 @@
       { id: "alerts", t: "هشدارهای عملیاتی", ic: "bell", path: "alerts" },
       { id: "insights", t: "تحلیل، پیش‌بینی و خروجی", ic: "bars", path: "insights" },
       { id: "stations", t: "ایستگاه‌ها و نقشه", ic: "map", path: "stations" },
-      { id: "sessions", t: "جلسات شارژ", ic: "bolt", path: "sessions", badge: "۲۴" },
+      { id: "sessions", t: "جلسات شارژ", ic: "bolt", path: "sessions", stat: "sessions" },
       { id: "reservations", t: "رزرو شارژ", ic: "calendar", path: "reservations" },
       { id: "anpr", t: "تشخیص پلاک (ANPR)", ic: "car", path: "anpr" },
     ]},
@@ -103,7 +103,7 @@
     { group: "عملیات", items: [
       { id: "users", t: "کاربران و سازمان‌ها", ic: "users", path: "users" },
       { id: "partners", t: "شرکا و مالکان شارژر", ic: "building", path: "partners" },
-      { id: "support", t: "پشتیبانی و خطاها", ic: "headset", path: "support", badge: "۷" },
+      { id: "support", t: "پشتیبانی و خطاها", ic: "headset", path: "support", stat: "support" },
     ]},
     { group: "انبار و دارایی", items: [
       { id: "inventory", t: "انبار و دستگاه‌ها", ic: "box", path: "inventory" },
@@ -112,7 +112,7 @@
     { group: "سامانه و ارتباطات", items: [
       { id: "ev-catalog", t: "کاتالوگ خودرو برقی", ic: "car", path: "ev-catalog" },
       { id: "sync", t: "همگام‌سازی و آفلاین", ic: "refresh", path: "sync" },
-      { id: "notifications", t: "اعلان‌ها", ic: "bell", path: "notifications", badge: "۵" },
+      { id: "notifications", t: "اعلان‌ها", ic: "bell", path: "notifications", stat: "notifications" },
       { id: "campaigns", t: "طرح‌ها و کمپین‌ها", ic: "gift", path: "campaigns" },
       { id: "team", t: "کاربران مدیر و دسترسی", ic: "shield", path: "team" },
     ]},
@@ -152,8 +152,12 @@
     var title = body.getAttribute("data-title") || "";
     var crumb = body.getAttribute("data-crumb") || "SafirCharge";
 
+    var stats = {};
+    try { stats = JSON.parse(body.getAttribute("data-nav") || "{}") || {}; } catch (e) {}
+    var faNum = function (n) { return String(n).replace(/\d/g, function (d) { return "۰۱۲۳۴۵۶۷۸۹"[d]; }); };
     var navHTML = NAV.map(function (g) {
       var items = g.items.map(function (it) {
+        if (it.stat) it.badge = stats[it.stat] ? faNum(stats[it.stat]) : "";
         var extra = it.badge ? '<span class="badge-mini tnum">' + it.badge + '</span>'
           : (it.dot ? '<span class="badge-dot"></span>' : '');
         return '<a class="nav-link' + (it.id === page ? ' active' : '') + '" href="' + adminUrl(it.path) + '">' +
@@ -172,7 +176,7 @@
         '<div class="sidebar-foot">' +
           '<div class="station-card">' +
             '<div class="sc-top"><span class="pulse"></span><span>وضعیت شبکه</span></div>' +
-            '<div class="sc-meta">۱٬۲۴۸ شارژر آنلاین · ۹۸٫۶٪ در دسترس<br>آخرین همگام‌سازی: لحظاتی پیش</div>' +
+            '<div class="sc-meta">' + (stats.chargers ? faNum(stats.online || 0) + ' از ' + faNum(stats.chargers) + ' شارژر آنلاین · ' + faNum(Math.round(100 * (stats.online || 0) / stats.chargers)) + '٪ در دسترس' : 'شارژری ثبت نشده') + '<br>به‌روزرسانی: هر ۳۰ ثانیه</div>' +
           '</div>' +
         '</div>' +
       '</aside>';

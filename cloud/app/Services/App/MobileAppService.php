@@ -273,7 +273,7 @@ class MobileAppService
     public function ticketDetail(User $user, SupportTicket $ticket): array
     {
         return [
-            'ticket' => $ticket->load(['messages.user']),
+            'ticket' => $ticket->load(['messages' => fn ($q) => $q->where('is_internal', false), 'messages.user']),
             'messages' => $ticket->messages,
         ];
     }

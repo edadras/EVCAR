@@ -2,13 +2,14 @@
 
 require __DIR__.'/../vendor/autoload.php';
 $app = require __DIR__.'/../bootstrap/app.php';
-$app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
+$app->make(Kernel::class)->bootstrap();
 
 use App\Models\Connector;
 use App\Models\RfidCard;
 use App\Models\Station;
 use App\Models\User;
 use App\Models\Vehicle;
+use Illuminate\Contracts\Console\Kernel;
 
 $base = getenv('APP_TEST_URL') ?: 'http://sc_cloud_nginx';
 $cookieFile = sys_get_temp_dir().'/sc_app_actions_cookies.txt';

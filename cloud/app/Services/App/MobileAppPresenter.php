@@ -154,7 +154,7 @@ class MobileAppPresenter
     {
         return $transactions->map(function (WalletTransaction $t) {
             $amount = (int) round((float) $t->amount / 10);
-            $isIn = in_array($t->type, ['topup', 'credit', 'refund', 'bonus'], true);
+            $isIn = in_array($t->type, ['topup', 'credit', 'refund', 'bonus', 'compensation'], true);
 
             return [
                 't' => $t->description ?: $t->typeLabel(),

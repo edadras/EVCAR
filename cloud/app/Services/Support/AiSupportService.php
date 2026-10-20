@@ -288,6 +288,45 @@ class AiSupportService
         });
     }
 
+    /**
+     * پیش‌نویس پاسخ کارشناس برای یک تیکت (پنل مدیریت). کارشناس قبل از ارسال آن را ویرایش و تأیید می‌کند.
+     */
+    public function draftReply(SupportTicket $ticket): string
+    {
+        $ticket->loadMissing(['user', 'messages.user', 'station']);
+        $user = $ticket->user;
+        if (! $this->enabled() || ! $user) {
+            return 'سلام '.($user?->name ?? '').' عزیز،'."\n".'درخواست شما بررسی شد. ';
+        }
+
+        $thread = $ticket->messages->map(fn ($m) => ($m->is_internal ? '[یادداشت داخلی] ' : ($m->is_staff_reply ? 'کارشناس: ' : 'مشتری: ')).$m->message)->implode("\n");
+        $context = json_encode([
+            'account' => $this->tools->run('get_account_summary', [], $user, new AiConversation),
+            'recent_sessions' => $this->tools->run('get_recent_sessions', ['limit' => 5], $user, new AiConversation),
+            'recent_transactions' => $this->tools->run('get_wallet_transactions', ['limit' => 5], $user, new AiConversation),
+        ], JSON_UNESCAPED_UNICODE);
+
+        try {
+            $client = new Client(apiKey: (string) config('services.anthropic.key'), baseUrl: config('services.anthropic.base_url') ?: null, requestOptions: ['timeout' => 60, 'maxRetries' => 2]);
+            $response = $client->beta->messages->create(
+                maxTokens: 2048,
+                messages: [['role' => 'user', 'content' => "Ticket {$ticket->ticket_number} — category: {$ticket->category}, priority: {$ticket->priority}, station: ".($ticket->station?->name ?? '-')."\nSubject: {$ticket->subject}\n\nThread:\n{$thread}\n\nCustomer data (amounts in toman):\n{$context}\n\nWrite the next reply from the support agent to the customer."]],
+                model: (string) config('services.anthropic.support_model', 'claude-opus-5-5'),
+                system: 'You draft replies for SafirCharge (EV charging, Iran) human support agents. Write in polite, concise Persian, addressed to the customer by name, using Persian digits and toman. Base every fact on the thread and customer data; do not promise refunds or actions the agent has not decided — where a decision is needed, leave a clear placeholder like [مبلغ استرداد] for the agent. Never include internal notes verbatim. Output only the reply text.',
+                outputConfig: ['effort' => 'medium'],
+                fallbacks: 'default',
+                betas: ['server-side-fallback-2026-07-01'],
+            );
+            $text = $response->stopReason === 'refusal' ? '' : $this->textOf($response);
+
+            return $text !== '' ? $text : 'سلام '.$user->name.' عزیز، ';
+        } catch (RateLimitException|APIConnectionException|APIStatusException $e) {
+            Log::warning('AI draft failed', ['ticket' => $ticket->id, 'error' => $e->getMessage()]);
+
+            return 'سلام '.$user->name.' عزیز، ';
+        }
+    }
+
     private function systemPrompt(): string
     {
         $contact = $this->presenter->supportContact();

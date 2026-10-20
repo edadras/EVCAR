@@ -4,7 +4,6 @@
  * End-to-end smoke test for customer web app (/app/*).
  * Run: docker exec sc_cloud_app php scripts/test-customer-app.php
  */
-
 $base = getenv('APP_TEST_URL') ?: 'http://127.0.0.1:8180';
 $cookieFile = sys_get_temp_dir().'/sc_app_test_cookies.txt';
 @unlink($cookieFile);
@@ -238,5 +237,5 @@ if ($token) {
 }
 
 echo implode("\n", $results)."\n\n";
-echo $fail === 0 ? "ALL PASSED (".count($results)." checks)\n" : "FAILED: $fail issue(s)\n";
+echo $fail === 0 ? 'ALL PASSED ('.count($results)." checks)\n" : "FAILED: $fail issue(s)\n";
 exit($fail > 0 ? 1 : 0);

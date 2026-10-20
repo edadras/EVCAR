@@ -1,4 +1,5 @@
 <?php
+
 // سرور آزمایشی Messages API برای تست دستیار پشتیبانی (php -S ... fake-anthropic.php).
 // بر اساس آخرین پیام کاربر تصمیم می‌گیرد: ابزار حساب، ثبت تیکت، امتناع یا پاسخ پایانی.
 $body = file_get_contents('php://input');
@@ -9,7 +10,10 @@ $messages = $req['messages'] ?? [];
 $last = end($messages);
 $firstUserText = '';
 foreach (array_reverse($messages) as $m) {
-    if ($m['role'] === 'user' && is_string($m['content'])) { $firstUserText = $m['content']; break; }
+    if ($m['role'] === 'user' && is_string($m['content'])) {
+        $firstUserText = $m['content'];
+        break;
+    }
 }
 $isToolResult = is_array($last['content'] ?? null) && (($last['content'][0]['type'] ?? '') === 'tool_result');
 header('Content-Type: application/json');

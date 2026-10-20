@@ -2,17 +2,26 @@
 
 require __DIR__.'/../vendor/autoload.php';
 $app = require __DIR__.'/../bootstrap/app.php';
-$app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
+$app->make(Kernel::class)->bootstrap();
 
-use App\Models\User;
-use App\Models\Vehicle;
-use App\Services\Sync\EdgeSyncPayloadBuilder;
 use App\Models\EdgeStation;
+use App\Models\User;
+use App\Services\Sync\EdgeSyncPayloadBuilder;
+use Illuminate\Contracts\Console\Kernel;
 
 $fail = 0;
 $results = [];
-function ok(string $m): void { global $results; $results[] = "OK   $m"; }
-function bad(string $m): void { global $results, $fail; $results[] = "FAIL $m"; $fail++; }
+function ok(string $m): void
+{
+    global $results;
+    $results[] = "OK   $m";
+}
+function bad(string $m): void
+{
+    global $results, $fail;
+    $results[] = "FAIL $m";
+    $fail++;
+}
 
 echo "=== Full Sync Tests ===\n";
 

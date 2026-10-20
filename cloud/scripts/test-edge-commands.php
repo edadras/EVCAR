@@ -2,19 +2,28 @@
 
 require __DIR__.'/../vendor/autoload.php';
 $app = require __DIR__.'/../bootstrap/app.php';
-$app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
+$app->make(Kernel::class)->bootstrap();
 
 use App\Models\Connector;
-use App\Models\EdgeStation;
 use App\Models\Station;
 use App\Models\User;
 use App\Services\Edge\EdgeCommandService;
+use Illuminate\Contracts\Console\Kernel;
 
 $fail = 0;
 $results = [];
 
-function ok(string $m): void { global $results; $results[] = "OK   $m"; }
-function bad(string $m): void { global $results, $fail; $results[] = "FAIL $m"; $fail++; }
+function ok(string $m): void
+{
+    global $results;
+    $results[] = "OK   $m";
+}
+function bad(string $m): void
+{
+    global $results, $fail;
+    $results[] = "FAIL $m";
+    $fail++;
+}
 
 function httpJson(string $method, string $url, ?array $body = null, array $headers = []): array
 {
