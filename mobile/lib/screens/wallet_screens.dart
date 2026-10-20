@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../core/fmt.dart';
 import '../core/nav.dart';
@@ -246,22 +249,94 @@ class TopupScreen extends StatefulWidget {
   State<TopupScreen> createState() => _TopupScreenState();
 }
 
-class _TopupScreenState extends State<TopupScreen> {
-  String gateway = 'mellat';
+class _TopupScreenState extends State<TopupScreen> with WidgetsBindingObserver {
+  String? gateway;
   bool paying = false;
+  List<Map<String, dynamic>> gateways = [];
 
-  static const gateways = [('mellat', 'به', 'به‌پرداخت ملت'), ('saman', 'سپ', 'سامان (سپ)'), ('zarin', 'زر', 'زرین‌پال')];
+  /// پرداختی که صفحهٔ بانک آن برای کاربر باز شده و منتظر نتیجهٔ آن هستیم.
+  String? pendingPayment;
+  String? waitMessage;
+  Timer? _poll;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _poll?.cancel();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // بازگشت از مرورگر (یا لینک safircharge://payment) → بررسی فوری نتیجه.
+    if (state == AppLifecycleState.resumed && pendingPayment != null) _check();
+  }
+
+  Future<Map<String, dynamic>> _load() async {
+    final d = await context.api.get('wallet');
+    gateways = asList(d['gateways']);
+    gateway ??= gateways.isNotEmpty ? '${gateways.first['id']}' : null;
+    return d;
+  }
 
   Future<void> _pay() async {
+    if (gateway == null) return;
     setState(() => paying = true);
     final res = await runAction(context, () => context.api.post('topup', {'amount': widget.amount, 'gateway': gateway}), showSuccess: false);
     if (!mounted) return;
     setState(() => paying = false);
-    if (res != null) {
-      final params = asMap(res['params']);
-      await Navigator.of(context).pushReplacement(MaterialPageRoute(
-        builder: (_) => TopupResultScreen(amount: asInt(params['amount'], widget.amount), payment: params['payment']?.toString(), gateway: gateways.firstWhere((g) => g.$1 == gateway).$3),
-      ));
+    if (res == null) return;
+
+    final url = res['url']?.toString();
+    if (url != null && res['payment'] != null) {
+      // درگاه واقعی: صفحهٔ بانک در مرورگر باز می‌شود؛ نتیجه پس از بازگشت از سرور خوانده می‌شود.
+      setState(() {
+        pendingPayment = '${res['payment']}';
+        waitMessage = 'پرداخت را در صفحهٔ بانک کامل کنید؛ پس از بازگشت، نتیجه خودکار بررسی می‌شود.';
+      });
+      final opened = await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+      if (!opened && mounted) toast(context, 'مرورگر برای باز کردن درگاه پیدا نشد.', error: true);
+      _poll?.cancel();
+      var ticks = 0;
+      _poll = Timer.periodic(const Duration(seconds: 5), (t) {
+        if (++ticks > 180) t.cancel(); // حداکثر ۱۵ دقیقه
+        _check();
+      });
+      return;
+    }
+
+    final params = asMap(res['params']);
+    await Navigator.of(context).pushReplacement(MaterialPageRoute(
+      builder: (_) => TopupResultScreen(amount: asInt(params['amount'], widget.amount), payment: params['payment']?.toString()),
+    ));
+  }
+
+  Future<void> _check() async {
+    final uuid = pendingPayment;
+    if (uuid == null) return;
+    try {
+      final p = await context.api.get('payments/$uuid');
+      if (!mounted || pendingPayment == null) return;
+      final status = p['status'];
+      if (status == 'paid') {
+        _poll?.cancel();
+        pendingPayment = null;
+        await Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => TopupResultScreen(amount: asInt(p['amount']), payment: uuid)));
+      } else if (status == 'failed' || status == 'cancelled') {
+        _poll?.cancel();
+        setState(() {
+          pendingPayment = null;
+          waitMessage = status == 'cancelled' ? 'پرداخت لغو شد. مبلغی به کیف پول اضافه نشد.' : 'پرداخت ناموفق بود. اگر مبلغی کسر شده، حداکثر تا ۷۲ ساعت بازگردانده می‌شود.';
+        });
+      }
+    } catch (_) {
+      // نتیجه هنوز آماده نیست یا شبکه قطع است؛ بررسی بعدی دوباره انجام می‌شود.
     }
   }
 
@@ -281,76 +356,103 @@ class _TopupScreenState extends State<TopupScreen> {
         child: Column(children: [
           const PageHeader('تأیید پرداخت'),
           Expanded(
-            child: ListView(padding: const EdgeInsets.fromLTRB(18, 8, 18, 20), children: [
-              Container(
-                padding: const EdgeInsets.symmetric(vertical: 24),
-                decoration: BoxDecoration(color: c.accentSoft, borderRadius: BorderRadius.circular(22)),
-                child: Column(children: [
-                  Text('مبلغ افزایش موجودی', style: TextStyle(color: c.text2, fontSize: 13)),
-                  const SizedBox(height: 6),
-                  Text.rich(TextSpan(children: [
-                    TextSpan(text: money(widget.amount), style: TextStyle(fontSize: 32, fontWeight: FontWeight.w800, color: c.accentStrong)),
-                    TextSpan(text: ' تومان', style: TextStyle(fontSize: 14, color: c.text2)),
-                  ])),
-                ]),
-              ),
-              const SizedBox(height: 16),
-              AppCard(
-                child: Column(children: [
-                  row('مبلغ شارژ', '${money(widget.amount)} تومان'),
-                  row('کارمزد تراکنش', 'رایگان'),
-                  row('کیف پول مقصد', fa(user['phone'] ?? '—')),
-                  const Divider(),
-                  row('مبلغ قابل پرداخت', '${money(widget.amount)} تومان', total: true),
-                ]),
-              ),
-              const SecTitle('درگاه پرداخت'),
-              for (final (id, logo, name) in gateways)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  child: AppCard(
+            child: AsyncBody(
+              refreshable: false,
+              load: _load,
+              builder: (context, d, _) => ListView(padding: const EdgeInsets.fromLTRB(18, 8, 18, 20), children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(vertical: 24),
+                  decoration: BoxDecoration(color: c.accentSoft, borderRadius: BorderRadius.circular(22)),
+                  child: Column(children: [
+                    Text('مبلغ افزایش موجودی', style: TextStyle(color: c.text2, fontSize: 13)),
+                    const SizedBox(height: 6),
+                    Text.rich(TextSpan(children: [
+                      TextSpan(text: money(widget.amount), style: TextStyle(fontSize: 32, fontWeight: FontWeight.w800, color: c.accentStrong)),
+                      TextSpan(text: ' تومان', style: TextStyle(fontSize: 14, color: c.text2)),
+                    ])),
+                  ]),
+                ),
+                if (waitMessage != null) ...[
+                  const SizedBox(height: 14),
+                  Container(
                     padding: const EdgeInsets.all(14),
-                    border: gateway == id ? c.accent : null,
-                    color: gateway == id ? c.accentSoft : null,
-                    onTap: () => setState(() => gateway = id),
+                    decoration: BoxDecoration(
+                      color: pendingPayment != null ? c.amberSoft : c.redSoft,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
                     child: Row(children: [
-                      Container(
-                        width: 42,
-                        height: 42,
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(color: c.surface3, borderRadius: BorderRadius.circular(12)),
-                        child: Text(logo, style: const TextStyle(fontWeight: FontWeight.w800)),
-                      ),
+                      if (pendingPayment != null)
+                        const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2.4, color: Palette.amber))
+                      else
+                        const Icon(Icons.error_outline, color: Palette.red),
                       const SizedBox(width: 12),
-                      Expanded(child: Text(name, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5))),
-                      Icon(gateway == id ? Icons.radio_button_checked : Icons.radio_button_off, color: gateway == id ? c.accent : c.muted),
+                      Expanded(child: Text(waitMessage!, style: TextStyle(fontSize: 13, color: c.text2, height: 1.7))),
+                      if (pendingPayment != null) TextButton(onPressed: _check, child: const Text('بررسی')),
                     ]),
                   ),
+                ],
+                const SizedBox(height: 16),
+                AppCard(
+                  child: Column(children: [
+                    row('مبلغ شارژ', '${money(widget.amount)} تومان'),
+                    row('کارمزد تراکنش', 'رایگان'),
+                    row('کیف پول مقصد', fa(user['phone'] ?? '—')),
+                    const Divider(),
+                    row('مبلغ قابل پرداخت', '${money(widget.amount)} تومان', total: true),
+                  ]),
                 ),
-              const SizedBox(height: 6),
-              Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                const Icon(Icons.shield_outlined, color: Palette.green, size: 20),
-                const SizedBox(width: 10),
-                Expanded(child: Text('اتصال شما رمزنگاری‌شده است. پس از تأیید، به درگاه بانکی منتقل می‌شوید.', style: TextStyle(fontSize: 12.5, color: c.text2, height: 1.7))),
+                const SecTitle('درگاه پرداخت'),
+                for (final g in gateways)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: AppCard(
+                      padding: const EdgeInsets.all(14),
+                      border: gateway == g['id'] ? c.accent : null,
+                      color: gateway == g['id'] ? c.accentSoft : null,
+                      onTap: () => setState(() => gateway = '${g['id']}'),
+                      child: Row(children: [
+                        Container(
+                          width: 42,
+                          height: 42,
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(color: _gwColor(g['id']), borderRadius: BorderRadius.circular(12)),
+                          child: Text('${g['logo']}', style: TextStyle(fontWeight: FontWeight.w800, color: g['id'] == 'zarin' ? const Color(0xFF5A4500) : Colors.white)),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(child: Text('${g['label']}', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5))),
+                        Icon(gateway == g['id'] ? Icons.radio_button_checked : Icons.radio_button_off, color: gateway == g['id'] ? c.accent : c.muted),
+                      ]),
+                    ),
+                  ),
+                const SizedBox(height: 6),
+                Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  const Icon(Icons.shield_outlined, color: Palette.green, size: 20),
+                  const SizedBox(width: 10),
+                  Expanded(child: Text('اتصال شما رمزنگاری‌شده است. پس از تأیید، به درگاه بانکی منتقل می‌شوید.', style: TextStyle(fontSize: 12.5, color: c.text2, height: 1.7))),
+                ]),
               ]),
-            ]),
+            ),
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(18, 8, 18, 16),
-            child: AppButton('انتقال به درگاه پرداخت', icon: Icons.credit_card_rounded, kind: BtnKind.orange, loading: paying, onPressed: _pay),
+            child: AppButton(pendingPayment != null ? 'باز کردن دوبارهٔ درگاه' : 'انتقال به درگاه پرداخت',
+                icon: Icons.credit_card_rounded, kind: BtnKind.orange, loading: paying, onPressed: gateway == null ? null : _pay),
           ),
         ]),
       ),
     );
   }
+
+  Color _gwColor(Object? id) => switch (id) { 'mellat' => const Color(0xFFD6212A), 'saman' => const Color(0xFF00AA55), 'zarin' => const Color(0xFFFFC107), _ => Colors.blueGrey };
 }
 
 class TopupResultScreen extends StatelessWidget {
-  const TopupResultScreen({super.key, this.amount, this.payment, this.gateway = 'به‌پرداخت ملت'});
+  const TopupResultScreen({super.key, this.amount, this.payment});
 
   final int? amount;
   final String? payment;
-  final String gateway;
+
+  static const _gatewayNames = {'mellat': 'به‌پرداخت ملت', 'saman': 'سامان (سپ)', 'zarinpal': 'زرین‌پال'};
 
   @override
   Widget build(BuildContext context) {
@@ -358,10 +460,18 @@ class TopupResultScreen extends StatelessWidget {
       body: SafeArea(
         child: AsyncBody(
           refreshable: false,
-          load: () => context.api.get('wallet'),
+          load: () async {
+            final api = context.api;
+            final w = await api.get('wallet');
+            final p = payment != null ? await api.get('payments/$payment') : <String, dynamic>{};
+            return {...w, 'payment': p};
+          },
           builder: (context, d, _) {
             final c = context.c;
-            final now = DateTime.now();
+            final p = asMap(d['payment']);
+            final paid = p.isEmpty || p['status'] == 'paid';
+            final paidAt = DateTime.tryParse('${p['paid_at']}')?.toLocal() ?? DateTime.now();
+            String two(int n) => n.toString().padLeft(2, '0');
             Widget row(String k, String v) => Padding(
                   padding: const EdgeInsets.symmetric(vertical: 7),
                   child: Row(children: [Expanded(child: Text(k, style: TextStyle(color: c.muted, fontSize: 13))), Text(v, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13))]),
@@ -375,38 +485,47 @@ class TopupResultScreen extends StatelessWidget {
                       height: 96,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        gradient: const LinearGradient(colors: [Palette.green, Color(0xFF4ADE80)]),
-                        boxShadow: [BoxShadow(color: Palette.green.withValues(alpha: .35), blurRadius: 34, offset: const Offset(0, 16))],
+                        gradient: LinearGradient(colors: paid ? const [Palette.green, Color(0xFF4ADE80)] : const [Palette.red, Color(0xFFF87171)]),
+                        boxShadow: [BoxShadow(color: (paid ? Palette.green : Palette.red).withValues(alpha: .35), blurRadius: 34, offset: const Offset(0, 16))],
                       ),
-                      child: const Icon(Icons.check_rounded, color: Colors.white, size: 50),
+                      child: Icon(paid ? Icons.check_rounded : Icons.close_rounded, color: Colors.white, size: 50),
                     ),
                   ),
                   const SizedBox(height: 20),
-                  const Center(child: Text('پرداخت موفق بود', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800))),
+                  Center(child: Text(paid ? 'پرداخت موفق بود' : 'پرداخت ناموفق بود', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800))),
                   const SizedBox(height: 6),
-                  Center(child: Text('موجودی کیف پول شما با موفقیت افزایش یافت.', style: TextStyle(color: c.muted))),
+                  Center(child: Text(paid ? 'موجودی کیف پول شما با موفقیت افزایش یافت.' : 'مبلغی به کیف پول اضافه نشد.', style: TextStyle(color: c.muted))),
                   const SizedBox(height: 26),
                   AppCard(
                     padding: const EdgeInsets.all(20),
                     child: Column(children: [
                       Text.rich(TextSpan(children: [
-                        TextSpan(text: money(amount ?? 0), style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w800)),
+                        TextSpan(text: money(asInt(p['amount'], amount ?? 0)), style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w800)),
                         TextSpan(text: ' تومان', style: TextStyle(fontSize: 14, color: c.text2)),
                       ])),
                       const SizedBox(height: 14),
                       const Divider(),
                       const SizedBox(height: 6),
                       row('موجودی جدید', '${money(d['balance'] as num?)} تومان'),
-                      row('شمارهٔ پیگیری', payment == null ? '—' : payment!.substring(0, payment!.length.clamp(0, 13))),
-                      row('درگاه', gateway),
-                      row('تاریخ', fa('${now.year}/${now.month.toString().padLeft(2, '0')}/${now.day.toString().padLeft(2, '0')} — ${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}')),
+                      row('شمارهٔ پیگیری', fa(p['reference'] ?? '—')),
+                      row('درگاه', _gatewayNames[p['gateway']] ?? '${p['gateway'] ?? '—'}'),
+                      row('تاریخ', fa('${paidAt.year}/${two(paidAt.month)}/${two(paidAt.day)} — ${two(paidAt.hour)}:${two(paidAt.minute)}')),
                     ]),
                   ),
                 ]),
               ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(18, 8, 18, 16),
-                child: AppButton('بازگشت به کیف پول', kind: BtnKind.orange, onPressed: () => openScreen(context, 'wallet')),
+                child: Row(children: [
+                  Expanded(child: AppButton('بازگشت به کیف پول', kind: BtnKind.orange, onPressed: () => openScreen(context, 'wallet'))),
+                  if (paid) ...[
+                    const SizedBox(width: 10),
+                    SizedBox(
+                      width: 56,
+                      child: AppButton('', icon: Icons.ios_share_rounded, kind: BtnKind.ghost, onPressed: () => shareText(context, 'رسید پرداخت SafirCharge\nمبلغ: ${money(asInt(p['amount'], amount ?? 0))} تومان\nشمارهٔ پیگیری: ${fa(p['reference'] ?? '—')}\nتاریخ: ${fa('${paidAt.year}/${two(paidAt.month)}/${two(paidAt.day)} ${two(paidAt.hour)}:${two(paidAt.minute)}')}')),
+                    ),
+                  ],
+                ]),
               ),
             ]);
           },

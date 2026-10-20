@@ -78,6 +78,12 @@ return [
     ],
 
     'payment' => [
+        // simulated: پرداخت آزمایشی بدون درگاه (در production غیرفعال است) · zarinpal: درگاه واقعی
+        'driver' => env('PAYMENT_DRIVER', 'simulated'),
+        'zarinpal' => [
+            'merchant_id' => env('ZARINPAL_MERCHANT_ID', ''),
+            'sandbox' => (bool) env('ZARINPAL_SANDBOX', false),
+        ],
         'gateways' => ['mellat', 'saman', 'zarin'],
         'gateway_aliases' => [
             'mellat' => 'mellat',

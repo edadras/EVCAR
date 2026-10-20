@@ -4,6 +4,7 @@ namespace App\Http\Controllers\App;
 
 use App\Http\Controllers\Controller;
 use App\Models\Campaign;
+use App\Models\Payment;
 use App\Models\SupportTicket;
 use App\Services\App\ChargingAuthorizationService;
 use App\Services\App\MobileAppService;
@@ -165,11 +166,14 @@ class PageController extends Controller
 
     public function topupResult(): View
     {
+        $payment = Payment::where('uuid', (string) request('payment'))->where('user_id', $this->user()->id)->first();
+
         return view('app.topup-result', array_merge(
             $this->app->wallet($this->user()),
             [
-                'topupAmount' => request('amount'),
-                'paymentRef' => request('payment'),
+                'payment' => $payment,
+                'topupAmount' => $payment ? (int) round((float) $payment->amount / 10) : request('amount'),
+                'paymentRef' => $payment?->gateway_reference ?? '—',
             ]
         ));
     }

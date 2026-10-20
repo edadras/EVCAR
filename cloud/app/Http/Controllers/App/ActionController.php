@@ -5,7 +5,6 @@ namespace App\Http\Controllers\App;
 use App\Http\Controllers\Controller;
 use App\Models\ChargingSession;
 use App\Models\Connector;
-use App\Models\Payment;
 use App\Models\Reservation;
 use App\Models\RfidCard;
 use App\Models\SupportTicket;
@@ -13,12 +12,11 @@ use App\Models\Tariff;
 use App\Models\TicketMessage;
 use App\Models\UserNotification;
 use App\Models\Vehicle;
-use App\Models\Wallet;
-use App\Models\WalletTransaction;
 use App\Services\App\ChargingAuthorizationService;
 use App\Services\Audit\AuditService;
 use App\Services\Charging\CloudChargingSessionService;
 use App\Services\Charging\ConnectorAvailabilityService;
+use App\Services\Finance\PaymentGatewayService;
 use App\Services\ReservationService;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
@@ -149,59 +147,36 @@ class ActionController extends Controller
             ->with('success', 'رزرو شما ثبت شد.');
     }
 
-    public function processTopup(Request $request): RedirectResponse
+    public function processTopup(Request $request, PaymentGatewayService $payments): RedirectResponse|JsonResponse
     {
-        $gateways = config('safircharge.payment.gateways', ['mellat', 'saman', 'zarinpal']);
-
         $data = $request->validate([
-            'amount' => ['required', 'numeric', 'min:10000', 'max:50000000'],
-            'gateway' => ['required', 'string', 'in:'.implode(',', $gateways)],
+            'amount' => ['required', 'integer', 'min:10000', 'max:50000000'],
+            'gateway' => ['required', 'string', 'in:'.implode(',', array_column($payments->gateways(), 'id'))],
         ]);
 
-        $user = $this->user();
-        $amountRial = (float) $data['amount'] * 10;
-        $gateway = config('safircharge.payment.gateway_aliases.'.$data['gateway'], $data['gateway']);
+        if ($payments->driver() === 'simulated' && app()->isProduction()) {
+            return back()->withErrors(['amount' => 'درگاه پرداخت هنوز پیکربندی نشده است.']);
+        }
 
-        $payment = Payment::create([
-            'uuid' => (string) Str::uuid(),
-            'user_id' => $user->id,
-            'method' => 'gateway',
-            'status' => 'paid',
-            'amount' => $amountRial,
-            'currency' => 'IRR',
-            'gateway' => $gateway,
-            'gateway_reference' => 'SC-'.Str::upper(Str::substr(str_replace('-', '', (string) Str::uuid()), 0, 12)),
-            'paid_at' => now(),
+        try {
+            $result = $payments->start($this->user(), (int) $data['amount'], $data['gateway'], $request->expectsJson() ? 'app' : 'web');
+        } catch (\RuntimeException $e) {
+            return back()->withErrors(['amount' => $e->getMessage()]);
+        }
+
+        if ($result['redirect_url']) {
+            // اپ موبایل صفحهٔ بانک را در مرورگر باز می‌کند و وضعیت را با شناسهٔ پرداخت پیگیری می‌کند.
+            if ($request->expectsJson()) {
+                return response()->json(['ok' => true, 'url' => $result['redirect_url'], 'payment' => $result['payment']->uuid]);
+            }
+
+            return redirect()->away($result['redirect_url']);
+        }
+
+        return redirect()->route('app.topup.result', [
+            'payment' => $result['payment']->uuid,
+            'amount' => $data['amount'],
         ]);
-
-        $wallet = $user->wallet ?? Wallet::create([
-            'uuid' => (string) Str::uuid(),
-            'user_id' => $user->id,
-            'balance' => 0,
-            'currency' => 'IRR',
-            'status' => 'active',
-        ]);
-
-        $newBalance = (float) $wallet->balance + $amountRial;
-        $wallet->update(['balance' => $newBalance]);
-
-        WalletTransaction::create([
-            'uuid' => (string) Str::uuid(),
-            'wallet_id' => $wallet->id,
-            'type' => 'credit',
-            'amount' => $amountRial,
-            'balance_after' => $newBalance,
-            'reference_type' => Payment::class,
-            'reference_id' => $payment->id,
-            'description' => 'شارژ کیف پول از درگاه',
-            'occurred_at' => now(),
-        ]);
-
-        return redirect()
-            ->route('app.topup.result', [
-                'payment' => $payment->uuid,
-                'amount' => $data['amount'],
-            ]);
     }
 
     public function chat(Request $request): View

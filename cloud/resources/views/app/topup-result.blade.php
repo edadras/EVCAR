@@ -9,6 +9,18 @@ $amount = (int) ($topupAmount ?? request('amount', 0));
 $balanceToman = (int) round(($wallet?->balance ?? 0) / 10);
 $ref = $paymentRef ?? request('payment', '—');
 @endphp
+@if(($payment ?? null) && $payment->status !== 'paid')
+<div class="screen" style="display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px">
+    <div class="ok-circle rise" style="background:linear-gradient(140deg,var(--red),#f87171)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+    </div>
+    <h2 class="mt20" style="font-size:22px">{{ $payment->status === 'pending' ? 'در انتظار تأیید بانک' : 'پرداخت ناموفق بود' }}</h2>
+    <p class="muted" style="margin-top:8px;font-size:13.5px;line-height:1.8">مبلغی از کیف پول شما کسر یا به آن اضافه نشد. اگر از حساب بانکی شما برداشت شده، حداکثر تا ۷۲ ساعت بازگردانده می‌شود.</p>
+</div>
+<div class="savebar">
+    <a href="{{ route('app.wallet') }}" class="btn btn-orange" style="flex:1;text-decoration:none">بازگشت به کیف پول</a>
+</div>
+@else
 <div class="screen" style="display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px">
     <div class="ok-circle rise">
         <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
@@ -20,7 +32,7 @@ $ref = $paymentRef ?? request('payment', '—');
         <div class="rcpt-amt tnum" id="amt">{{ Persian::money($amount) }} <small>تومان</small></div>
         <div class="rrow"><span class="muted">موجودی جدید</span><b class="tnum" id="newBal">{{ Persian::money($balanceToman) }} تومان</b></div>
         <div class="rrow"><span class="muted">شمارهٔ پیگیری</span><b class="mono">{{ $ref }}</b></div>
-        <div class="rrow"><span class="muted">درگاه</span><b>به‌پرداخت ملت</b></div>
+        <div class="rrow"><span class="muted">درگاه</span><b>{{ ['mellat' => 'به‌پرداخت ملت', 'saman' => 'سامان (سپ)', 'zarinpal' => 'زرین‌پال'][$payment?->gateway ?? 'mellat'] ?? $payment?->gateway }}</b></div>
         <div class="rrow"><span class="muted">تاریخ</span><b class="tnum">{{ Persian::digits(now()->format('Y/m/d')) }} — {{ Persian::digits(now()->format('H:i')) }}</b></div>
     </div>
 </div>
@@ -29,6 +41,7 @@ $ref = $paymentRef ?? request('payment', '—');
     <a href="{{ route('app.wallet') }}" class="btn btn-orange" style="flex:1;height:50px;display:flex;align-items:center;justify-content:center">بازگشت به کیف پول</a>
     <button type="button" class="btn btn-ghost" style="flex:none;width:54px" title="رسید"><span data-ic="download"></span></button>
 </div>
+@endif
 @endsection
 
 @push('styles')

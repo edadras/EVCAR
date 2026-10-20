@@ -18,7 +18,7 @@ $phoneFormatted = $presenter->formatPhone($user->phone);
 <form method="POST" action="{{ route('app.topup.process') }}" id="topupForm">
 @csrf
 <input type="hidden" name="amount" id="amountInput" value="{{ $amount }}">
-<input type="hidden" name="gateway" id="gatewayInput" value="mellat">
+<input type="hidden" name="gateway" id="gatewayInput" value="{{ app(\App\Services\Finance\PaymentGatewayService::class)->gateways()[0]['id'] }}">
 
 <div class="screen">
     @if($errors->any())
@@ -43,9 +43,9 @@ $phoneFormatted = $presenter->formatPhone($user->phone);
 
     <div class="sec-title">درگاه پرداخت</div>
     <div class="gateways" id="gws">
-        <button type="button" class="gw active" data-g="mellat"><span class="gw-logo" style="background:#D6212A">به</span><span class="fw7 fs13">به‌پرداخت ملت</span><span class="gw-radio on"></span></button>
-        <button type="button" class="gw" data-g="saman"><span class="gw-logo" style="background:#0a5">سپ</span><span class="fw7 fs13">سامان (سپ)</span><span class="gw-radio"></span></button>
-        <button type="button" class="gw" data-g="zarin"><span class="gw-logo" style="background:#ffc107;color:#5a4500">زر</span><span class="fw7 fs13">زرین‌پال</span><span class="gw-radio"></span></button>
+        @foreach(app(\App\Services\Finance\PaymentGatewayService::class)->gateways() as $gw)
+        <button type="button" class="gw{{ $loop->first ? ' active' : '' }}" data-g="{{ $gw['id'] }}"><span class="gw-logo" style="{{ ['mellat' => 'background:#D6212A', 'saman' => 'background:#0a5', 'zarin' => 'background:#ffc107;color:#5a4500'][$gw['id']] ?? '' }}">{{ $gw['logo'] }}</span><span class="fw7 fs13">{{ $gw['label'] }}</span><span class="gw-radio{{ $loop->first ? ' on' : '' }}"></span></button>
+        @endforeach
     </div>
 
     <div class="secure-note">

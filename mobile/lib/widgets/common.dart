@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../core/api.dart';
 import '../core/theme.dart';
@@ -471,4 +473,14 @@ class LtrIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) =>
       Directionality(textDirection: TextDirection.ltr, child: Icon(icon, size: size, color: color));
+}
+
+/// اشتراک‌گذاری متن با برگهٔ اشتراک سیستم (رسید، آدرس ایستگاه و …).
+Future<void> shareText(BuildContext context, String text) async {
+  try {
+    await SharePlus.instance.share(ShareParams(text: text));
+  } catch (_) {
+    await Clipboard.setData(ClipboardData(text: text));
+    if (context.mounted) toast(context, 'متن کپی شد.');
+  }
 }

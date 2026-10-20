@@ -11,6 +11,17 @@
 		<string>fa</string>
 		<string>en</string>
 	</array>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>ir.safircharge.app</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>safircharge</string>
+			</array>
+		</dict>
+	</array>
 	<key>NSCameraUsageDescription</key>
 	<string>برای اسکن کد QR شارژر و شروع شارژ به دوربین نیاز است.</string>
 	<key>LSApplicationQueriesSchemes</key>

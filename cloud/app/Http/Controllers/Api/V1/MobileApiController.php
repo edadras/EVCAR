@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Campaign;
 use App\Models\ChargingSession;
 use App\Models\EvCatalogVehicle;
+use App\Models\Payment;
 use App\Models\QrToken;
 use App\Models\Reservation;
 use App\Models\RfidCard;
@@ -21,6 +22,7 @@ use App\Services\App\MobileAppPresenter;
 use App\Services\App\MobileAppService;
 use App\Services\Auth\CustomerAuthService;
 use App\Services\Charging\CloudChargingSessionService;
+use App\Services\Finance\PaymentGatewayService;
 use App\Services\Navigator\EvNavigatorService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -216,6 +218,23 @@ class MobileApiController extends Controller
             'rfid_masked' => $d['rfidMasked'],
             'loyalty' => $d['loyalty'],
             'transactions' => $d['transactionsJs'],
+            'gateways' => app(PaymentGatewayService::class)->gateways(),
+        ]);
+    }
+
+    /** وضعیت یک پرداخت (اپ پس از بازگشت از درگاه بانک آن را می‌خواند). */
+    public function payment(Request $request, string $uuid): JsonResponse
+    {
+        $payment = Payment::where('uuid', $uuid)->where('user_id', $request->user()->id)->firstOrFail();
+
+        return response()->json([
+            'uuid' => $payment->uuid,
+            'status' => $payment->status,
+            'amount' => $this->toman($payment->amount),
+            'gateway' => $payment->gateway,
+            'reference' => $payment->gateway_reference,
+            'paid_at' => $payment->paid_at?->toIso8601String(),
+            'balance' => $this->toman($request->user()->wallet()->first()?->balance),
         ]);
     }
 

@@ -47,6 +47,12 @@ class MobileJsonResponses
             return new JsonResponse(['message' => $bag->first(), 'errors' => $bag->toArray()], 422);
         }
 
+        $target = $response->getTargetUrl();
+        if (! str_starts_with($target, url('/'))) {
+            // هدایت به سایت بیرونی (مثلاً صفحهٔ درگاه بانک): اپ آن را در مرورگر باز می‌کند.
+            return new JsonResponse(['ok' => true, 'url' => $target, 'redirect' => null, 'params' => []]);
+        }
+
         return new JsonResponse([
             'ok' => true,
             'message' => $store->get('success') ?? $store->get('status'),

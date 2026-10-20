@@ -57,6 +57,7 @@ Route::prefix('v1')->group(function () {
             Route::post('charging/stop', [ActionController::class, 'stopCharging']);
             Route::get('wallet', [MobileApiController::class, 'wallet']);
             Route::post('topup', [ActionController::class, 'processTopup']);
+            Route::get('payments/{uuid}', [MobileApiController::class, 'payment']);
             Route::get('history', [MobileApiController::class, 'history']);
             Route::get('account', [MobileApiController::class, 'account']);
             Route::post('profile', [ActionController::class, 'updateProfile']);
