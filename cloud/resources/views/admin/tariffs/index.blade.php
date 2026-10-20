@@ -316,7 +316,7 @@ html[dir=rtl] .switch.on i{transform:translateX(-18px)}
       if(!selectedQrLink)return;
       var svg=qrBox.querySelector('svg');
       if(!svg)return;
-      var blob=new Blob(['<?xml version="1.0" encoding="UTF-8"?>\n'+svg.outerHTML],{type:'image/svg+xml'});
+      var blob=new Blob(['<'+'?xml version="1.0" encoding="UTF-8"?'+'>\n'+svg.outerHTML],{type:'image/svg+xml'});
       var a=document.createElement('a');
       a.href=URL.createObjectURL(blob);
       a.download='qr-'+selectedQrLink.replace(/[^a-zA-Z0-9]/g,'-')+'.svg';
