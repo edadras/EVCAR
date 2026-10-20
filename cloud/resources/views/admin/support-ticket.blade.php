@@ -124,6 +124,7 @@
 
 @push('styles')
 <style>
+.grid.col-2-1>*{min-width:0}
 .thread{display:flex;flex-direction:column;gap:12px;max-height:560px;overflow:auto}
 .tm{border-radius:14px;padding:12px 14px;max-width:88%}
 .tm.cust{background:var(--surface-2);border:1px solid var(--border);align-self:flex-start}

@@ -4,6 +4,7 @@ import '../screens/account_screens.dart';
 import '../screens/charger_screen.dart';
 import '../screens/charging_screen.dart';
 import '../screens/edge_screens.dart';
+import '../screens/engagement_screens.dart';
 import '../screens/history_screen.dart';
 import '../screens/misc_screens.dart';
 import '../screens/navigator_screen.dart';
@@ -55,6 +56,8 @@ Future<void> openScreen(BuildContext context, String? name, [Map<String, dynamic
     'server' => const ServerSettingsScreen(),
     'edge' => const EdgeStationScreen(),
     'assistant' => const AssistantScreen(),
+    'insights' => const InsightsScreen(),
+    'session' when p('uuid') != null => SessionReceiptScreen(uuid: p('uuid')!),
     _ => null,
   };
   if (page == null) return;

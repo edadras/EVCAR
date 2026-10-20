@@ -81,7 +81,7 @@
                     <tbody>
                     @forelse($faults as $f)
                         <tr>
-                            <td class="mono cell-strong">{{ $f['charger']->charge_point_id }}<div class="cell-muted fs12">{{ $f['charger']->station?->name }}</div></td>
+                            <td class="cell-strong"><span class="mono">{{ $f['charger']->charge_point_id }}</span><div class="cell-muted fs12">{{ $f['charger']->station?->name }}</div></td>
                             <td><span class="pill {{ $f['critical'] ? 'pill-red' : 'pill-amber' }}">{{ $f['code'] }}</span></td>
                             <td class="tnum">{{ Persian::digits($f['open_tickets']) }}</td>
                             <td><a href="{{ route('admin.chargers.show', $f['charger']) }}" class="btn btn-sm">رسیدگی</a></td>
@@ -99,6 +99,8 @@
 
 @push('styles')
 <style>
+.grid.col-2-1>*{min-width:0}
+.table-wrap{overflow-x:auto}
 .mini-stat{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:16px;display:flex;align-items:center;gap:13px;box-shadow:var(--shadow-sm)}
 .ms-ic{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;flex:none}.ms-ic svg{width:22px;height:22px}
 .ms-v{font-size:22px;font-weight:800}.ms-v small{font-size:12px;font-weight:600;color:var(--text-2)}.ms-l{font-size:12px;color:var(--muted)}

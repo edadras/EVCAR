@@ -83,7 +83,7 @@
             <div class="fw7 fs13">همهٔ کانکتورها مشغول‌اند</div>
             <div class="fs12 muted mt4" id="watchText">{{ $watching ? 'به محض آزاد شدن به شما اعلان می‌دهیم.' : 'وقتی کانکتوری آزاد شد خبرتان کنیم؟' }}</div>
         </div>
-        <button type="button" class="btn btn-sm {{ $watching ? '' : 'btn-primary' }}" id="watchBtn" style="width:auto;padding:0 14px">{{ $watching ? 'لغو' : 'خبرم کن' }}</button>
+        <button type="button" class="btn btn-sm {{ $watching ? 'btn-ghost' : '' }}" id="watchBtn" style="width:auto;padding:0 14px">{{ $watching ? 'لغو' : 'خبرم کن' }}</button>
     </div>
     @endif
 
@@ -162,7 +162,7 @@
         </select>
         <textarea name="description" class="sheet-in" rows="3" maxlength="1500" placeholder="توضیح کوتاه (مثلاً پیغام خطای روی صفحه)"></textarea>
         <div class="row" style="gap:10px;margin-top:12px">
-            <button type="button" class="btn" id="reportClose" style="flex:1">انصراف</button>
+            <button type="button" class="btn btn-ghost" id="reportClose" style="flex:1">انصراف</button>
             <button type="submit" class="btn btn-orange" style="flex:2">ثبت گزارش</button>
         </div>
     </form>
@@ -277,7 +277,7 @@
   wb&&wb.addEventListener('click',function(){wb.disabled=true;post(@json(route('app.station.watch', $station->code))).then(function(d){
     document.getElementById('watchCard').classList.toggle('on',d.watching);
     document.getElementById('watchText').textContent=d.watching?'به محض آزاد شدن به شما اعلان می‌دهیم.':'وقتی کانکتوری آزاد شد خبرتان کنیم؟';
-    wb.textContent=d.watching?'لغو':'خبرم کن';wb.classList.toggle('btn-primary',!d.watching);toast(d.message);
+    wb.textContent=d.watching?'لغو':'خبرم کن';wb.classList.toggle('btn-ghost',d.watching);toast(d.message);
   }).finally(function(){wb.disabled=false;});});
   var sheet=document.getElementById('reportSheet');
   document.getElementById('reportOpen').addEventListener('click',function(){sheet.hidden=false;});

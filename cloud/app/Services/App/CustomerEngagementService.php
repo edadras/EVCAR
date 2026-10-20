@@ -82,7 +82,7 @@ class CustomerEngagementService
             'uuid' => $session->uuid,
             'status' => $session->status,
             'done' => $done,
-            'station' => ['code' => $session->station?->code, 'name' => $session->station?->name ?? '—', 'address' => trim(($session->station?->city ?? '').'، '.($session->station?->address ?? ''), '، ')],
+            'station' => ['code' => $session->station?->code, 'name' => $session->station?->name ?? '—', 'address' => implode('، ', array_filter([$session->station?->city, $session->station?->address]))],
             'charger' => $session->charger?->charge_point_id,
             'connector' => $session->connector?->connector_number,
             'vehicle' => $session->vehicle ? trim($session->vehicle->brand.' '.$session->vehicle->model) : null,

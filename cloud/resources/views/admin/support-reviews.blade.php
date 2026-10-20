@@ -69,6 +69,8 @@
 
 @push('styles')
 <style>
+.grid.col-2-1>*{min-width:0}
+.table-wrap{overflow-x:auto}
 .mini-stat{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:16px;box-shadow:var(--shadow-sm)}
 .ms-v{font-size:22px;font-weight:800}.ms-v small{font-size:12px;color:var(--muted);font-weight:600}.ms-l{font-size:12px;color:var(--muted)}
 .rv{border:1px solid var(--border);border-radius:14px;padding:14px}

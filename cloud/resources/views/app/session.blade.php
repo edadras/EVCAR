@@ -33,7 +33,7 @@
     @if(count($r['curve']) > 1)
     <div class="sec-title">نمودار توان شارژ</div>
     <div class="card card-p"><svg id="curve" viewBox="0 0 320 120" width="100%" height="120" preserveAspectRatio="none"></svg>
-        <div class="row between fs12 muted"><span>شروع</span><span>{{ Persian::digits($r['duration_min']) }} دقیقه</span></div></div>
+        <div class="row between fs12 muted" style="direction:ltr"><span>شروع</span><span>{{ Persian::digits($r['duration_min']) }} دقیقه</span></div></div>
     @endif
 
     <div class="sec-title">جزئیات هزینه</div>
@@ -69,13 +69,13 @@
         <div class="rv-pick" id="rvPick">@for($i = 1; $i <= 5; $i++)<button type="button" data-v="{{ $i }}">★</button>@endfor</div>
         <div class="rv-chips">@foreach($r['tags'] as $k => $label)<label><input type="checkbox" name="tags[]" value="{{ $k }}"><span>{{ $label }}</span></label>@endforeach</div>
         <textarea name="comment" rows="3" maxlength="600" class="rv-text" placeholder="نظر شما (اختیاری)"></textarea>
-        <button class="btn btn-primary mt4" type="submit" id="rvSubmit" disabled>ثبت امتیاز</button>
+        <button class="btn mt4" type="submit" id="rvSubmit" disabled>ثبت امتیاز</button>
     </form>
     @endif
 
     <div class="row" style="gap:10px;margin-top:16px">
-        <a class="btn" style="flex:1" href="{{ route('app.ticket.new', ['session' => $r['uuid']]) }}"><span data-ic="headset"></span> مشکل در این جلسه</a>
-        @if($r['station']['code'])<a class="btn" style="flex:1" href="{{ route('app.charger', ['station' => $r['station']['code']]) }}"><span data-ic="bolt"></span> شارژ دوباره</a>@endif
+        <a class="btn btn-ghost" style="flex:1" href="{{ route('app.ticket.new', ['session' => $r['uuid']]) }}"><span data-ic="headset"></span> مشکل در این جلسه</a>
+        @if($r['station']['code'])<a class="btn btn-soft" style="flex:1" href="{{ route('app.charger', ['station' => $r['station']['code']]) }}"><span data-ic="bolt"></span> شارژ دوباره</a>@endif
     </div>
 </div>
 @endsection

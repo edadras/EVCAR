@@ -98,6 +98,8 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('سلام، مهدی 👋'), findsOneWidget);
     expect(find.textContaining('۴۷۷,۲۵۹', findRichText: true), findsOneWidget);
+    // بنرهای بالای پیشخان فهرست ایستگاه‌ها را به پایین صفحه برده‌اند
+    await tester.scrollUntilVisible(find.text('میدان آزادی'), 200, scrollable: find.byType(Scrollable).first);
     expect(find.text('میدان آزادی'), findsOneWidget);
     expect(find.text('پیشخان'), findsOneWidget);
   });

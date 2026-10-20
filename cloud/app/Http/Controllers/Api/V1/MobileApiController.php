@@ -283,6 +283,7 @@ class MobileApiController extends Controller
             'title' => $n->title,
             'body' => $n->body,
             'read' => $n->read_at !== null,
+            'data' => (object) array_intersect_key((array) ($n->data ?? []), array_flip(['session', 'ticket', 'station', 'payment'])),
             'time' => $n->sent_at?->locale('fa')->diffForHumans(),
             'sent_at' => $n->sent_at?->toIso8601String(),
         ])->values();
