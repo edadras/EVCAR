@@ -95,8 +95,15 @@
             <label class="nav-field">
                 <span>درصد شارژ هدف در مقصد</span>
                 <div class="nav-soc-row">
-                    <input type="range" id="targetSocRange" min="10" max="100" value="20">
+                    <input type="range" id="targetSocRange" min="5" max="90" value="20">
                     <output id="targetSocOut">{{ Persian::digits(20) }}٪</output>
+                </div>
+            </label>
+            <label class="nav-field">
+                <span>شارژ تا چند درصد در ایستگاه‌های بین راه</span>
+                <div class="nav-soc-row">
+                    <input type="range" id="chargeToRange" min="50" max="100" step="5" value="80">
+                    <output id="chargeToOut">{{ Persian::digits(80) }}٪</output>
                 </div>
             </label>
         </div>

@@ -58,7 +58,8 @@ window.SC_API = {
 @endif
 @stack('scripts')
 <style>
-.sc-backend-badge{position:fixed;top:calc(8px + env(safe-area-inset-top,0));left:50%;transform:translateX(-50%);z-index:300;border:none;border-radius:20px;padding:4px 12px;font-family:inherit;font-size:11px;font-weight:800;letter-spacing:.02em;cursor:pointer;box-shadow:var(--shadow-md)}
+.sc-backend-badge{position:fixed;bottom:calc(92px + env(safe-area-inset-bottom,0));left:max(12px,calc(50% - var(--phone-w,430px)/2 + 12px));z-index:300;opacity:.92;border:none;border-radius:20px;padding:4px 12px;font-family:inherit;font-size:11px;font-weight:800;letter-spacing:.02em;cursor:pointer;box-shadow:var(--shadow-md)}
+body[data-no-tab] .sc-backend-badge{bottom:calc(120px + env(safe-area-inset-bottom,0))}
 .sc-backend-badge.cloud{background:var(--accent-soft);color:var(--accent-strong)}
 .sc-backend-badge.edge{background:var(--green-soft);color:var(--green)}
 .sc-bp-overlay{position:fixed;inset:0;background:rgba(8,16,24,.55);display:flex;align-items:flex-end;justify-content:center;opacity:0;visibility:hidden;transition:opacity .2s;z-index:400;padding:0 12px}

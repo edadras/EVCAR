@@ -20,14 +20,15 @@ class HandleCors
             return response('', 204)
                 ->header('Access-Control-Allow-Origin', $allowOrigin)
                 ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
-                ->header('Access-Control-Allow-Headers', 'Content-Type, Accept, X-SC-User-UUID, X-SC-Edge-Token, X-SC-Cloud-Sync, Authorization')
+                ->header('Access-Control-Allow-Headers', 'Content-Type, Accept, X-Requested-With, X-SC-User-UUID, X-SC-Edge-Token, X-SC-Cloud-Sync, Authorization')
                 ->header('Access-Control-Max-Age', '86400');
         }
 
         $response = $next($request);
 
-        return $response
-            ->header('Access-Control-Allow-Origin', $allowOrigin)
-            ->header('Access-Control-Allow-Credentials', 'false');
+        $response->headers->set('Access-Control-Allow-Origin', $allowOrigin);
+        $response->headers->set('Vary', 'Origin');
+
+        return $response;
     }
 }

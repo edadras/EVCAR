@@ -45,7 +45,7 @@ return [
         'remote_stop_wait' => (int) env('OCPP_REMOTE_STOP_WAIT', 10),
         'start_timeout_minutes' => (int) env('OCPP_START_TIMEOUT_MINUTES', 3),
         'min_wallet_balance' => (float) env('SC_MIN_WALLET_BALANCE', 10000),
-        'progress_sync_seconds' => (int) env('OCPP_PROGRESS_SYNC_SECONDS', 60),
+        'progress_sync_seconds' => (int) env('OCPP_PROGRESS_SYNC_SECONDS', 15),
         'log_messages' => (bool) env('OCPP_LOG_MESSAGES', true),
         'log_retention_days' => (int) env('OCPP_LOG_RETENTION_DAYS', 14),
 

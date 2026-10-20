@@ -20,6 +20,8 @@
   if (!mapEl) return;
 
   var map = L.map('navMap', { zoomControl: false, attributionControl: false }).setView([center.lat, center.lng], 11);
+  setTimeout(function () { map.invalidateSize(); }, 250);
+  window.addEventListener('resize', function () { map.invalidateSize(); });
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
 
   function segmentColor(ratio) {
@@ -592,6 +594,13 @@
         ? '<div class="ns-row"><span>با توقف شارژ پیشنهادی</span><strong>' + fa(s.start_soc) + '٪ → ' + fa(s.arrival_soc_planned) + '٪ در مقصد</strong></div>'
         : '') +
       '<div class="ns-row"><span>هدف در مقصد</span><strong>' + fa(s.target_soc) + '٪</strong></div>' +
+      (s.total_charge_minutes > 0
+        ? '<div class="ns-row"><span>زمان و هزینهٔ شارژ بین راه</span><strong>حدود ' + fa(s.total_charge_minutes) + ' دقیقه · ' +
+          fa(s.total_charge_kwh) + ' kWh' + (s.total_charge_cost ? ' · ' + fa(Math.round(s.total_charge_cost / 10).toLocaleString('en-US')) + ' تومان' : '') + '</strong></div>'
+        : '') +
+      (s.stranded_km != null
+        ? '<div class="ns-row"><span>تمام شدن شارژ</span><strong style="color:var(--red,#d33)">حدود کیلومتر ' + fa(s.stranded_km) + '</strong></div>'
+        : '') +
       '<div class="ns-row"><span>کمینه شارژ در مسیر</span><strong style="color:' + socColor(s.min_soc_on_route || s.arrival_soc) + '">' + fa(s.min_soc_on_route || s.arrival_soc) + '٪</strong></div>' +
       (s.needs_charge_trip && s.estimated_charge_stops > 0
         ? '<div class="ns-row"><span>توقف شارژ لازم</span><strong>حدود ' + fa(s.estimated_charge_stops) + ' بار</strong></div>'
@@ -617,7 +626,13 @@
         return '<a class="nav-plan-item" href="' + (p.url || '#') + '">' +
           '<div class="pi">' + (window.icon ? window.icon('plug') : '⚡') + '</div>' +
           '<div style="flex:1"><div class="fw7">' + p.name + '</div>' +
-          '<div class="fs12 muted mt4">کیلومتر ' + fa(p.km) + ' · ' + p.reason + '</div></div>' +
+          '<div class="fs12 muted mt4">کیلومتر ' + fa(p.km) + ' · ' + p.reason + '</div>' +
+          (p.energy_kwh != null
+            ? '<div class="fs12 muted mt4">' + fa(p.energy_kwh) + ' کیلووات‌ساعت · حدود ' + fa(p.duration_min) + ' دقیقه' +
+              (p.cost_rial ? ' · ' + fa(Math.round(p.cost_rial / 10).toLocaleString('en-US')) + ' تومان' : '') +
+              (p.max_power_kw ? ' · ' + fa(p.max_power_kw) + ' kW' : '') + '</div>'
+            : '') +
+          '</div>' +
           '<span class="pill pill-accent">→ ' + fa(p.charge_to_soc || s.target_soc) + '٪</span></a>';
       }).join('');
     }
@@ -678,6 +693,7 @@
       destination: { lat: destination.lat, lng: destination.lng },
       current_soc: parseInt(document.getElementById('socRange').value, 10),
       target_soc: parseInt(document.getElementById('targetSocRange').value, 10),
+      charge_to_soc: chargeToValue(),
     };
     var sel = document.getElementById('vehicleSelect').value;
     if (sel.indexOf('user:') === 0) {
@@ -700,6 +716,7 @@
       destination: { lat: destination.lat, lng: destination.lng, label: destination.label },
       current_soc: parseInt(document.getElementById('socRange').value, 10),
       target_soc: parseInt(document.getElementById('targetSocRange').value, 10),
+      charge_to_soc: chargeToValue(),
     };
     if (sel.indexOf('user:') === 0) {
       payload.vehicle_uuid = sel.slice(5);
@@ -717,6 +734,17 @@
     document.getElementById('socOut').textContent = fa(e.target.value) + '٪';
     scheduleRoutePreview();
   });
+  function chargeToValue() {
+    var el = document.getElementById('chargeToRange');
+    return el ? parseInt(el.value, 10) : 80;
+  }
+  var chargeToEl = document.getElementById('chargeToRange');
+  if (chargeToEl) {
+    chargeToEl.addEventListener('input', function (e) {
+      document.getElementById('chargeToOut').textContent = fa(e.target.value) + '٪';
+      scheduleRoutePreview();
+    });
+  }
   document.getElementById('targetSocRange').addEventListener('input', function (e) {
     document.getElementById('targetSocOut').textContent = fa(e.target.value) + '٪';
     scheduleRoutePreview();

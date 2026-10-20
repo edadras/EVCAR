@@ -11,6 +11,7 @@ use App\Models\Vehicle;
 use App\Models\Wallet;
 use App\Models\WalletTransaction;
 use App\Services\Edge\EdgeCommandService;
+use App\Support\ChargeEstimator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -23,7 +24,7 @@ class CloudChargingSessionService
      * برای آن صف می‌شود و Edge با OCPP شارژر را روشن می‌کند؛ انرژی و هزینهٔ واقعی
      * از طریق سینک (charging.session.progress / stopped) برمی‌گردد.
      */
-    public function requestStart(User $user, Connector $connector, string $authMethod, ?Tariff $tariff, ?Vehicle $vehicle, int $targetSoc): ChargingSession
+    public function requestStart(User $user, Connector $connector, string $authMethod, ?Tariff $tariff, ?Vehicle $vehicle, int $targetSoc, ?int $startSoc = null): ChargingSession
     {
         $connector->loadMissing('charger.station.edgeStation');
         $station = $connector->charger->station;
@@ -33,7 +34,9 @@ class CloudChargingSessionService
             throw new \RuntimeException('این ایستگاه هنوز به کنترلر محلی (Edge) متصل نیست و شروع شارژ از راه دور ممکن نیست.');
         }
 
-        return DB::transaction(function () use ($user, $connector, $authMethod, $tariff, $vehicle, $targetSoc, $station, $edge) {
+        $startSoc ??= ChargeEstimator::DEFAULT_START_SOC;
+
+        return DB::transaction(function () use ($user, $connector, $authMethod, $tariff, $vehicle, $targetSoc, $startSoc, $station, $edge) {
             $session = ChargingSession::create([
                 'uuid' => (string) Str::uuid(),
                 'station_id' => $connector->charger->station_id,
@@ -50,6 +53,7 @@ class CloudChargingSessionService
                 'cost_amount' => 0,
                 'meta' => [
                     'soc' => null,
+                    'start_soc' => $startSoc,
                     'target_soc' => $targetSoc,
                     'power_kw' => $edge ? 0 : (int) ($connector->max_power_kw ?: $connector->charger->max_power_kw),
                     'rated_power_kw' => (int) ($connector->max_power_kw ?: $connector->charger->max_power_kw),
@@ -64,6 +68,8 @@ class CloudChargingSessionService
                     'cloud_user_uuid' => $user->uuid,
                     'auth_method' => $authMethod,
                     'target_soc' => $targetSoc,
+                    'start_soc' => $startSoc,
+                    'battery_kwh' => $vehicle?->battery_kwh,
                 ], $user);
                 $session->update(['meta' => array_merge($session->meta, ['start_command_uuid' => $command->uuid])]);
             } else {
@@ -204,7 +210,7 @@ class CloudChargingSessionService
         return round($energyKwh * $perKwh + (float) ($tariff->session_fee ?? 0), 2);
     }
 
-    /** @return array{pct:int,energy:float,cost:int,secs:int,power:int,goal:int,eta:?int} */
+    /** @return array{pct:int,energy:float,cost:int,secs:int,power:int,goal:int,eta:?int,state:string,battery_kwh:float} */
     public function liveMetrics(ChargingSession $session): array
     {
         $secs = $session->status === 'active'
@@ -212,20 +218,38 @@ class CloudChargingSessionService
             : (int) $session->duration_seconds;
         $energy = $this->estimateEnergyKwh($session, $secs);
         $costRial = $this->estimateCost($session, $energy);
-        $goal = (int) ($session->meta['target_soc'] ?? 80);
-        $power = (int) ($session->meta['power_kw'] ?? $session->charger?->max_power_kw ?? 0);
+        $meta = $session->meta ?? [];
+        $goal = (int) ($meta['target_soc'] ?? 80);
+        $battery = $this->batteryKwh($session);
+        $power = (float) ($meta['power_kw'] ?? 0);
+        if ($power <= 0 && ! $this->isEdgeBacked($session) && $session->status === 'active') {
+            $power = (float) ($meta['rated_power_kw'] ?? $session->charger?->max_power_kw ?? 0);
+        }
 
-        $pct = $this->socPercent($session, $energy);
+        $reported = ($meta['soc_source'] ?? null) === 'charger' && isset($meta['soc']) ? (float) $meta['soc'] : null;
+        $pct = ChargeEstimator::socPercent($reported, (float) ($meta['start_soc'] ?? ChargeEstimator::DEFAULT_START_SOC), $energy, $battery);
 
         return [
             'pct' => $pct,
-            'energy' => $energy,
+            'energy' => round($energy, 3),
             'cost' => (int) round($costRial / 10),
             'secs' => $secs,
-            'power' => $power,
+            'power' => (int) round($power),
             'goal' => $goal,
-            'eta' => $this->etaMinutes($pct, $goal, $power),
+            'eta' => $session->status === 'active' ? ChargeEstimator::etaMinutes($pct, $goal, $power, $battery) : null,
+            'state' => (string) ($meta['edge_state'] ?? 'charging'),
+            'battery_kwh' => $battery,
         ];
+    }
+
+    public function batteryKwh(ChargingSession $session): float
+    {
+        $kwh = $session->vehicle_id ? (float) Vehicle::whereKey($session->vehicle_id)->value('battery_kwh') : 0;
+        if ($kwh <= 0 && $session->user_id) {
+            $kwh = (float) Vehicle::where('user_id', $session->user_id)->orderByDesc('is_default')->value('battery_kwh');
+        }
+
+        return $kwh > 0 ? $kwh : ChargeEstimator::DEFAULT_BATTERY_KWH;
     }
 
     public function stop(ChargingSession $session, User $user): ChargingSession
@@ -241,8 +265,8 @@ class CloudChargingSessionService
             $duration = $session->started_at ? $session->started_at->diffInSeconds($stoppedAt) : 0;
             $energy = $this->estimateEnergyKwh($session, $duration);
             $cost = $this->estimateCost($session, $energy);
-            $targetKwh = $this->targetKwh($session);
-            $soc = min(99, max(10, (int) round(10 + ($energy / max(1, $targetKwh)) * 70)));
+            $meta = $session->meta ?? [];
+            $soc = ChargeEstimator::socPercent(null, (float) ($meta['start_soc'] ?? ChargeEstimator::DEFAULT_START_SOC), $energy, $this->batteryKwh($session));
 
             $session->update([
                 'status' => 'stopped',
@@ -281,46 +305,5 @@ class CloudChargingSessionService
 
             return $session->fresh();
         });
-    }
-
-    private function socPercent(ChargingSession $session, float $energyKwh): int
-    {
-        if (isset($session->meta['soc']) && (float) $session->energy_kwh > 0) {
-            return min(99, max(5, (int) $session->meta['soc']));
-        }
-
-        $targetKwh = $this->targetKwh($session);
-        if ($targetKwh > 0 && $energyKwh > 0) {
-            return min(99, max(5, (int) round(($energyKwh / $targetKwh) * 100)));
-        }
-
-        if (isset($session->meta['soc'])) {
-            return min(99, max(5, (int) $session->meta['soc']));
-        }
-
-        $secs = $session->started_at ? (int) $session->started_at->diffInSeconds(now(), true) : 0;
-        if ($secs > 0) {
-            return min(99, max(5, (int) round(10 + ($secs / 3600) * 40)));
-        }
-
-        return 10;
-    }
-
-    private function targetKwh(ChargingSession $session): float
-    {
-        $powerKw = (float) ($session->meta['power_kw'] ?? $session->charger?->max_power_kw ?? 22);
-        $targetSoc = (int) ($session->meta['target_soc'] ?? 80);
-
-        return max(5, $powerKw * ($targetSoc / 100));
-    }
-
-    private function etaMinutes(int $pct, int $goal, int $powerKw): ?int
-    {
-        $left = max(0, $goal - $pct);
-        if ($left <= 0 || $powerKw <= 0) {
-            return null;
-        }
-
-        return max(1, (int) round($left / max(1, $powerKw) * 60 / max(1, $goal) * 10));
     }
 }

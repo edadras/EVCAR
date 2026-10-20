@@ -40,6 +40,10 @@ class CentralSystem implements WebSocketHandler
     /** Resets state left over from a previous run (crash / restart). */
     public function boot(): void
     {
+        // تا شارژر دوباره وصل نشود آفلاین است؛ ابر هم از همین وضعیت مطلع می‌شود.
+        foreach (EdgeCharger::where('is_online', true)->pluck('charge_point_id') as $chargePointId) {
+            $this->handler->chargerDisconnected((string) $chargePointId);
+        }
         EdgeCharger::query()->update(['is_online' => false]);
         OcppCall::where('status', 'sent')->update([
             'status' => 'error',

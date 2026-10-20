@@ -22,7 +22,10 @@ class ChargingSessionProgressHandler
             'energy_kwh' => $payload['energy_kwh'] ?? $session->energy_kwh,
             'cost_amount' => $payload['cost_amount'] ?? $session->cost_amount,
             'ocpp_transaction_id' => $payload['ocpp_transaction_id'] ?? $session->ocpp_transaction_id,
-            'meta' => array_merge($session->meta ?? [], $payload['meta'] ?? [], ['edge_progress_at' => now()->toIso8601String()]),
+            'meta' => array_merge($session->meta ?? [], $payload['meta'] ?? [], array_filter([
+                'edge_progress_at' => now()->toIso8601String(),
+                'edge_state' => $payload['meta']['ocpp_state'] ?? null,
+            ])),
         ]);
 
         return $session;

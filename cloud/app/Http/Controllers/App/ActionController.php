@@ -258,6 +258,7 @@ class ActionController extends Controller
     ): RedirectResponse {
         $data = $request->validate([
             'connector_id' => ['required', 'exists:connectors,id'],
+            'start_soc' => ['nullable', 'integer', 'min:0', 'max:99'],
         ]);
 
         $user = $this->user();
@@ -295,6 +296,7 @@ class ActionController extends Controller
                 $tariff,
                 $vehicle,
                 $targetSoc,
+                isset($data['start_soc']) ? (int) $data['start_soc'] : null,
             );
         } catch (\RuntimeException $e) {
             return back()->withErrors(['charging' => $e->getMessage()]);

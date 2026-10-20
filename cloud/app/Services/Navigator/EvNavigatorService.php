@@ -3,14 +3,19 @@
 namespace App\Services\Navigator;
 
 use App\Models\Station;
+use App\Models\Tariff;
 use App\Models\User;
 use App\Models\Vehicle;
 use App\Support\Geo;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 class EvNavigatorService
 {
+    /** سطح شارژ در ایستگاه‌های بین راه (پیش‌فرض ۸۰٪ — بالاتر از آن شارژ کند می‌شود). */
+    private int $chargeToSoc = 80;
+
     /** @return array<string, mixed> */
     public function analyze(User $user, array $input): array
     {
@@ -63,7 +68,9 @@ class EvNavigatorService
         $destination = $input['destination'];
         $vehicle = $this->resolveVehicle($user, $input);
         $soc = max(5, min(100, (int) ($input['current_soc'] ?? 80)));
-        $targetSoc = max(10, min(100, (int) ($input['target_soc'] ?? max(20, $soc))));
+        // target_soc = حداقل شارژ مطلوب هنگام رسیدن به مقصد (رزرو)، نه سطح شارژ در ایستگاه.
+        $targetSoc = max(5, min(90, (int) ($input['target_soc'] ?? 20)));
+        $this->chargeToSoc = max($targetSoc + 10, min(100, (int) ($input['charge_to_soc'] ?? 80)));
 
         $batteryKwh = (float) $vehicle['battery_kwh'];
 
@@ -121,6 +128,11 @@ class EvNavigatorService
             $geometry['range_km_on_start'] ?? null,
         );
 
+        if (! ($chargeSimulation['reachable'] ?? true) && ($chargeSimulation['stranded_km'] ?? null) !== null) {
+            $verdict['can_reach_with_plan'] = false;
+            $verdict['warnings'][] = 'با ایستگاه‌های ثبت‌شده، شارژ حدود کیلومتر '.round((float) $chargeSimulation['stranded_km']).' به حداقل ایمن می‌رسد و ایستگاه دیگری در دسترس نیست.';
+        }
+
         $elevationProfile = $this->buildElevationProfile($points, $elevations);
         $socProfile = $this->buildSocProfile($segments, $soc);
         $weatherMid = $weatherSamples[(int) floor(count($weatherSamples) / 2)] ?? $weatherSamples[0];
@@ -168,6 +180,11 @@ class EvNavigatorService
                 'consumption_profile' => $geometry['consumption_profile'] ?? 'route_adjusted',
                 'consumption_source' => $geometry['consumption_source'] ?? ($vehicle['consumption_source'] ?? 'estimate'),
                 'charge_stops' => count($chargePlan),
+                'charge_to_soc' => $this->chargeToSoc,
+                'total_charge_minutes' => (int) ($chargeSimulation['total_charge_minutes'] ?? 0),
+                'total_charge_kwh' => (float) ($chargeSimulation['total_charge_kwh'] ?? 0),
+                'total_charge_cost' => (float) ($chargeSimulation['total_charge_cost'] ?? 0),
+                'stranded_km' => $chargeSimulation['stranded_km'] ?? null,
                 'avg_temp_c' => round($weatherMid['temperature_c'], 1),
                 'wind_ms' => round($weatherMid['wind_speed_ms'], 1),
                 'battery_kwh' => $batteryKwh,
@@ -281,6 +298,13 @@ class EvNavigatorService
         $parts[] = sprintf('%f,%f', $destination['lng'], $destination['lat']);
         $url = 'https://router.project-osrm.org/route/v1/driving/'.implode(';', $parts);
 
+        // مسیر بین دو نقطهٔ ثابت تغییر نمی‌کند؛ کش یک‌روزه سرعت تحلیل را چند برابر می‌کند.
+        return Cache::remember('nav:osrm:'.md5($url), now()->addDay(), fn () => $this->requestOsrm($url));
+    }
+
+    /** @return array{distance_m:int,duration_s:int,coordinates:list<array{0:float,1:float}>} */
+    private function requestOsrm(string $url): array
+    {
         $response = Http::timeout(20)->get($url, [
             'overview' => 'full',
             'geometries' => 'geojson',
@@ -337,14 +361,8 @@ class EvNavigatorService
         $segments = $this->buildSegments($points, $elevations, $vehicleForSegments, $weatherSamples, $avgSpeedKmh);
         $segments = $this->attachSocToSegments($segments, $batteryKwh, $soc);
         $corridorChargers = $this->stationsAlongRoute($points);
-        $chargerContext = $this->resolveRelevantChargers($corridorChargers, $segments, $vehicle, $batteryKwh, $soc, $targetSoc);
-        $chargeSimulation = $this->simulateChargePlan(
-            $segments,
-            $chargerContext['candidates'],
-            $batteryKwh,
-            $soc,
-            $targetSoc,
-        );
+        $chargerContext = $this->planCharging($corridorChargers, $segments, $vehicle, $batteryKwh, $soc, $targetSoc);
+        $chargeSimulation = $chargerContext['simulation'];
 
         return [
             'elevation_data' => $elevationData,
@@ -494,19 +512,25 @@ class EvNavigatorService
         $results = [];
         $estimated = false;
         foreach (array_chunk($points, 100) as $batchIdx => $batch) {
-            if ($batchIdx > 0) {
-                usleep(1_100_000);
-            }
             $locations = implode('|', array_map(fn ($p) => round($p[0], 4).','.round($p[1], 4), $batch));
+            $cacheKey = 'nav:elev:'.md5($locations);
+            if (is_array($cached = Cache::get($cacheKey))) {
+                array_push($results, ...$cached);
+
+                continue;
+            }
+            if ($batchIdx > 0) {
+                usleep(1_100_000); // محدودیت نرخ opentopodata
+            }
 
             try {
                 $response = Http::timeout(25)->get('https://api.opentopodata.org/v1/srtm30m', [
                     'locations' => $locations,
                 ]);
                 if ($response->successful()) {
-                    foreach ($response->json('results') ?? [] as $r) {
-                        $results[] = (float) ($r['elevation'] ?? 0);
-                    }
+                    $values = array_map(fn ($r) => (float) ($r['elevation'] ?? 0), $response->json('results') ?? []);
+                    Cache::put($cacheKey, $values, now()->addDays(30));
+                    array_push($results, ...$values);
 
                     continue;
                 }
@@ -633,6 +657,22 @@ class EvNavigatorService
     /** @return array{temperature_c:float,wind_speed_ms:float,wind_dir_deg:int} */
     private function fetchWeather(float $lat, float $lng): array
     {
+        $key = 'nav:wx:'.round($lat, 1).','.round($lng, 1);
+        if (is_array($cached = Cache::get($key))) {
+            return $cached;
+        }
+
+        $weather = $this->requestWeather($lat, $lng);
+        if (! ($weather['estimated'] ?? false)) {
+            Cache::put($key, $weather, now()->addMinutes(30));
+        }
+
+        return $weather;
+    }
+
+    /** @return array<string, mixed> */
+    private function requestWeather(float $lat, float $lng): array
+    {
         try {
             $response = Http::timeout(10)->get('https://api.open-meteo.com/v1/forecast', [
                 'latitude' => $lat,
@@ -653,7 +693,7 @@ class EvNavigatorService
             //
         }
 
-        return ['temperature_c' => 20.0, 'wind_speed_ms' => 0.0, 'wind_dir_deg' => 0];
+        return ['temperature_c' => 20.0, 'wind_speed_ms' => 0.0, 'wind_dir_deg' => 0, 'estimated' => true];
     }
 
     /**
@@ -880,126 +920,20 @@ class EvNavigatorService
         return array_slice($result, 0, 15);
     }
 
-    /**
-     * شبیه‌سازی توقف‌های شارژ — segments دست‌نخورده می‌ماند (SOC هر بخش فقط از مصرف).
-     *
-     * @param  list<array<string, mixed>>  $segments
-     * @param  list<array<string, mixed>>  $chargers
-     * @return array{stops:list<array<string, mixed>>,arrival_soc:float,min_soc:float}
-     */
-    private function simulateChargePlan(array $segments, array $chargers, float $batteryKwh, int $startSoc, int $targetSoc): array
-    {
-        $empty = ['stops' => [], 'arrival_soc' => (float) $startSoc, 'min_soc' => (float) $startSoc];
-
-        if ($batteryKwh <= 0 || $chargers === [] || $segments === []) {
-            if ($segments !== []) {
-                $minSoc = $startSoc;
-                foreach ($segments as $seg) {
-                    $minSoc = min($minSoc, (float) ($seg['soc_after'] ?? $startSoc));
-                }
-                $empty['arrival_soc'] = (float) end($segments)['soc_after'];
-                $empty['min_soc'] = $minSoc;
-            }
-
-            return $empty;
-        }
-
-        $plan = [];
-        $used = [];
-        $chargeThreshold = max(15, min(35, $targetSoc));
-        $energy = $batteryKwh * ($startSoc / 100);
-        $chargerIdx = 0;
-        $minSoc = (float) $startSoc;
-        $socNow = (float) $startSoc;
-
-        foreach ($segments as $seg) {
-            $energy -= $seg['consumption_kwh'];
-            $socNow = max(0, ($energy / $batteryKwh) * 100);
-            $minSoc = min($minSoc, $socNow);
-
-            if ($socNow < $chargeThreshold) {
-                $charged = false;
-                while ($chargerIdx < count($chargers)) {
-                    $ch = $chargers[$chargerIdx];
-                    if ($ch['route_km'] > $seg['to_km'] + 8) {
-                        break;
-                    }
-                    $chargerIdx++;
-                    if (isset($used[$ch['uuid']])) {
-                        continue;
-                    }
-                    if ($ch['route_km'] < $seg['from_km'] - 15) {
-                        continue;
-                    }
-
-                    $plan[] = [
-                        'station_uuid' => $ch['uuid'],
-                        'name' => $ch['name'],
-                        'km' => $ch['route_km'],
-                        'lat' => $ch['lat'],
-                        'lng' => $ch['lng'],
-                        'reason' => 'شارژ تا '.(int) $targetSoc.'٪',
-                        'free_ports' => $ch['free_ports'],
-                        'max_power_kw' => $ch['max_power_kw'],
-                        'url' => $ch['url'],
-                        'charge_to_soc' => $targetSoc,
-                    ];
-                    $used[$ch['uuid']] = true;
-                    $energy = $batteryKwh * ($targetSoc / 100);
-                    $socNow = (float) $targetSoc;
-                    $minSoc = min($minSoc, $socNow);
-                    $charged = true;
-                    break;
-                }
-
-                if (! $charged && $plan === []) {
-                    $ch = $chargers[0];
-                    $plan[] = [
-                        'station_uuid' => $ch['uuid'],
-                        'name' => $ch['name'],
-                        'km' => $ch['route_km'],
-                        'lat' => $ch['lat'],
-                        'lng' => $ch['lng'],
-                        'reason' => 'شارژ پیشنهادی — سطح باتری بحرانی',
-                        'free_ports' => $ch['free_ports'],
-                        'max_power_kw' => $ch['max_power_kw'],
-                        'url' => $ch['url'],
-                        'charge_to_soc' => $targetSoc,
-                    ];
-                    $energy = $batteryKwh * ($targetSoc / 100);
-                    $socNow = (float) $targetSoc;
-                    $minSoc = min($minSoc, $socNow);
-                }
-            }
-        }
-
-        return [
-            'stops' => $plan,
-            'arrival_soc' => round($socNow, 1),
-            'min_soc' => round($minSoc, 1),
-        ];
-    }
-
     /** @return array<string, mixed> */
     public function previewRoute(User $user, array $origin, array $destination, array $input = []): array
     {
         $vehicle = $this->resolveVehicle($user, $input);
         $soc = max(5, min(100, (int) ($input['current_soc'] ?? 80)));
-        $targetSoc = max(10, min(100, (int) ($input['target_soc'] ?? 20)));
+        $targetSoc = max(5, min(90, (int) ($input['target_soc'] ?? 20)));
+        $this->chargeToSoc = max($targetSoc + 10, min(100, (int) ($input['charge_to_soc'] ?? 80)));
         $batteryKwh = (float) $vehicle['battery_kwh'];
 
         $route = $this->fetchOsrmRoute($origin, $destination);
         $points = $this->smartSampleRoute($route['coordinates'], 80);
         $geometry = $this->analyzeGeometry($points, $route, $vehicle, $batteryKwh, $soc, $targetSoc);
         $corridorChargers = $this->stationsAlongRoute($points);
-        $chargerContext = $this->resolveRelevantChargers(
-            $corridorChargers,
-            $geometry['segments'],
-            $vehicle,
-            $batteryKwh,
-            $soc,
-            $targetSoc,
-        );
+        $chargerContext = $this->planCharging($corridorChargers, $geometry['segments'], $vehicle, $batteryKwh, $soc, $targetSoc);
 
         return [
             'route' => [
@@ -1017,6 +951,65 @@ class EvNavigatorService
             'range_km_on_start' => $chargerContext['range_km_on_start'],
             'battery_kwh' => $batteryKwh,
             'first_charge_km' => $chargerContext['first_charge_km'],
+        ];
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $corridorChargers
+     * @param  list<array<string, mixed>>  $segments
+     * @param  array<string, mixed>  $vehicle
+     * @return array<string, mixed>
+     */
+    private function planCharging(
+        array $corridorChargers,
+        array $segments,
+        array $vehicle,
+        float $batteryKwh,
+        int $startSoc,
+        int $targetSoc,
+    ): array {
+        $energyStats = $this->computeTripEnergyStats($segments, $vehicle, $batteryKwh, $startSoc, $targetSoc);
+        $tariff = Tariff::query()->where('status', 'active')->orderByDesc('is_default')->first();
+
+        $plan = (new ChargePlanner)->plan(
+            $segments,
+            $corridorChargers,
+            $batteryKwh,
+            $startSoc,
+            $targetSoc,
+            $this->chargeToSoc,
+            (float) ($vehicle['max_dc_kw'] ?? 100),
+            (float) ($tariff?->price_per_kwh ?? 0),
+            (float) ($tariff?->session_fee ?? 0),
+        );
+
+        $stops = $plan['stops'];
+        $display = $stops;
+        if ($display === [] && $plan['needs_charge']) {
+            // ایستگاه‌هایی که پیش از تمام شدن باتری در دسترس‌اند (برای نمایش، حتی اگر کافی نباشند).
+            $limitKm = $plan['stranded_km'] ?? INF;
+            $display = array_slice(array_values(array_filter($corridorChargers, fn ($c) => $c['route_km'] <= $limitKm)), 0, 3);
+        }
+
+        return [
+            'needs_charge' => $plan['needs_charge'],
+            'stations_missing' => $plan['needs_charge'] && ! $plan['reachable'],
+            'first_charge_km' => $plan['first_charge_km'] ?? $energyStats['first_charge_km'],
+            'estimated_charge_stops' => $plan['reachable'] ? count($stops) : max(count($stops) + 1, $energyStats['estimated_charge_stops']),
+            'range_km_on_start' => $energyStats['range_km_on_start'],
+            'consumption_per_100km' => $energyStats['consumption_per_100km'],
+            'candidates' => $stops,
+            'display' => $display,
+            'simulation' => [
+                'stops' => $stops,
+                'arrival_soc' => $plan['arrival_soc'],
+                'min_soc' => $plan['min_soc'],
+                'reachable' => $plan['reachable'],
+                'stranded_km' => $plan['stranded_km'],
+                'total_charge_minutes' => $plan['total_charge_minutes'],
+                'total_charge_kwh' => $plan['total_charge_kwh'],
+                'total_charge_cost' => $plan['total_charge_cost'],
+            ],
         ];
     }
 
@@ -1078,100 +1071,6 @@ class EvNavigatorService
         ];
     }
 
-    /**
-     * @param  list<array<string, mixed>>  $corridorChargers
-     * @param  list<array<string, mixed>>  $segments
-     * @return array{
-     *   needs_charge:bool,
-     *   first_charge_km:?float,
-     *   candidates:list<array<string, mixed>>,
-     *   display:list<array<string, mixed>>
-     * }
-     */
-    private function resolveRelevantChargers(
-        array $corridorChargers,
-        array $segments,
-        array $vehicle,
-        float $batteryKwh,
-        int $startSoc,
-        int $targetSoc,
-    ): array {
-        $energyStats = $this->computeTripEnergyStats($segments, $vehicle, $batteryKwh, $startSoc, $targetSoc);
-
-        $noChargeNeeded = [
-            'needs_charge' => false,
-            'stations_missing' => false,
-            'first_charge_km' => null,
-            'estimated_charge_stops' => 0,
-            'range_km_on_start' => $energyStats['range_km_on_start'],
-            'consumption_per_100km' => $energyStats['consumption_per_100km'],
-            'candidates' => [],
-            'display' => [],
-        ];
-
-        if ($segments === []) {
-            return $noChargeNeeded;
-        }
-
-        if (! $this->tripNeedsCharge($segments, $startSoc, $targetSoc)) {
-            return $noChargeNeeded;
-        }
-
-        if ($corridorChargers === []) {
-            return [
-                'needs_charge' => true,
-                'stations_missing' => true,
-                'first_charge_km' => $energyStats['first_charge_km'],
-                'estimated_charge_stops' => $energyStats['estimated_charge_stops'],
-                'range_km_on_start' => $energyStats['range_km_on_start'],
-                'consumption_per_100km' => $energyStats['consumption_per_100km'],
-                'candidates' => [],
-                'display' => [],
-            ];
-        }
-
-        $candidates = $this->filterChargersInChargeWindows(
-            $corridorChargers,
-            $segments,
-            $batteryKwh,
-            $startSoc,
-            $targetSoc,
-        );
-        $simulation = $this->simulateChargePlan($segments, $candidates, $batteryKwh, $startSoc, $targetSoc);
-        $byUuid = [];
-        foreach ($candidates as $ch) {
-            $byUuid[$ch['uuid']] = $ch;
-        }
-
-        $display = [];
-        foreach ($simulation['stops'] as $stop) {
-            $ch = $byUuid[$stop['station_uuid'] ?? ''] ?? null;
-            if ($ch) {
-                $display[] = $ch;
-            }
-        }
-
-        if ($display === [] && $candidates !== []) {
-            $display = array_slice($candidates, 0, 3);
-        }
-
-        $firstChargeKm = $energyStats['first_charge_km'];
-        if ($firstChargeKm === null && $display !== []) {
-            $firstChargeKm = (float) $display[0]['route_km'];
-        }
-
-        return [
-            'needs_charge' => true,
-            'stations_missing' => $display === [],
-            'first_charge_km' => $firstChargeKm,
-            'estimated_charge_stops' => $energyStats['estimated_charge_stops'],
-            'range_km_on_start' => $energyStats['range_km_on_start'],
-            'consumption_per_100km' => $energyStats['consumption_per_100km'],
-            'candidates' => $candidates,
-            'display' => $display,
-        ];
-    }
-
     /** @param  list<array<string, mixed>>  $segments */
     private function tripNeedsCharge(array $segments, int $startSoc, int $targetSoc): bool
     {
@@ -1188,82 +1087,6 @@ class EvNavigatorService
         }
 
         return $arrivalSoc < $reserveSoc || $minSoc < $reserveSoc;
-    }
-
-    /**
-     * @param  list<array<string, mixed>>  $allChargers
-     * @param  list<array<string, mixed>>  $segments
-     * @return list<array<string, mixed>>
-     */
-    private function filterChargersInChargeWindows(
-        array $allChargers,
-        array $segments,
-        float $batteryKwh,
-        int $startSoc,
-        int $targetSoc,
-    ): array {
-        $chargeThreshold = max(15, min(35, $targetSoc));
-        $totalKm = (float) end($segments)['to_km'];
-        $picked = [];
-        $resumeFromKm = 0.0;
-        $maxPasses = 8;
-
-        for ($pass = 0; $pass < $maxPasses; $pass++) {
-            $energy = $batteryKwh * (($pass === 0 ? $startSoc : $targetSoc) / 100);
-            $chargedThisPass = false;
-
-            foreach ($segments as $seg) {
-                if ((float) $seg['to_km'] <= $resumeFromKm) {
-                    continue;
-                }
-
-                $consume = (float) $seg['consumption_kwh'];
-                $segLen = max(0.01, (float) $seg['to_km'] - (float) $seg['from_km']);
-                if ((float) $seg['from_km'] < $resumeFromKm) {
-                    $consume *= max(0, ((float) $seg['to_km'] - $resumeFromKm) / $segLen);
-                }
-
-                $energy -= $consume;
-                $socNow = max(0, ($energy / $batteryKwh) * 100);
-                if ($socNow >= $chargeThreshold) {
-                    continue;
-                }
-
-                $winFrom = max($resumeFromKm, (float) $seg['from_km'] - 20);
-                $winTo = min($totalKm, (float) $seg['to_km'] + 60);
-
-                foreach ($allChargers as $ch) {
-                    if ($ch['route_km'] >= $winFrom && $ch['route_km'] <= $winTo) {
-                        $picked[$ch['uuid']] = $ch;
-                    }
-                }
-
-                $next = null;
-                foreach ($allChargers as $ch) {
-                    if ($ch['route_km'] >= max($resumeFromKm, (float) $seg['from_km']) && $ch['route_km'] <= $winTo) {
-                        $next = $ch;
-                        break;
-                    }
-                }
-
-                if ($next) {
-                    $picked[$next['uuid']] = $next;
-                    $resumeFromKm = (float) $next['route_km'];
-                    $chargedThisPass = true;
-                }
-
-                break;
-            }
-
-            if (! $chargedThisPass) {
-                break;
-            }
-        }
-
-        $result = array_values($picked);
-        usort($result, fn ($a, $b) => $a['route_km'] <=> $b['route_km']);
-
-        return $result;
     }
 
     /** @param  list<array<string, mixed>>  $segments */

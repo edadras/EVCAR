@@ -116,6 +116,8 @@ class EdgeCommandExecutor
             (string) ($payload['auth_method'] ?? 'app'),
             array_filter([
                 'target_soc' => isset($payload['target_soc']) ? (int) $payload['target_soc'] : null,
+                'start_soc' => isset($payload['start_soc']) ? (int) $payload['start_soc'] : null,
+                'battery_kwh' => isset($payload['battery_kwh']) ? (float) $payload['battery_kwh'] : null,
                 'requested_from' => 'cloud',
             ], fn ($v) => $v !== null),
             ! empty($payload['cloud_session_uuid']) ? (string) $payload['cloud_session_uuid'] : null,

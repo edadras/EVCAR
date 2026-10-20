@@ -5,6 +5,7 @@ namespace App\Services\Charging;
 use App\Models\CachedRfidCard;
 use App\Models\CachedTariff;
 use App\Models\CachedUser;
+use App\Models\CachedVehicle;
 use App\Models\CachedWallet;
 use App\Models\EdgeChargingSession;
 use App\Models\EdgeConnector;
@@ -15,6 +16,7 @@ use App\Services\Ocpp\ChargePointCommander;
 use App\Services\Ocpp\TariffCalculator;
 use App\Services\Sync\SyncOutboxService;
 use App\Services\Sync\SyncPushRunner;
+use App\Support\ChargeEstimator;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -40,7 +42,8 @@ class EdgeChargingService
         private TariffCalculator $tariffs,
     ) {}
 
-    public function start(CachedUser $user, string $connectorUuid): EdgeChargingSession
+    /** @param  array<string, mixed>  $extraMeta */
+    public function start(CachedUser $user, string $connectorUuid, array $extraMeta = []): EdgeChargingSession
     {
         if (EdgeChargingSession::where('cached_user_uuid', $user->uuid)->where('status', 'active')->exists()) {
             throw new \RuntimeException('جلسه شارژ فعال دارید.');
@@ -65,7 +68,7 @@ class EdgeChargingService
             default => 'wallet',
         };
 
-        return $this->startOnConnector($user, $connector, $authMethod);
+        return $this->startOnConnector($user, $connector, $authMethod, $extraMeta);
     }
 
     /**
@@ -304,8 +307,9 @@ class EdgeChargingService
             $meta = $locked->meta ?? [];
             $meta['ocpp_state'] = 'finished';
             $meta['power_kw'] = 0;
-            if (! isset($meta['soc']) || $meta['soc'] === null) {
-                $meta['soc'] = min(99, max(10, (int) round(10 + ($energyKwh / max(1, $this->targetKwh($locked))) * 70)));
+            if (($meta['soc_source'] ?? null) !== 'charger') {
+                $meta['soc'] = ChargeEstimator::socPercent(null, (float) ($meta['start_soc'] ?? ChargeEstimator::DEFAULT_START_SOC), $energyKwh, $this->batteryKwh($locked));
+                $meta['soc_source'] = 'estimate';
             }
 
             $locked->update([
@@ -385,6 +389,7 @@ class EdgeChargingService
         }
         if (isset($reading['soc'])) {
             $meta['soc'] = max(0, min(100, (int) $reading['soc']));
+            $meta['soc_source'] = 'charger';
         }
         $meta['last_meter_at'] = $sampledAt->toIso8601String();
         if (($meta['ocpp_state'] ?? null) === 'starting') {
@@ -412,7 +417,34 @@ class EdgeChargingService
         $user = CachedUser::where('uuid', $session->cached_user_uuid)->first();
         $wallet = $user ? CachedWallet::where('cached_user_id', $user->id)->first() : null;
 
-        return $wallet !== null && (float) $session->cost_amount >= $this->spendable($wallet);
+        $lowBalance = $wallet !== null && (float) $session->cost_amount >= $this->spendable($wallet);
+        // توقف خودکار در «حد توقف» فقط وقتی SoC معتبر است: گزارش شارژر یا درصد شروعی که کاربر وارد کرده.
+        $fresh = $session->fresh();
+        $socKnown = ($meta['soc_source'] ?? null) === 'charger' || isset($meta['start_soc']);
+        $targetReached = $socKnown && $this->socPercent($fresh, (float) $fresh->energy_kwh) >= (int) ($meta['target_soc'] ?? 100);
+
+        return $lowBalance || $targetReached;
+    }
+
+    public function socPercent(EdgeChargingSession $session, float $energyKwh): int
+    {
+        $meta = $session->meta ?? [];
+        $reported = ($meta['soc_source'] ?? null) === 'charger' && isset($meta['soc']) ? (float) $meta['soc'] : null;
+
+        return ChargeEstimator::socPercent($reported, (float) ($meta['start_soc'] ?? ChargeEstimator::DEFAULT_START_SOC), $energyKwh, $this->batteryKwh($session));
+    }
+
+    public function batteryKwh(EdgeChargingSession $session): float
+    {
+        $kwh = (float) ($session->meta['battery_kwh'] ?? 0);
+        if ($kwh <= 0 && $session->cached_vehicle_uuid) {
+            $kwh = (float) CachedVehicle::where('uuid', $session->cached_vehicle_uuid)->value('battery_kwh');
+        }
+        if ($kwh <= 0 && $session->cached_user_uuid) {
+            $kwh = (float) CachedVehicle::where('cached_user_uuid', $session->cached_user_uuid)->orderByDesc('is_default')->value('battery_kwh');
+        }
+
+        return $kwh > 0 ? $kwh : ChargeEstimator::DEFAULT_BATTERY_KWH;
     }
 
     /** @return array<string, mixed> */
@@ -495,22 +527,10 @@ class EdgeChargingService
 
         $goal = (int) ($session->meta['target_soc'] ?? 80);
         $power = (int) round((float) ($session->meta['power_kw'] ?? 0));
-        $soc = $session->meta['soc'] ?? null;
-        $targetKwh = $this->targetKwh($session);
-
-        if ($soc !== null) {
-            $pct = min(100, max(0, (int) $soc));
-        } elseif ($energy > 0 && $targetKwh > 0) {
-            $pct = min(99, max(5, (int) round(10 + ($energy / $targetKwh) * 70)));
-        } else {
-            $pct = 10;
-        }
-
-        $eta = null;
-        if ($power > 0 && $pct < $goal) {
-            $remainingKwh = max(0, ($goal - $pct) / 100 * max($targetKwh, 1) / 0.8);
-            $eta = max(1, (int) round($remainingKwh / $power * 60));
-        }
+        $pct = $this->socPercent($session, $energy);
+        $eta = $session->status === 'active'
+            ? ChargeEstimator::etaMinutes($pct, $goal, (float) $power, $this->batteryKwh($session))
+            : null;
 
         return [
             'pct' => $pct,
@@ -631,13 +651,5 @@ class EdgeChargingService
         $powerKw = (float) ($session->meta['power_kw'] ?? $session->meta['rated_power_kw'] ?? 22);
 
         return round($powerKw * ($durationSeconds / 3600) * 0.85, 3);
-    }
-
-    private function targetKwh(EdgeChargingSession $session): float
-    {
-        $powerKw = (float) ($session->meta['rated_power_kw'] ?? $session->meta['power_kw'] ?? 22);
-        $targetSoc = (int) ($session->meta['target_soc'] ?? 80);
-
-        return max(5, $powerKw * ($targetSoc / 100));
     }
 }
