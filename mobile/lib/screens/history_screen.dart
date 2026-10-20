@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../core/fmt.dart';
+import '../core/nav.dart';
 import '../core/state.dart';
 import '../core/theme.dart';
 import '../widgets/common.dart';
@@ -34,7 +35,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
     return Scaffold(
       body: SafeArea(
         child: Column(children: [
-          PageHeader('سوابق شارژ', actions: [RoundIconButton(Icons.download_outlined, onTap: _export)]),
+          PageHeader('سوابق شارژ', actions: [
+            RoundIconButton(Icons.insights_rounded, onTap: () => openScreen(context, 'insights')),
+            const SizedBox(width: 8),
+            RoundIconButton(Icons.download_outlined, onTap: _export),
+          ]),
           Expanded(
             child: AsyncBody(
               load: () => context.api.get('history'),
@@ -79,6 +84,15 @@ class _HistoryScreenState extends State<HistoryScreen> {
                       ),
                     ]),
                   ),
+                  const SizedBox(height: 12),
+                  ListRow(
+                    icon: Icons.insights_rounded,
+                    tone: 'blue',
+                    title: 'تحلیل هزینه و مصرف',
+                    subtitle: 'روند ۶ ماه و صرفه‌جویی نسبت به بنزین',
+                    chevron: true,
+                    onTap: () => openScreen(context, 'insights'),
+                  ),
                   const SecTitle('جلسات اخیر'),
                   TextField(
                     controller: search,
@@ -110,6 +124,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     return AppCard(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(14),
+      onTap: h['uuid'] == null ? null : () => openScreen(context, 'session', {'uuid': h['uuid']}),
       child: Column(children: [
         Row(children: [
           IconTile(Icons.bolt_rounded, tone: ok ? 'blue' : 'red', size: 42),

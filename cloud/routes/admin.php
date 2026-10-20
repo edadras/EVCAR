@@ -17,6 +17,7 @@ use App\Http\Controllers\Admin\RfidCardController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\SettlementController;
 use App\Http\Controllers\Admin\StationController;
+use App\Http\Controllers\Admin\SupportCenterController;
 use App\Http\Controllers\Admin\TariffController;
 use App\Http\Controllers\Admin\UserController;
 use Illuminate\Support\Facades\Route;
@@ -94,7 +95,19 @@ Route::middleware(['auth', 'staff'])->group(function () {
     Route::get('partners', [PageController::class, 'partners'])->name('partners.index');
     Route::get('partners/create', [PartnerController::class, 'create'])->name('partners.create');
     Route::post('partners', [PartnerController::class, 'store'])->name('partners.store');
-    Route::get('support', [PageController::class, 'support'])->name('support');
+    Route::get('support', [SupportCenterController::class, 'index'])->name('support');
+    Route::get('support/tickets/{ticket}', [SupportCenterController::class, 'show'])->name('support.ticket');
+    Route::post('support/tickets/{ticket}/reply', [SupportCenterController::class, 'reply'])->name('support.reply');
+    Route::post('support/tickets/{ticket}/update', [SupportCenterController::class, 'update'])->name('support.update');
+    Route::post('support/tickets/{ticket}/credit', [SupportCenterController::class, 'credit'])->name('support.credit');
+    Route::post('support/tickets/{ticket}/draft', [SupportCenterController::class, 'draft'])->name('support.draft');
+    Route::post('support/canned', [SupportCenterController::class, 'storeCanned'])->name('support.canned.store');
+    Route::get('support/reviews', [SupportCenterController::class, 'reviews'])->name('support.reviews');
+    Route::post('support/reviews/{review}', [SupportCenterController::class, 'updateReview'])->name('support.reviews.update');
+    Route::delete('support/canned/{index}', [SupportCenterController::class, 'destroyCanned'])->name('support.canned.destroy')->whereNumber('index');
+    Route::get('support/ai', [SupportCenterController::class, 'conversations'])->name('support.ai');
+    Route::get('support/ai/{conversation:uuid}', [SupportCenterController::class, 'conversation'])->name('support.ai.show');
+    Route::post('support/ai/settings', [SupportCenterController::class, 'updateAiSettings'])->name('support.ai.settings');
 
     // انبار و دارایی
     Route::get('inventory', [PageController::class, 'inventory'])->name('inventory');

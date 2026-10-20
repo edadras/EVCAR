@@ -148,6 +148,28 @@ class _HomeTabState extends State<HomeTab> {
                 ),
               ),
           ]),
+          const SizedBox(height: 14),
+          AppCard(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            onTap: () => openScreen(context, 'assistant'),
+            child: Row(children: [
+              Container(
+                width: 44,
+                height: 44,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(borderRadius: BorderRadius.circular(14), gradient: LinearGradient(colors: [c.accent, Palette.violet])),
+                child: const Text('✦', style: TextStyle(color: Colors.white, fontSize: 20)),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  const Text('دستیار هوشمند پشتیبانی', style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.w800)),
+                  Text('سؤال دارید؟ همین حالا بپرسید — پاسخ فوری', style: TextStyle(fontSize: 12, color: c.muted)),
+                ]),
+              ),
+              LtrIcon(Icons.chevron_left_rounded, color: c.muted),
+            ]),
+          ),
           SecTitle('نزدیک‌ترین ایستگاه‌ها', action: 'نقشه', onAction: () => openScreen(context, 'map')),
           Segmented<String>(
             options: const [('all', 'همه'), ('fast', 'شارژ سریع'), ('public', 'عمومی')],

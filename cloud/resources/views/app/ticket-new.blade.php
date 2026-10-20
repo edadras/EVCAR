@@ -31,7 +31,7 @@
     <select class="input" name="session_id">
         <option value="">— انتخاب جلسهٔ شارژ —</option>
         @foreach($sessions as $s)
-            <option value="{{ $s->id }}" @selected(old('session_id') == $s->id)>
+            <option value="{{ $s->id }}" @selected(old('session_id') == $s->id || request('session') === $s->uuid)>
                 {{ $s->station?->name }} · {{ $s->started_at ? Persian::digits($s->started_at->format('Y/m/d H:i')) : '—' }}
             </option>
         @endforeach

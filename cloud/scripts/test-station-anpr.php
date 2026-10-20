@@ -1,16 +1,20 @@
 <?php
 
+use App\Models\Station;
+use App\Services\Stations\StationAnprService;
+use Illuminate\Contracts\Console\Kernel;
+
 require __DIR__.'/../vendor/autoload.php';
 $app = require __DIR__.'/../bootstrap/app.php';
-$app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
+$app->make(Kernel::class)->bootstrap();
 
-$station = App\Models\Station::with('edgeStation')->first();
+$station = Station::with('edgeStation')->first();
 if (! $station) {
     fwrite(STDERR, "no station\n");
     exit(1);
 }
 
-$svc = app(App\Services\Stations\StationAnprService::class);
+$svc = app(StationAnprService::class);
 $panel = $svc->panelData($station);
 $summary = $svc->summaryForList($station);
 

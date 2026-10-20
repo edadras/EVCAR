@@ -1,5 +1,8 @@
 <?php
 
+use App\Http\Middleware\AuthenticateEdgeStation;
+use App\Http\Middleware\EnsureCustomerUser;
+use App\Http\Middleware\EnsurePartnerUser;
 use App\Http\Middleware\EnsureStaffUser;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -18,9 +21,9 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->alias([
             'staff' => EnsureStaffUser::class,
-            'partner' => \App\Http\Middleware\EnsurePartnerUser::class,
-            'customer' => \App\Http\Middleware\EnsureCustomerUser::class,
-            'edge' => \App\Http\Middleware\AuthenticateEdgeStation::class,
+            'partner' => EnsurePartnerUser::class,
+            'customer' => EnsureCustomerUser::class,
+            'edge' => AuthenticateEdgeStation::class,
         ]);
 
         $middleware->redirectGuestsTo(function (Request $request): string {

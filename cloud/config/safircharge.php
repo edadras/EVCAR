@@ -5,7 +5,6 @@ return [
     // ساعت محلی برای قوانین تعرفه (اوج/کم‌باری) — ساعت سرور UTC است.
     'timezone' => env('SC_LOCAL_TIMEZONE', 'Asia/Tehran'),
 
-
     /*
   |--------------------------------------------------------------------------
   | Edge probe URLs (comma-separated in env)

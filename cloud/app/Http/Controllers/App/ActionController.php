@@ -187,7 +187,7 @@ class ActionController extends Controller
         $messages = collect();
 
         if ($ticketId) {
-            $ticket = SupportTicket::with('messages.user')
+            $ticket = SupportTicket::with(['messages' => fn ($q) => $q->where('is_internal', false), 'messages.user'])
                 ->where('user_id', $user->id)
                 ->find($ticketId);
             $messages = $ticket?->messages ?? collect();

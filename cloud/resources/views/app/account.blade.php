@@ -48,6 +48,13 @@
         </div>
     </div>
 
+    <div class="sec-title">فعالیت من</div>
+    <div class="card card-p" style="margin-bottom:16px">
+        <a class="lrow" style="padding-top:0" href="{{ route('app.history') }}"><div class="l-ic ic-blue" data-ic="receipt"></div><div class="l-main"><div class="l-title">سوابق و رسید جلسات</div><div class="l-sub">جزئیات هزینه، نمودار توان و امتیازدهی</div></div><span class="chev" data-ic="chevron"></span></a>
+        <a class="lrow" href="{{ route('app.insights') }}"><div class="l-ic ic-green" data-ic="chart"></div><div class="l-main"><div class="l-title">تحلیل هزینه و مصرف</div><div class="l-sub">روند ماهانه و صرفه‌جویی نسبت به بنزین</div></div><span class="chev" data-ic="chevron"></span></a>
+        <a class="lrow" style="padding-bottom:0" href="{{ route('app.assistant') }}"><div class="l-ic ic-violet" data-ic="headset"></div><div class="l-main"><div class="l-title">دستیار هوشمند پشتیبانی</div><div class="l-sub">پاسخ فوری ۲۴ ساعته به سؤالات شما</div></div><span class="chev" data-ic="chevron"></span></a>
+    </div>
+
     <div class="sec-title">مسیریابی</div>
     <div class="card card-p" style="margin-bottom:16px">
         <a class="lrow" style="padding-top:0;padding-bottom:0" href="{{ route('app.navigator') }}">

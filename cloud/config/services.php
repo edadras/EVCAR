@@ -40,4 +40,13 @@ return [
         'credentials' => env('FCM_CREDENTIALS', ''),
     ],
 
+    // دستیار هوشمند پشتیبانی مشتریان (Claude API)
+    'anthropic' => [
+        'key' => env('ANTHROPIC_API_KEY', ''),
+        'base_url' => env('ANTHROPIC_BASE_URL'),
+        'support_model' => env('SUPPORT_AI_MODEL', 'claude-opus-5-5'),
+        'support_effort' => env('SUPPORT_AI_EFFORT', 'medium'),
+        'support_hourly_limit' => (int) env('SUPPORT_AI_HOURLY_LIMIT', 40),
+    ],
+
 ];

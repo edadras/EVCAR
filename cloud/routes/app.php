@@ -2,8 +2,10 @@
 
 use App\Http\Controllers\App\ActionController;
 use App\Http\Controllers\App\ApiController;
+use App\Http\Controllers\App\AssistantController;
 use App\Http\Controllers\App\AuthApiController;
 use App\Http\Controllers\App\AuthController;
+use App\Http\Controllers\App\EngagementController;
 use App\Http\Controllers\App\NavigatorController;
 use App\Http\Controllers\App\PageController;
 use Illuminate\Support\Facades\Route;
@@ -32,6 +34,13 @@ Route::middleware(['auth', 'customer'])->group(function () {
     Route::get('wallet', [PageController::class, 'wallet'])->name('wallet');
     Route::get('account', [PageController::class, 'account'])->name('account');
     Route::get('history', [PageController::class, 'history'])->name('history');
+    Route::get('history/{uuid}', [EngagementController::class, 'receipt'])->name('session');
+    Route::post('history/{uuid}/review', [EngagementController::class, 'review'])->name('session.review');
+    Route::get('insights', [EngagementController::class, 'insights'])->name('insights');
+    Route::post('stations/{code}/report', [EngagementController::class, 'report'])->name('station.report');
+    Route::post('stations/{code}/watch', [EngagementController::class, 'watch'])->name('station.watch');
+    Route::post('stations/{code}/favorite', [EngagementController::class, 'favorite'])->name('station.favorite');
+    Route::get('stations/{code}/reviews', [EngagementController::class, 'reviews'])->name('station.reviews');
     Route::get('charging', [PageController::class, 'charging'])->name('charging');
     Route::post('charging/start', [ActionController::class, 'startCharging'])->name('charging.start');
     Route::post('charging/stop', [ActionController::class, 'stopCharging'])->name('charging.stop');
@@ -58,6 +67,11 @@ Route::middleware(['auth', 'customer'])->group(function () {
     Route::get('reserve', [PageController::class, 'reserve'])->name('reserve');
     Route::post('reserve', [ActionController::class, 'storeReservation'])->name('reserve.store');
     Route::get('support', [PageController::class, 'support'])->name('support');
+    Route::get('assistant', [AssistantController::class, 'page'])->name('assistant');
+    Route::get('api/assistant', [AssistantController::class, 'show'])->name('api.assistant');
+    Route::post('api/assistant', [AssistantController::class, 'send'])->name('api.assistant.send');
+    Route::post('api/assistant/escalate', [AssistantController::class, 'escalate'])->name('api.assistant.escalate');
+    Route::post('api/assistant/reset', [AssistantController::class, 'reset'])->name('api.assistant.reset');
     Route::get('scan', [PageController::class, 'scan'])->name('scan');
     Route::get('charger', [PageController::class, 'charger'])->name('charger');
     Route::get('arrival', [PageController::class, 'arrival'])->name('arrival');

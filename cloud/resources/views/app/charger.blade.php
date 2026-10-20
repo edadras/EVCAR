@@ -56,7 +56,7 @@
         <button class="chg-tool-btn" type="button" disabled><span data-ic="nav"></span><span>مسیریابی</span></button>
         @endif
         <a href="{{ route('app.reserve', ['station' => $station->code]) }}" class="chg-tool-btn"><span data-ic="calendar"></span><span>رزرو</span></a>
-        <button class="chg-tool-icon" type="button" aria-label="علاقه‌مندی"><span data-ic="star"></span></button>
+        <button class="chg-tool-icon {{ $favorite ? 'fav-on' : '' }}" type="button" id="favBtn" aria-label="علاقه‌مندی" aria-pressed="{{ $favorite ? 'true' : 'false' }}"><span data-ic="star"></span></button>
     </div>
 
     <div class="auth-panel">
@@ -75,6 +75,17 @@
 
     <div class="sec-title">کانکتور مجاز</div>
     <div style="display:flex;flex-direction:column;gap:10px" id="connectors"></div>
+
+    @if($freeCount < 1)
+    <div class="watch-card {{ $watching ? 'on' : '' }}" id="watchCard">
+        <div class="watch-ic" data-ic="bell"></div>
+        <div style="flex:1">
+            <div class="fw7 fs13">همهٔ کانکتورها مشغول‌اند</div>
+            <div class="fs12 muted mt4" id="watchText">{{ $watching ? 'به محض آزاد شدن به شما اعلان می‌دهیم.' : 'وقتی کانکتوری آزاد شد خبرتان کنیم؟' }}</div>
+        </div>
+        <button type="button" class="btn btn-sm {{ $watching ? 'btn-ghost' : '' }}" id="watchBtn" style="width:auto;padding:0 14px">{{ $watching ? 'لغو' : 'خبرم کن' }}</button>
+    </div>
+    @endif
 
     <div class="sec-title">تعرفه</div>
     <div class="card card-p">
@@ -103,6 +114,58 @@
         @endforeach
     </div>
     @endif
+
+    <div class="sec-title row between" style="align-items:center"><span>امتیاز و نظرات</span>@if(($reviewsData['count'] ?? 0) > 0)<span class="fs12 muted">{{ Persian::digits($reviewsData['count']) }} نظر</span>@endif</div>
+    <div class="card card-p">
+        @if(($reviewsData['count'] ?? 0) > 0)
+        <div class="rv-sum">
+            <div class="rv-big"><b class="tnum">{{ Persian::digits(number_format((float) $reviewsData['rating'], 1)) }}</b><div class="rv-stars">@for($i = 1; $i <= 5; $i++)<span class="{{ $i <= round($reviewsData['rating']) ? 'on' : '' }}">★</span>@endfor</div></div>
+            <div style="flex:1">
+                @foreach($reviewsData['distribution'] as $star => $cnt)
+                <div class="rv-bar"><span class="tnum">{{ Persian::digits($star) }}</span><i><b style="width:{{ $reviewsData['count'] ? round(100 * $cnt / $reviewsData['count']) : 0 }}%"></b></i></div>
+                @endforeach
+            </div>
+        </div>
+        @if($reviewsData['top_tags'])
+        <div class="rv-tags">@foreach($reviewsData['top_tags'] as $t)<span class="tag">{{ $t['tag'] }} · {{ Persian::digits($t['count']) }}</span>@endforeach</div>
+        @endif
+        @foreach($reviewsData['items'] as $rv)
+        <div class="rv-item">
+            <div class="row between"><span class="fw7 fs13">{{ $rv['author'] }}</span><span class="rv-stars sm">@for($i = 1; $i <= 5; $i++)<span class="{{ $i <= $rv['rating'] ? 'on' : '' }}">★</span>@endfor</span></div>
+            @if($rv['comment'])<div class="fs13 mt4" style="line-height:1.8">{{ $rv['comment'] }}</div>@endif
+            @if($rv['tags'])<div class="fs12 muted mt4">{{ implode(' · ', $rv['tags']) }}</div>@endif
+            @if($rv['reply'])<div class="rv-reply"><b>پاسخ SafirCharge:</b> {{ $rv['reply'] }}</div>@endif
+            <div class="fs12 muted mt4">{{ $rv['date'] }}</div>
+        </div>
+        @endforeach
+        @else
+        <div class="fs13 muted">هنوز نظری ثبت نشده است. پس از شارژ در این ایستگاه از صفحهٔ رسید جلسه امتیاز دهید.</div>
+        @endif
+    </div>
+
+    <button type="button" class="report-btn" id="reportOpen"><span data-ic="alert"></span> گزارش خرابی یا مشکل این ایستگاه</button>
+</div>
+
+<div class="sheet-back" id="reportSheet" hidden>
+    <form class="sheet" method="POST" action="{{ route('app.station.report', $station->code) }}">@csrf
+        <div class="sheet-grip"></div>
+        <div class="fw8" style="font-size:16px">گزارش مشکل — {{ $station->name }}</div>
+        <div class="fs12 muted mt4">گزارش مستقیم برای تیم فنی ارسال و از بخش پشتیبانی قابل پیگیری است.</div>
+        <div class="prob-list">
+            @foreach($problems as $k => $label)
+            <label class="prob"><input type="radio" name="problem" value="{{ $k }}" @checked($loop->first) required><span>{{ $label }}</span></label>
+            @endforeach
+        </div>
+        <select name="connector" class="sheet-in">
+            <option value="">کانکتور (اختیاری)</option>
+            @foreach($connectorsJs as $c)<option value="{{ $c['id'] }}">{{ $c['name'] }}</option>@endforeach
+        </select>
+        <textarea name="description" class="sheet-in" rows="3" maxlength="1500" placeholder="توضیح کوتاه (مثلاً پیغام خطای روی صفحه)"></textarea>
+        <div class="row" style="gap:10px;margin-top:12px">
+            <button type="button" class="btn btn-ghost" id="reportClose" style="flex:1">انصراف</button>
+            <button type="submit" class="btn btn-orange" style="flex:2">ثبت گزارش</button>
+        </div>
+    </form>
 </div>
 
 <div class="startbar">
@@ -128,6 +191,28 @@
 
 @push('styles')
 <style>
+.fav-on{color:var(--amber,#F59E0B)!important;border-color:var(--amber,#F59E0B)!important}
+.watch-card{display:flex;align-items:center;gap:12px;margin-top:12px;padding:14px;border-radius:16px;background:var(--accent-soft);border:1px dashed var(--accent)}
+.watch-card.on{background:var(--green-soft);border-color:var(--green)}
+.watch-ic{width:40px;height:40px;border-radius:12px;background:var(--surface);display:grid;place-items:center;color:var(--accent);flex:none}.watch-ic svg{width:20px;height:20px}
+.rv-sum{display:flex;gap:18px;align-items:center}
+.rv-big{text-align:center}.rv-big b{font-size:34px;font-weight:800;display:block;line-height:1}
+.rv-stars span{color:var(--border);font-size:14px}.rv-stars span.on{color:#F59E0B}.rv-stars.sm span{font-size:12px}
+.rv-bar{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--muted)}
+.rv-bar i{flex:1;height:6px;border-radius:4px;background:var(--surface-2);overflow:hidden;display:block}.rv-bar i b{display:block;height:100%;background:#F59E0B;border-radius:4px}
+.rv-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+.rv-item{border-top:1px solid var(--border-2);margin-top:12px;padding-top:12px}
+.rv-reply{margin-top:8px;padding:8px 10px;border-radius:10px;background:var(--surface-2);font-size:12.5px}
+.report-btn{width:100%;margin-top:14px;height:46px;border-radius:14px;border:1px solid var(--red-soft,#fde2e2);background:var(--surface);color:var(--red);font-family:inherit;font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer}
+.report-btn svg{width:18px;height:18px}
+.sheet-back{position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:60;display:flex;align-items:flex-end;justify-content:center}
+.sheet-back[hidden]{display:none}
+.sheet{width:100%;max-width:480px;background:var(--surface);border-radius:22px 22px 0 0;padding:14px 18px calc(18px + env(safe-area-inset-bottom,0));max-height:88vh;overflow:auto}
+.sheet-grip{width:44px;height:5px;border-radius:3px;background:var(--border);margin:0 auto 12px}
+.prob-list{display:flex;flex-direction:column;gap:8px;margin:14px 0}
+.prob{display:flex;align-items:center;gap:10px;padding:11px 12px;border:1.5px solid var(--border);border-radius:13px;font-size:13.5px;cursor:pointer}
+.prob:has(input:checked){border-color:var(--accent);background:var(--accent-soft)}
+.sheet-in{width:100%;margin-top:8px;border:1.5px solid var(--border);background:var(--surface-2);border-radius:13px;padding:11px 12px;font-family:inherit;font-size:13.5px;color:var(--text)}
 .hero{position:relative;height:200px;flex:none}
 .hero-bg{position:absolute;inset:0;background:linear-gradient(140deg,var(--accent),color-mix(in srgb,var(--accent) 50%,var(--orange)));display:grid;place-items:center;color:rgba(255,255,255,.5)}
 .hero-bg svg{width:72px;height:72px}
@@ -180,6 +265,27 @@
 
 @if($station ?? null)
 @push('scripts')
+@if($station)
+<script>
+(function(){
+  var csrf=document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+  function post(url){return fetch(url,{method:'POST',headers:{'Accept':'application/json','X-CSRF-TOKEN':csrf,'X-Requested-With':'XMLHttpRequest'}}).then(function(r){return r.json();});}
+  function toast(m){if(window.showToast){window.showToast(m);}else{var t=document.createElement('div');t.textContent=m;t.style.cssText='position:fixed;bottom:110px;left:50%;transform:translateX(-50%);background:#0f172a;color:#fff;padding:10px 16px;border-radius:12px;font-size:13px;z-index:99;max-width:86%;text-align:center';document.body.appendChild(t);setTimeout(function(){t.remove();},2600);}}
+  var fav=document.getElementById('favBtn');
+  fav&&fav.addEventListener('click',function(){post(@json(route('app.station.favorite', $station->code))).then(function(d){fav.classList.toggle('fav-on',d.favorite);fav.setAttribute('aria-pressed',d.favorite?'true':'false');toast(d.message);});});
+  var wb=document.getElementById('watchBtn');
+  wb&&wb.addEventListener('click',function(){wb.disabled=true;post(@json(route('app.station.watch', $station->code))).then(function(d){
+    document.getElementById('watchCard').classList.toggle('on',d.watching);
+    document.getElementById('watchText').textContent=d.watching?'به محض آزاد شدن به شما اعلان می‌دهیم.':'وقتی کانکتوری آزاد شد خبرتان کنیم؟';
+    wb.textContent=d.watching?'لغو':'خبرم کن';wb.classList.toggle('btn-ghost',d.watching);toast(d.message);
+  }).finally(function(){wb.disabled=false;});});
+  var sheet=document.getElementById('reportSheet');
+  document.getElementById('reportOpen').addEventListener('click',function(){sheet.hidden=false;});
+  document.getElementById('reportClose').addEventListener('click',function(){sheet.hidden=true;});
+  sheet.addEventListener('click',function(e){if(e.target===sheet)sheet.hidden=true;});
+})();
+</script>
+@endif
 <script>
 (function(){
   var conns=@json($connectorsJs);

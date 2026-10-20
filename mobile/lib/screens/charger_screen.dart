@@ -6,6 +6,7 @@ import '../core/nav.dart';
 import '../core/state.dart';
 import '../core/theme.dart';
 import '../widgets/common.dart';
+import 'engagement_screens.dart';
 
 /// جزئیات ایستگاه/شارژر و شروع شارژ — همان منطق صفحهٔ charger وب‌اپ:
 /// فقط کانکتوری که برای کاربر مجوز دارد (اسکن QR / RFID / پلاک) و آزاد است قابل انتخاب است.
@@ -197,6 +198,7 @@ class _ChargerScreenState extends State<ChargerScreen> {
                   const SecTitle('کانکتور مجاز'),
                   if (conns.isEmpty) const EmptyState('برای این ایستگاه کانکتوری ثبت نشده است.', icon: Icons.power_off_outlined),
                   for (final cn in conns) _connector(c, cn),
+                  if (asInt(d['free_count']) == 0 && conns.isNotEmpty) WatchStationCard(key: ValueKey('watch-${st['code']}'), code: '${st['code']}', watching: d['watching'] == true),
                   const SecTitle('تعرفه'),
                   AppCard(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
@@ -234,6 +236,23 @@ class _ChargerScreenState extends State<ChargerScreen> {
                         ]),
                     ]),
                   ],
+                  if (d['reviews'] is Map) ...[
+                    const SecTitle('امتیاز و نظرات'),
+                    StationReviewsSection(data: asMap(d['reviews'])),
+                  ],
+                  const SizedBox(height: 14),
+                  AppButton(
+                    'گزارش خرابی یا مشکل این ایستگاه',
+                    icon: Icons.report_problem_outlined,
+                    kind: BtnKind.ghost,
+                    onPressed: () => showReportProblemSheet(
+                      context,
+                      code: '${st['code']}',
+                      name: '${st['name']}',
+                      problems: asMap(d['problems']).isEmpty ? const {'other': 'مشکل در ایستگاه'} : asMap(d['problems']),
+                      connectors: [for (final cn in conns) '${cn['id']}'],
+                    ),
+                  ),
                 ]),
               ),
             ]),

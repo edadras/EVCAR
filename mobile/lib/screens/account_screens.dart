@@ -87,6 +87,17 @@ class AccountTab extends StatelessWidget {
               ),
             ]),
           ),
+          const SecTitle('فعالیت من'),
+          AppCard(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            child: Column(children: [
+              ListRow(icon: Icons.receipt_long_outlined, title: 'سوابق و رسید جلسات', subtitle: 'جزئیات هزینه، نمودار توان و امتیازدهی', chevron: true, onTap: () => openScreen(context, 'history')),
+              const Divider(),
+              ListRow(icon: Icons.insights_rounded, tone: 'green', title: 'تحلیل هزینه و مصرف', subtitle: 'روند ماهانه و صرفه‌جویی نسبت به بنزین', chevron: true, onTap: () => openScreen(context, 'insights')),
+              const Divider(),
+              ListRow(icon: Icons.auto_awesome_rounded, tone: 'violet', title: 'دستیار هوشمند پشتیبانی', subtitle: 'پاسخ فوری ۲۴ ساعته به سؤالات شما', chevron: true, onTap: () => openScreen(context, 'assistant')),
+            ]),
+          ),
           const SecTitle('مسیریابی'),
           AppCard(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),

@@ -2,19 +2,32 @@
 
 require __DIR__.'/../vendor/autoload.php';
 $app = require __DIR__.'/../bootstrap/app.php';
-$app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
+$app->make(Kernel::class)->bootstrap();
 
 use App\Models\ChargingSession;
 use App\Models\Connector;
+use App\Models\EdgeStation;
 use App\Models\User;
 use App\Services\App\ConnectivityService;
+use App\Services\Sync\SyncIngestService;
+use Illuminate\Contracts\Console\Kernel;
+use Illuminate\Support\Str;
 
 $edge = rtrim(getenv('EDGE_TEST_URL') ?: 'http://sc_edge_nginx', '/');
 $fail = 0;
 $results = [];
 
-function ok(string $m): void { global $results; $results[] = "OK   $m"; }
-function bad(string $m): void { global $results, $fail; $results[] = "FAIL $m"; $fail++; }
+function ok(string $m): void
+{
+    global $results;
+    $results[] = "OK   $m";
+}
+function bad(string $m): void
+{
+    global $results, $fail;
+    $results[] = "FAIL $m";
+    $fail++;
+}
 
 function httpJson(string $method, string $url, ?array $body = null, array $headers = []): array
 {
@@ -85,11 +98,11 @@ if ($connectorUuid === '') {
     $sessionUuid = $stop['body']['session_uuid'] ?? '';
     $sessionUuid !== '' ? ok('stop returned session_uuid') : bad('stop missing session_uuid');
 
-    $edgeStation = \App\Models\EdgeStation::where('edge_code', 'EDGE-AZADI-01')->first();
+    $edgeStation = EdgeStation::where('edge_code', 'EDGE-AZADI-01')->first();
     if ($edgeStation && $sessionUuid) {
-        $ingest = app(\App\Services\Sync\SyncIngestService::class);
+        $ingest = app(SyncIngestService::class);
         $ingest->ingest($edgeStation, [[
-            'event_uuid' => (string) \Illuminate\Support\Str::uuid(),
+            'event_uuid' => (string) Str::uuid(),
             'event_type' => 'charging.session.started',
             'occurred_at' => now()->subMinutes(2)->toIso8601String(),
             'payload' => [
@@ -101,7 +114,7 @@ if ($connectorUuid === '') {
                 'started_at' => now()->subMinutes(2)->toIso8601String(),
             ],
         ], [
-            'event_uuid' => (string) \Illuminate\Support\Str::uuid(),
+            'event_uuid' => (string) Str::uuid(),
             'event_type' => 'charging.session.stopped',
             'occurred_at' => now()->toIso8601String(),
             'payload' => array_merge($stop['body'], [

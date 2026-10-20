@@ -1,5 +1,6 @@
 <?php
 
+use App\Services\App\CustomerEngagementService;
 use App\Services\Charging\CloudChargingSessionService;
 use App\Services\Charging\ReservationDispatcher;
 use App\Services\Finance\SettlementService;
@@ -45,3 +46,13 @@ Artisan::command('settlements:generate {--month= : YYYY-MM}', function (Settleme
 })->purpose('Create monthly partner settlements from finished charging sessions');
 
 Schedule::command('settlements:generate')->monthlyOn(1, '02:10');
+
+// اعلان «ایستگاه آزاد شد» (به‌روزرسانی‌های گروهی وضعیت کانکتور رویداد مدل ندارند)
+Artisan::command('stations:notify-watchers', function (CustomerEngagementService $engagement) {
+    $sent = $engagement->notifyWatchers();
+    if ($sent > 0) {
+        $this->info("Notified {$sent} customer(s) about free connectors.");
+    }
+})->purpose('Tell customers waiting on a busy station that a connector became free');
+
+Schedule::command('stations:notify-watchers')->everyMinute()->withoutOverlapping();

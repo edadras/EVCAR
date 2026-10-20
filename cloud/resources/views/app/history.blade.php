@@ -6,7 +6,7 @@
 @php use App\Support\Persian; @endphp
 <div class="appbar" style="padding-top:2px">
     <div style="flex:1"><div class="ab-title">سوابق شارژ</div></div>
-    <button class="ab-btn" type="button"><span data-ic="download"></span></button>
+    <a class="ab-btn" href="{{ route('app.insights') }}" title="تحلیل هزینه‌ها"><span data-ic="chart"></span></a>
 </div>
 
 <div class="screen">
@@ -25,6 +25,12 @@
             <div class="fs12" style="opacity:.85">معادل کاشت {{ $monthStats['trees'] }} اصله درخت در این ماه 🌱</div>
         </div>
     </div>
+
+    <a class="ins-link rise" href="{{ route('app.insights') }}" style="animation-delay:.08s">
+        <span class="ins-ic" data-ic="chart"></span>
+        <span style="flex:1"><b class="fs13">تحلیل هزینه و مصرف</b><span class="fs12 muted" style="display:block">روند ۶ ماه، صرفه‌جویی نسبت به بنزین و پیشنهاد کاهش هزینه</span></span>
+        <span data-ic="chevron" class="ins-chev"></span>
+    </a>
 
     <div class="sec-title">جلسات اخیر</div>
     <div class="tx-search">
@@ -58,6 +64,10 @@
 .tx-search input{width:100%;height:46px;border:1.5px solid var(--border);background:var(--surface-2);border-radius:14px;padding:0 44px 0 14px;font-family:inherit;font-size:13.5px;color:var(--text);outline:none}
 .tx-search input:focus{border-color:var(--accent);background:var(--surface)}
 .tx-search span[data-ic]{position:absolute;inset-inline-start:14px;top:50%;transform:translateY(-50%);width:18px;height:18px;color:var(--muted);display:inline-grid}.tx-search svg{width:18px;height:18px}
+.ins-link{display:flex;align-items:center;gap:12px;margin-top:14px;padding:13px 14px;border-radius:16px;background:var(--surface);border:1px solid var(--border);text-decoration:none;color:var(--text)}
+.ins-ic{width:40px;height:40px;border-radius:12px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;flex:none}.ins-ic svg{width:20px;height:20px}
+.ins-chev svg{width:16px;height:16px;transform:scaleX(-1);color:var(--muted)}
+a.hist{display:block;text-decoration:none;color:inherit}
 .tx-empty{text-align:center;color:var(--muted);font-size:13px;padding:24px 0}
 </style>
 @endpush
@@ -66,9 +76,10 @@
 <script>
 (function(){
   var H=@json($sessionsJs);
+  var base=@json(route('app.history'));
   document.getElementById('list').innerHTML=H.length?H.map(function(h){
     var ok=h.st[1]==='pill-green';
-    return '<div class="hist">'+
+    return '<a class="hist" href="'+base+'/'+h.uuid+'">'+
       '<div class="row">'+
         '<div class="h-ic '+(ok?'ic-blue':'ic-red')+'">'+window.icon('bolt')+'</div>'+
         '<div style="flex:1"><div class="row between"><span class="fw7" style="font-size:14.5px">'+h.n+'</span><span class="pill '+h.st[1]+'">'+h.st[0]+'</span></div>'+
@@ -79,7 +90,7 @@
         '<div>مدت<b class="tnum">'+h.dur+'</b></div>'+
         '<div style="margin-inline-start:auto;text-align:end">هزینه<b class="tnum">'+h.amt+' ت</b></div>'+
       '</div>'+
-    '</div>';
+    '</a>';
   }).join(''):'<div class="tx-empty">جلسه‌ای ثبت نشده است.</div>';
 
   var se=document.getElementById('histSearch');

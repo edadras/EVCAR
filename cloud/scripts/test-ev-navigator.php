@@ -1,16 +1,20 @@
 <?php
 
+use App\Models\User;
+use App\Services\Navigator\EvNavigatorService;
+use Illuminate\Contracts\Console\Kernel;
+
 require __DIR__.'/../vendor/autoload.php';
 $app = require __DIR__.'/../bootstrap/app.php';
-$app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
+$app->make(Kernel::class)->bootstrap();
 
-$user = App\Models\User::where('email', 'user1@demo.ir')->first();
+$user = User::where('email', 'user1@demo.ir')->first();
 if (! $user) {
     fwrite(STDERR, "demo user not found\n");
     exit(1);
 }
 
-$svc = app(App\Services\Navigator\EvNavigatorService::class);
+$svc = app(EvNavigatorService::class);
 $result = $svc->analyze($user, [
     'origin' => ['lat' => 35.689, 'lng' => 51.389],
     'destination' => ['lat' => 32.661, 'lng' => 51.676],

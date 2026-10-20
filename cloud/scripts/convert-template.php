@@ -4,9 +4,8 @@
  * تبدیل فایل‌های HTML قالب به Blade پنل ادمین
  * اجرا: php scripts/convert-template.php
  */
-
-$templateDir = dirname(__DIR__) . '/../Template';
-$viewsDir = dirname(__DIR__) . '/resources/views/admin';
+$templateDir = dirname(__DIR__).'/../Template';
+$viewsDir = dirname(__DIR__).'/resources/views/admin';
 
 if (! is_dir($templateDir)) {
     fwrite(STDERR, "Template dir not found: {$templateDir}\n");
@@ -87,7 +86,7 @@ function extractBodyMeta(string $html): array
         return ['page' => '', 'title' => '', 'crumb' => ''];
     }
     $attrs = $m[1];
-    $get = fn (string $name) => preg_match('/data-' . $name . '="([^"]*)"/', $attrs, $x) ? $x[1] : '';
+    $get = fn (string $name) => preg_match('/data-'.$name.'="([^"]*)"/', $attrs, $x) ? $x[1] : '';
 
     return [
         'page' => $get('page'),
@@ -148,10 +147,10 @@ function extractMainParts(string $html): array
 function replaceLinks(string $html, array $linkMap): string
 {
     foreach ($linkMap as $file => $route) {
-        $html = str_replace('href="' . $file . '"', 'href="' . $route . '"', $html);
-        $html = str_replace("href='" . $file . "'", "href='" . $route . "'", $html);
-        $html = str_replace('location.href=&quot;' . $file . '&quot;', 'location.href=&quot;' . $route . '&quot;', $html);
-        $html = str_replace("location.href='" . $file . "'", "location.href='" . $route . "'", $html);
+        $html = str_replace('href="'.$file.'"', 'href="'.$route.'"', $html);
+        $html = str_replace("href='".$file."'", "href='".$route."'", $html);
+        $html = str_replace('location.href=&quot;'.$file.'&quot;', 'location.href=&quot;'.$route.'&quot;', $html);
+        $html = str_replace("location.href='".$file."'", "location.href='".$route."'", $html);
     }
 
     return $html;
@@ -169,9 +168,10 @@ function bladeEscape(string $s): string
 
 $converted = 0;
 foreach ($outputMap as $file => $outPath) {
-    $src = $templateDir . '/' . $file;
+    $src = $templateDir.'/'.$file;
     if (! is_file($src)) {
         echo "SKIP (missing): {$file}\n";
+
         continue;
     }
 
@@ -188,17 +188,17 @@ foreach ($outputMap as $file => $outPath) {
     if ($tail !== '') {
         $blade .= "\n@push('styles')\n";
         if (preg_match('/<style[\s\S]*?<\/style>/i', $tail, $styleMatch)) {
-            $blade .= $styleMatch[0] . "\n";
+            $blade .= $styleMatch[0]."\n";
             $tail = trim(str_replace($styleMatch[0], '', $tail));
         }
         $blade .= "@endpush\n";
 
         if ($tail !== '') {
-            $blade .= "\n@push('scripts')\n" . bladeEscape($tail) . "\n@endpush\n";
+            $blade .= "\n@push('scripts')\n".bladeEscape($tail)."\n@endpush\n";
         }
     }
 
-    $dest = $viewsDir . '/' . $outPath;
+    $dest = $viewsDir.'/'.$outPath;
     $dir = dirname($dest);
     if (! is_dir($dir)) {
         mkdir($dir, 0755, true);

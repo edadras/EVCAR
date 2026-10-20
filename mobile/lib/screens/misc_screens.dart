@@ -22,8 +22,20 @@ class NotificationsScreen extends StatefulWidget {
 class _NotificationsScreenState extends State<NotificationsScreen> {
   final _body = GlobalKey<AsyncBodyState>();
 
+  /// مقصد لمس اعلان بر اساس داده‌های آن (رسید جلسه، تیکت، ایستگاه).
+  (String, Map<String, dynamic>)? _target(Map<String, dynamic> data) {
+    if (data['session'] != null) return ('session', {'uuid': data['session']});
+    if (data['ticket'] != null) return ('ticket', {'id': data['ticket']});
+    if (data['station'] != null) return ('charger', {'station': data['station']});
+    return null;
+  }
+
   (IconData, String) _icon(String? type) => switch (type) {
-        'charging' || 'session' || 'charging_completed' => (Icons.bolt_rounded, 'blue'),
+        'charging' || 'session' || 'charging_completed' || 'session_complete' => (Icons.bolt_rounded, 'blue'),
+        'session_failed' => (Icons.power_off_outlined, 'red'),
+        'station_free' => (Icons.ev_station_rounded, 'green'),
+        'ticket_reply' || 'ticket_resolved' || 'review_reply' => (Icons.support_agent_rounded, 'violet'),
+        'wallet_credit' => (Icons.savings_outlined, 'green'),
         'wallet' || 'payment' || 'low_balance' => (Icons.account_balance_wallet_outlined, 'orange'),
         'offer' || 'campaign' => (Icons.card_giftcard_outlined, 'violet'),
         'reservation' => (Icons.calendar_month_outlined, 'green'),
@@ -65,6 +77,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                               title: '${n['title']}',
                               subtitle: '${n['body'] ?? ''}\n${fa(n['time'] ?? '')}',
                               trailing: n['read'] == true ? null : Container(width: 9, height: 9, decoration: const BoxDecoration(color: Palette.orange, shape: BoxShape.circle)),
+                              onTap: _target(asMap(n['data'])) == null ? null : () => openScreen(context, _target(asMap(n['data']))!.$1, _target(asMap(n['data']))!.$2),
                             ),
                           ],
                         ]),

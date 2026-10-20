@@ -4,12 +4,11 @@
  * تزریق دادهٔ دیتابیس به Bladeهای تبدیل‌شده از قالب — بدون تغییر ساختار UI
  * اجرا پس از convert-template.php: php scripts/patch-admin-dynamic.php
  */
-
-$viewsDir = dirname(__DIR__) . '/resources/views/admin';
+$viewsDir = dirname(__DIR__).'/resources/views/admin';
 
 function patch(string $path, callable $fn): void
 {
-    $full = $GLOBALS['viewsDir'] . '/' . $path;
+    $full = $GLOBALS['viewsDir'].'/'.$path;
     if (! is_file($full)) {
         echo "SKIP {$path}\n";
 
@@ -139,7 +138,7 @@ patch('dashboard.blade.php', function (string $c) {
         "@include('admin.partials.leaflet-map', ['markers' => \$mapMarkers, 'mapId' => 'dashMap', 'height' => '320px'])",
         $c
     );
-  // حذف JS نقشه استاتیک
+    // حذف JS نقشه استاتیک
     $c = preg_replace(
         '/\/\/ نقشه[\s\S]*?map\.innerHTML = bg \+ pinHTML;\s*\}\)\(\);/m',
         '// نقشه از partial leaflet',
@@ -215,6 +214,7 @@ patch('wallet.blade.php', function (string $c) {
         $c = injectDataScript($c, '__WALLET', '$walletJs');
     }
     $c = str_replace('var users=[', 'var DB=window.__WALLET||{}; var users=(DB.wallets&&DB.wallets.length)?DB.wallets:[/*', $c);
+
     return $c;
 });
 
@@ -224,6 +224,7 @@ patch('anpr.blade.php', function (string $c) {
     if (! str_contains($c, 'window.__ANPR')) {
         $c = injectDataScript($c, '__ANPR', '$anprJs');
     }
+
     return $c;
 });
 
@@ -233,6 +234,7 @@ patch('reservations.blade.php', function (string $c) {
     if (! str_contains($c, 'window.__RESERVATIONS')) {
         $c = injectDataScript($c, '__RESERVATIONS', '$reservationsJs');
     }
+
     return $c;
 });
 
@@ -242,6 +244,7 @@ patch('users/index.blade.php', function (string $c) {
     if (! str_contains($c, 'window.__USERS')) {
         $c = injectDataScript($c, '__USERS', '$usersJs');
     }
+
     return $c;
 });
 
