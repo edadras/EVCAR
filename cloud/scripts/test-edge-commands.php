@@ -61,7 +61,7 @@ $cmd = $svc->queue($station, 'unlock', $connector, [], $admin);
 $cmd->status === 'pending' ? ok('queued command '.$cmd->uuid) : bad('queue failed');
 
 $token = getenv('EDGE_CLOUD_SYNC_TOKEN') ?: 'dev-sync-token';
-$pull = httpJson('GET', 'http://sc_cloud_nginx/api/v1/sync/commands', null, [
+$pull = httpJson('GET', rtrim(getenv('APP_TEST_URL') ?: 'http://sc_cloud_nginx', '/').'/api/v1/sync/commands', null, [
     'Authorization: Bearer '.$token,
 ]);
 ($pull['code'] === 200 && count($pull['body']['data'] ?? []) >= 1)
@@ -69,7 +69,7 @@ $pull = httpJson('GET', 'http://sc_cloud_nginx/api/v1/sync/commands', null, [
     : bad('edge pull HTTP '.$pull['code'].' '.$pull['raw']);
 
 $uuid = $pull['body']['data'][0]['uuid'] ?? $cmd->uuid;
-$ack = httpJson('POST', 'http://sc_cloud_nginx/api/v1/sync/commands/'.$uuid.'/ack', [
+$ack = httpJson('POST', rtrim(getenv('APP_TEST_URL') ?: 'http://sc_cloud_nginx', '/').'/api/v1/sync/commands/'.$uuid.'/ack', [
     'ok' => true,
     'result' => ['simulated' => true],
 ], ['Authorization: Bearer '.$token, 'Content-Type: application/json']);

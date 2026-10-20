@@ -81,9 +81,13 @@ class AdminMetricsService
     /** @return array<int, array{hour:int, energy:float, revenue:float}> */
     public function hourlyChart(int $hours = 24): array
     {
+        $hourExpr = ChargingSession::query()->getConnection()->getDriverName() === 'sqlite'
+            ? "CAST(strftime('%H', started_at) AS INTEGER)"
+            : 'HOUR(started_at)';
+
         $rows = ChargingSession::query()
             ->where('started_at', '>=', now()->subHours($hours))
-            ->selectRaw('HOUR(started_at) as h, SUM(energy_kwh) as e, SUM(cost_amount) as r')
+            ->selectRaw($hourExpr.' as h, SUM(energy_kwh) as e, SUM(cost_amount) as r')
             ->groupBy('h')
             ->orderBy('h')
             ->get()

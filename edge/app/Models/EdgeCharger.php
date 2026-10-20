@@ -11,6 +11,8 @@ class EdgeCharger extends Model
 
     protected $fillable = [
         'uuid', 'cloud_charger_uuid', 'charge_point_id', 'max_power_kw', 'is_online', 'status', 'meta',
+        'vendor', 'model', 'serial_number', 'firmware_version', 'last_heartbeat_at',
+        'last_boot_at', 'connected_at', 'remote_address', 'ocpp_status', 'error_code',
     ];
 
     protected function casts(): array
@@ -18,6 +20,9 @@ class EdgeCharger extends Model
         return [
             'is_online' => 'boolean',
             'meta' => 'array',
+            'last_heartbeat_at' => 'datetime',
+            'last_boot_at' => 'datetime',
+            'connected_at' => 'datetime',
         ];
     }
 

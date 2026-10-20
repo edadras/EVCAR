@@ -9,7 +9,7 @@ class CachedTariff extends Model
     protected $fillable = [
         'uuid', 'cloud_tariff_uuid', 'name', 'pricing_model',
         'price_per_kwh', 'price_per_minute', 'session_fee', 'rules',
-        'cloud_version', 'synced_at',
+        'cloud_version', 'synced_at', 'is_default', 'station_assigned',
     ];
 
     protected function casts(): array
@@ -20,6 +20,8 @@ class CachedTariff extends Model
             'session_fee' => 'decimal:2',
             'rules' => 'array',
             'synced_at' => 'datetime',
+            'is_default' => 'boolean',
+            'station_assigned' => 'boolean',
         ];
     }
 }

@@ -7,7 +7,6 @@ use App\Models\CachedRfidCard;
 use App\Models\CachedUser;
 use App\Models\ConnectorAuthGrant;
 use App\Models\EdgeConnector;
-use Illuminate\Support\Str;
 
 class ConnectorAuthService
 {
