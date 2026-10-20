@@ -16,6 +16,7 @@ class EdgeCommandService
     public const TYPES = [
         'reset', 'unlock', 'remote_stop', 'change_availability',
         'set_charging_profile', 'get_diagnostics', 'update_firmware',
+        'remote_start', 'trigger_status',
     ];
 
     public function queue(
@@ -87,12 +88,21 @@ class EdgeCommandService
             ->where('uuid', $commandUuid)
             ->firstOrFail();
 
+        if ($cmd->status === 'cancelled') {
+            return $cmd;
+        }
+
         $cmd->update([
             'status' => $ok ? 'completed' : 'failed',
             'result' => $result ?: null,
             'error_message' => $error,
             'completed_at' => now(),
         ]);
+
+        if (! $ok && $cmd->command_type === 'remote_start' && ! empty($cmd->payload['cloud_session_uuid'])) {
+            app(\App\Services\Charging\CloudChargingSessionService::class)
+                ->startFailed((string) $cmd->payload['cloud_session_uuid'], $error);
+        }
 
         return $cmd->fresh();
     }

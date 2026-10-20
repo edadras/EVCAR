@@ -12,6 +12,19 @@ return [
         'sync_token' => env('EDGE_CLOUD_SYNC_TOKEN', 'dev-sync-token'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | شارژ از طریق اپ آنلاین
+    |--------------------------------------------------------------------------
+    | ابر مستقیم به شارژر وصل نمی‌شود: شروع/توقف به‌صورت دستور remote_start/remote_stop
+    | برای Edge همان ایستگاه صف می‌شود و Edge آن را با OCPP روی شارژر اجرا می‌کند.
+    | allow_without_edge فقط برای دمو/توسعه است (جلسهٔ شبیه‌سازی‌شده بدون شارژر واقعی).
+    */
+    'charging' => [
+        'allow_without_edge' => (bool) env('SC_ALLOW_CHARGING_WITHOUT_EDGE', env('APP_ENV', 'production') !== 'production'),
+        'remote_start_timeout_minutes' => (int) env('SC_REMOTE_START_TIMEOUT_MINUTES', 3),
+    ],
+
     'connectivity' => [
         'edge_internal_url' => env('EDGE_INTERNAL_URL'),
         'edge_probe_urls' => array_values(array_filter(array_map(

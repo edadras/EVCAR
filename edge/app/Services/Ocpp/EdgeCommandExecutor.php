@@ -34,6 +34,11 @@ class EdgeCommandExecutor
         }
 
         if ($type === 'remote_start') {
+            $requestedAt = $command['requested_at'] ?? null;
+            if ($requestedAt && now()->diffInSeconds(\Carbon\CarbonImmutable::parse($requestedAt), true) > 180) {
+                throw new \RuntimeException('درخواست شروع شارژ منقضی شده است.');
+            }
+
             return $this->remoteStart($chargePointId, $connectorNumber, $payload);
         }
 

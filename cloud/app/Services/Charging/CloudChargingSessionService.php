@@ -4,18 +4,173 @@ namespace App\Services\Charging;
 
 use App\Models\ChargingSession;
 use App\Models\Connector;
+use App\Models\EdgeCommand;
 use App\Models\Tariff;
 use App\Models\User;
+use App\Models\Vehicle;
 use App\Models\Wallet;
 use App\Models\WalletTransaction;
+use App\Services\Edge\EdgeCommandService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class CloudChargingSessionService
 {
+    public function __construct(private EdgeCommandService $edgeCommands) {}
+
+    /**
+     * درخواست شروع شارژ از اپ آنلاین. اگر ایستگاه کنترلر Edge دارد، دستور remote_start
+     * برای آن صف می‌شود و Edge با OCPP شارژر را روشن می‌کند؛ انرژی و هزینهٔ واقعی
+     * از طریق سینک (charging.session.progress / stopped) برمی‌گردد.
+     */
+    public function requestStart(User $user, Connector $connector, string $authMethod, ?Tariff $tariff, ?Vehicle $vehicle, int $targetSoc): ChargingSession
+    {
+        $connector->loadMissing('charger.station.edgeStation');
+        $station = $connector->charger->station;
+        $edge = $station?->edgeStation;
+
+        if (! $edge && ! config('safircharge.charging.allow_without_edge')) {
+            throw new \RuntimeException('این ایستگاه هنوز به کنترلر محلی (Edge) متصل نیست و شروع شارژ از راه دور ممکن نیست.');
+        }
+
+        return DB::transaction(function () use ($user, $connector, $authMethod, $tariff, $vehicle, $targetSoc, $station, $edge) {
+            $session = ChargingSession::create([
+                'uuid' => (string) Str::uuid(),
+                'station_id' => $connector->charger->station_id,
+                'charger_id' => $connector->charger_id,
+                'connector_id' => $connector->id,
+                'user_id' => $user->id,
+                'vehicle_id' => $vehicle?->id,
+                'tariff_id' => $tariff?->id,
+                'edge_station_uuid' => $edge?->uuid,
+                'auth_method' => $authMethod,
+                'status' => 'active',
+                'started_at' => now(),
+                'energy_kwh' => 0,
+                'cost_amount' => 0,
+                'meta' => [
+                    'soc' => null,
+                    'target_soc' => $targetSoc,
+                    'power_kw' => $edge ? 0 : (int) ($connector->max_power_kw ?: $connector->charger->max_power_kw),
+                    'rated_power_kw' => (int) ($connector->max_power_kw ?: $connector->charger->max_power_kw),
+                    'edge_backed' => (bool) $edge,
+                    'edge_state' => $edge ? 'requested' : 'simulated',
+                ],
+            ]);
+
+            if ($edge) {
+                $command = $this->edgeCommands->queue($station, 'remote_start', $connector, [
+                    'cloud_session_uuid' => $session->uuid,
+                    'cloud_user_uuid' => $user->uuid,
+                    'auth_method' => $authMethod,
+                    'target_soc' => $targetSoc,
+                ], $user);
+                $session->update(['meta' => array_merge($session->meta, ['start_command_uuid' => $command->uuid])]);
+            } else {
+                $connector->update(['ocpp_status' => 'Charging']);
+            }
+
+            return $session->fresh();
+        });
+    }
+
+    /**
+     * درخواست توقف. برای جلسهٔ متصل به Edge، دستور remote_stop صف می‌شود و صورتحساب
+     * نهایی از روی کنتور شارژر توسط Edge محاسبه و سینک می‌شود (بدون برداشت دوباره در ابر).
+     */
+    public function requestStop(ChargingSession $session, User $user): ChargingSession
+    {
+        if (! $this->isEdgeBacked($session)) {
+            return $this->stop($session, $user);
+        }
+
+        $meta = $session->meta ?? [];
+        $startCommand = ! empty($meta['start_command_uuid'])
+            ? EdgeCommand::where('uuid', $meta['start_command_uuid'])->first()
+            : null;
+
+        // Edge هنوز دستور شروع را برنداشته — لغو بدون هزینه.
+        if (! $session->edge_session_uuid && $startCommand?->status === 'pending') {
+            $startCommand->update(['status' => 'cancelled', 'completed_at' => now(), 'error_message' => 'Cancelled by user']);
+
+            return $this->closeWithoutCharge($session, 'Cancelled');
+        }
+
+        $session->loadMissing(['station', 'connector']);
+        $this->edgeCommands->queue($session->station, 'remote_stop', $session->connector, [
+            'cloud_session_uuid' => $session->uuid,
+            'session_uuid' => $session->edge_session_uuid,
+        ], $user);
+
+        $session->update(['meta' => array_merge($meta, [
+            'edge_state' => 'stop_requested',
+            'stop_requested_at' => now()->toIso8601String(),
+        ])]);
+
+        return $session->fresh();
+    }
+
+    /** نتیجهٔ ناموفق دستور remote_start از Edge. */
+    public function startFailed(string $sessionUuid, ?string $error): void
+    {
+        $session = ChargingSession::where('uuid', $sessionUuid)->where('status', 'active')->first();
+        if (! $session || $session->edge_session_uuid) {
+            return;
+        }
+
+        $session->update(['meta' => array_merge($session->meta ?? [], ['edge_error' => $error])]);
+        $this->closeWithoutCharge($session, 'EdgeStartFailed');
+    }
+
+    /** درخواست‌های شروعی که Edge در زمان مقرر به آن‌ها پاسخ نداد (مثلاً Edge آفلاین). */
+    public function expireStaleRequests(): int
+    {
+        $minutes = max(1, (int) config('safircharge.charging.remote_start_timeout_minutes', 3));
+        $count = 0;
+
+        ChargingSession::query()
+            ->where('status', 'active')
+            ->whereNull('edge_session_uuid')
+            ->where('created_at', '<', now()->subMinutes($minutes))
+            ->get()
+            ->filter(fn (ChargingSession $s) => ! empty($s->meta['start_command_uuid']))
+            ->each(function (ChargingSession $session) use (&$count) {
+                $commandUuid = $session->meta['start_command_uuid'] ?? null;
+                if ($commandUuid) {
+                    EdgeCommand::where('uuid', $commandUuid)
+                        ->whereIn('status', ['pending', 'dispatched'])
+                        ->update(['status' => 'failed', 'error_message' => 'Expired', 'completed_at' => now()]);
+                }
+                $this->closeWithoutCharge($session, 'EdgeTimeout');
+                $count++;
+            });
+
+        return $count;
+    }
+
+    public function isEdgeBacked(ChargingSession $session): bool
+    {
+        return (bool) ($session->meta['edge_backed'] ?? false) || $session->synced_from_edge;
+    }
+
+    private function closeWithoutCharge(ChargingSession $session, string $reason): ChargingSession
+    {
+        $session->update([
+            'status' => 'stopped',
+            'stopped_at' => now(),
+            'duration_seconds' => 0,
+            'energy_kwh' => 0,
+            'cost_amount' => 0,
+            'stop_reason' => $reason,
+            'meta' => array_merge($session->meta ?? [], ['edge_state' => 'cancelled']),
+        ]);
+
+        return $session->fresh();
+    }
+
     public function estimateEnergyKwh(ChargingSession $session, int $durationSeconds): float
     {
-        if ((float) $session->energy_kwh > 0) {
+        if ((float) $session->energy_kwh > 0 || $this->isEdgeBacked($session)) {
             return (float) $session->energy_kwh;
         }
 
@@ -26,7 +181,7 @@ class CloudChargingSessionService
 
     public function estimateCost(ChargingSession $session, float $energyKwh): float
     {
-        if ((float) $session->cost_amount > 0) {
+        if ((float) $session->cost_amount > 0 || $this->isEdgeBacked($session)) {
             return (float) $session->cost_amount;
         }
 
@@ -52,8 +207,9 @@ class CloudChargingSessionService
     /** @return array{pct:int,energy:float,cost:int,secs:int,power:int,goal:int,eta:?int} */
     public function liveMetrics(ChargingSession $session): array
     {
-        $secs = (int) ($session->duration_seconds
-            ?? ($session->started_at ? now()->diffInSeconds($session->started_at) : 0));
+        $secs = $session->status === 'active'
+            ? ($session->started_at ? (int) $session->started_at->diffInSeconds(now(), true) : 0)
+            : (int) $session->duration_seconds;
         $energy = $this->estimateEnergyKwh($session, $secs);
         $costRial = $this->estimateCost($session, $energy);
         $goal = (int) ($session->meta['target_soc'] ?? 80);
@@ -142,7 +298,7 @@ class CloudChargingSessionService
             return min(99, max(5, (int) $session->meta['soc']));
         }
 
-        $secs = $session->started_at ? now()->diffInSeconds($session->started_at) : 0;
+        $secs = $session->started_at ? (int) $session->started_at->diffInSeconds(now(), true) : 0;
         if ($secs > 0) {
             return min(99, max(5, (int) round(10 + ($secs / 3600) * 40)));
         }

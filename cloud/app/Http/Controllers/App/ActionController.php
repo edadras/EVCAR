@@ -252,6 +252,7 @@ class ActionController extends Controller
         Request $request,
         ConnectorAvailabilityService $availability,
         ChargingAuthorizationService $chargeAuth,
+        CloudChargingSessionService $charging,
     ): RedirectResponse {
         $data = $request->validate([
             'connector_id' => ['required', 'exists:connectors,id'],
@@ -284,27 +285,18 @@ class ActionController extends Controller
         $prefs = $user->meta['app_prefs'] ?? [];
         $targetSoc = (int) ($prefs['charge_target_soc'] ?? 80);
 
-        ChargingSession::create([
-            'uuid' => (string) Str::uuid(),
-            'station_id' => $connector->charger->station_id,
-            'charger_id' => $connector->charger_id,
-            'connector_id' => $connector->id,
-            'user_id' => $user->id,
-            'vehicle_id' => $vehicle?->id,
-            'tariff_id' => $tariff?->id,
-            'auth_method' => $chargeAuth->grantTypeFor($connector) ?? 'qr',
-            'status' => 'active',
-            'started_at' => now(),
-            'energy_kwh' => 0,
-            'cost_amount' => 0,
-            'meta' => [
-                'soc' => 10,
-                'target_soc' => $targetSoc,
-                'power_kw' => (int) ($connector->max_power_kw ?: $connector->charger->max_power_kw),
-            ],
-        ]);
-
-        $connector->update(['ocpp_status' => 'Charging']);
+        try {
+            $charging->requestStart(
+                $user,
+                $connector,
+                $chargeAuth->grantTypeFor($connector) ?? 'qr',
+                $tariff,
+                $vehicle,
+                $targetSoc,
+            );
+        } catch (\RuntimeException $e) {
+            return back()->withErrors(['charging' => $e->getMessage()]);
+        }
 
         return redirect()->route('app.charging');
     }
@@ -320,7 +312,11 @@ class ActionController extends Controller
             return redirect()->route('app.charging')->withErrors(['charging' => 'جلسه فعالی برای توقف وجود ندارد.']);
         }
 
-        $charging->stop($session, $this->user());
+        $session = $charging->requestStop($session, $this->user());
+
+        if ($session->status === 'active') {
+            return redirect()->route('app.charging')->with('success', 'دستور توقف برای شارژر ارسال شد؛ صورتحساب نهایی پس از توقف شارژر ثبت می‌شود.');
+        }
 
         return redirect()->route('app.history')->with('success', 'شارژ متوقف شد.');
     }

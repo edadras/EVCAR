@@ -5,8 +5,10 @@ namespace App\Services\Sync;
 use App\Models\EdgeStation;
 use App\Models\SyncInbox;
 use App\Services\Sync\Handlers\AnprDetectedHandler;
+use App\Services\Sync\Handlers\ChargingSessionProgressHandler;
 use App\Services\Sync\Handlers\ChargingSessionStartedHandler;
 use App\Services\Sync\Handlers\ChargingSessionStoppedHandler;
+use App\Services\Sync\Handlers\DeviceStatusHandler;
 use App\Services\Sync\Handlers\WalletDebitedHandler;
 use Illuminate\Support\Facades\DB;
 
@@ -17,6 +19,8 @@ class SyncIngestService
         private ChargingSessionStartedHandler $sessionStarted,
         private ChargingSessionStoppedHandler $sessionStopped,
         private WalletDebitedHandler $walletDebited,
+        private ChargingSessionProgressHandler $sessionProgress,
+        private DeviceStatusHandler $deviceStatus,
     ) {}
 
     /**
@@ -89,6 +93,9 @@ class SyncIngestService
                     'anpr.detected' => $this->anpr->handle($edge, $payload),
                     'charging.session.started' => $this->sessionStarted->handle($edge, $payload),
                     'charging.session.stopped' => $this->sessionStopped->handle($edge, $payload),
+                    'charging.session.progress' => $this->sessionProgress->handle($edge, $payload),
+                    'connector.status' => $this->deviceStatus->connector($edge, $payload),
+                    'charger.status' => $this->deviceStatus->charger($edge, $payload),
                     'wallet.debited' => $this->walletDebited->handle($edge, $payload),
                     'station.heartbeat' => null,
                     default => throw new \InvalidArgumentException("نوع رویداد پشتیبانی نمی‌شود: {$eventType}"),
@@ -116,7 +123,9 @@ class SyncIngestService
     {
         return match ($eventType) {
             'anpr.detected' => 'anpr_detection',
-            'charging.session.started', 'charging.session.stopped' => 'charging_session',
+            'charging.session.started', 'charging.session.stopped', 'charging.session.progress' => 'charging_session',
+            'connector.status' => 'connector',
+            'charger.status' => 'charger',
             'wallet.debited' => 'wallet_transaction',
             'station.heartbeat' => 'edge_station',
             default => null,
