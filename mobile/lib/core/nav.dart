@@ -54,6 +54,7 @@ Future<void> openScreen(BuildContext context, String? name, [Map<String, dynamic
     'arrival' => const ArrivalScreen(),
     'server' => const ServerSettingsScreen(),
     'edge' => const EdgeStationScreen(),
+    'assistant' => const AssistantScreen(),
     _ => null,
   };
   if (page == null) return;

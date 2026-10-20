@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\V1\StationController;
 use App\Http\Controllers\Api\V1\SyncPushController;
 use App\Http\Controllers\App\ActionController;
 use App\Http\Controllers\App\ApiController;
+use App\Http\Controllers\App\AssistantController;
 use App\Http\Controllers\App\AuthApiController;
 use App\Http\Controllers\App\NavigatorController;
 use App\Http\Controllers\Ocpi\OcpiController;
@@ -84,6 +85,10 @@ Route::prefix('v1')->group(function () {
             Route::get('reservations', [MobileApiController::class, 'reservations']);
             Route::post('reservations', [ActionController::class, 'storeReservation']);
             Route::get('support', [MobileApiController::class, 'support']);
+            Route::get('assistant', [AssistantController::class, 'show']);
+            Route::post('assistant', [AssistantController::class, 'send'])->middleware('throttle:20,1');
+            Route::post('assistant/escalate', [AssistantController::class, 'escalate']);
+            Route::post('assistant/reset', [AssistantController::class, 'reset']);
             Route::get('tickets/form', [MobileApiController::class, 'ticketForm']);
             Route::get('tickets/{id}', [MobileApiController::class, 'ticket'])->whereNumber('id');
             Route::post('tickets', [ActionController::class, 'storeTicket']);

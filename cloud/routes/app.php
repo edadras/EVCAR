@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\App\ActionController;
 use App\Http\Controllers\App\ApiController;
+use App\Http\Controllers\App\AssistantController;
 use App\Http\Controllers\App\AuthApiController;
 use App\Http\Controllers\App\AuthController;
 use App\Http\Controllers\App\NavigatorController;
@@ -58,6 +59,11 @@ Route::middleware(['auth', 'customer'])->group(function () {
     Route::get('reserve', [PageController::class, 'reserve'])->name('reserve');
     Route::post('reserve', [ActionController::class, 'storeReservation'])->name('reserve.store');
     Route::get('support', [PageController::class, 'support'])->name('support');
+    Route::get('assistant', [AssistantController::class, 'page'])->name('assistant');
+    Route::get('api/assistant', [AssistantController::class, 'show'])->name('api.assistant');
+    Route::post('api/assistant', [AssistantController::class, 'send'])->name('api.assistant.send');
+    Route::post('api/assistant/escalate', [AssistantController::class, 'escalate'])->name('api.assistant.escalate');
+    Route::post('api/assistant/reset', [AssistantController::class, 'reset'])->name('api.assistant.reset');
     Route::get('scan', [PageController::class, 'scan'])->name('scan');
     Route::get('charger', [PageController::class, 'charger'])->name('charger');
     Route::get('arrival', [PageController::class, 'arrival'])->name('arrival');

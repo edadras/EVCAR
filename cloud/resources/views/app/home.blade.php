@@ -74,6 +74,14 @@
         <a class="qitem" href="{{ route('app.offers') }}"><span class="qic ic-violet" data-ic="gift"></span>طرح‌ها</a>
         <a class="qitem" href="{{ route('app.history') }}"><span class="qic ic-orange" data-ic="receipt"></span>سوابق</a>
     </div>
+    <a href="{{ route('app.assistant') }}" class="ev-nav-banner mt16">
+        <span class="enb-ic" style="background:linear-gradient(135deg,var(--accent),var(--violet));font-size:20px">✦</span>
+        <div style="flex:1">
+            <div class="fw8" style="font-size:14.5px">دستیار هوشمند پشتیبانی</div>
+            <div class="fs12 muted">سؤال دارید؟ همین حالا بپرسید — پاسخ فوری</div>
+        </div>
+        <span class="chev" data-ic="chevron"></span>
+    </a>
 
     <div class="sec-title">نزدیک‌ترین ایستگاه‌ها <a href="{{ route('app.map') }}">نقشه</a></div>
     <div class="seg" style="margin-bottom:14px" id="seg">

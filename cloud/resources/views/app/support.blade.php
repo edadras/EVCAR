@@ -34,6 +34,11 @@ $categoryIcons = [
         <a class="contact-item" href="{{ route('app.chat') }}"><span class="ci-ic ic-blue" data-ic="bolt"></span><div class="fw7 fs13">گفتگوی آنلاین</div><div class="fs12 muted">پاسخ فوری</div></a>
     </div>
 
+    <a href="{{ route('app.assistant') }}" class="ai-banner mt16">
+        <span class="aib-ic">✦</span>
+        <span style="flex:1"><span class="fw8" style="display:block;font-size:14.5px">دستیار هوشمند پشتیبانی</span><span class="fs12" style="opacity:.9">پاسخ فوری ۲۴ ساعته · بررسی حساب، شارژها و ایستگاه‌ها</span></span>
+        <span data-ic="chevron" class="chev"></span>
+    </a>
     <div class="sec-title">درخواست‌های من <a href="{{ route('app.ticket.new') }}">جدید +</a></div>
     <div class="card card-p">
         @forelse($tickets->take(5) as $t)
@@ -84,6 +89,9 @@ $categoryIcons = [
 .sup-banner{display:flex;align-items:center;gap:14px;padding:18px;border-radius:20px;color:#fff;background:linear-gradient(135deg,var(--accent),color-mix(in srgb,var(--accent) 50%,var(--orange)));box-shadow:0 14px 30px rgba(var(--accent-rgb),.35)}
 .sb-ic{width:50px;height:50px;border-radius:15px;background:rgba(255,255,255,.2);display:grid;place-items:center;flex:none}.sb-ic svg{width:25px;height:25px}
 .contact-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
+.ai-banner{display:flex;align-items:center;gap:12px;padding:16px;border-radius:18px;color:#fff;text-decoration:none;background:linear-gradient(135deg,var(--accent),var(--violet));box-shadow:0 12px 26px rgba(var(--accent-rgb),.3)}
+.aib-ic{width:44px;height:44px;border-radius:13px;background:rgba(255,255,255,.18);display:grid;place-items:center;font-size:22px;flex:none}
+.ai-banner .chev svg{width:18px;height:18px}
 .contact-item{text-align:center;padding:16px;border-radius:16px;background:var(--surface);border:1px solid var(--border);box-shadow:var(--shadow-sm);text-decoration:none;color:inherit}
 .ci-ic{width:46px;height:46px;border-radius:14px;display:grid;place-items:center;margin:0 auto 10px}.ci-ic svg{width:22px;height:22px}
 .tk{display:flex;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid var(--border-2);text-decoration:none;color:inherit}

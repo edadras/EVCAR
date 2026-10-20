@@ -13,12 +13,12 @@ class SupportTicket extends Model
 
     protected $fillable = [
         'uuid', 'ticket_number', 'user_id', 'station_id', 'assigned_to',
-        'category', 'priority', 'status', 'subject', 'body', 'resolved_at',
+        'category', 'priority', 'source', 'status', 'subject', 'body', 'resolved_at', 'first_response_at',
     ];
 
     protected function casts(): array
     {
-        return ['resolved_at' => 'datetime'];
+        return ['resolved_at' => 'datetime', 'first_response_at' => 'datetime'];
     }
 
     public function user(): BelongsTo

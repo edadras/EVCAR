@@ -66,6 +66,29 @@ class SupportScreen extends StatelessWidget {
                     ]),
                   ),
                   const SizedBox(height: 14),
+                  GestureDetector(
+                    onTap: () => openScreen(context, 'assistant'),
+                    child: Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(18),
+                        gradient: LinearGradient(colors: [c.accent, Palette.violet]),
+                        boxShadow: [BoxShadow(color: c.accent.withValues(alpha: .3), blurRadius: 18, offset: const Offset(0, 8))],
+                      ),
+                      child: const Row(children: [
+                        CircleAvatar(radius: 22, backgroundColor: Colors.white24, child: Text('✦', style: TextStyle(color: Colors.white, fontSize: 20))),
+                        SizedBox(width: 12),
+                        Expanded(
+                          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                            Text('دستیار هوشمند پشتیبانی', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 14.5)),
+                            Text('پاسخ فوری ۲۴ ساعته · بررسی حساب، شارژها و ایستگاه‌ها', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                          ]),
+                        ),
+                        LtrIcon(Icons.chevron_left_rounded, color: Colors.white),
+                      ]),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
                   Row(children: [
                     Expanded(
                       child: AppCard(
@@ -334,6 +357,223 @@ class _TicketScreenState extends State<TicketScreen> {
                   style: FilledButton.styleFrom(padding: EdgeInsets.zero, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
                   onPressed: sending ? null : _send,
                   child: sending ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Icon(Icons.send_rounded, size: 20),
+                ),
+              ),
+            ]),
+          ),
+        ]),
+      ),
+    );
+  }
+}
+
+/// دستیار هوشمند پشتیبانی (Claude): پاسخ فوری بر پایهٔ اطلاعات حساب، و ارجاع به کارشناس با متن گفتگو.
+class AssistantScreen extends StatefulWidget {
+  const AssistantScreen({super.key});
+
+  @override
+  State<AssistantScreen> createState() => _AssistantScreenState();
+}
+
+class _AssistantScreenState extends State<AssistantScreen> {
+  final input = TextEditingController();
+  final scroll = ScrollController();
+  Map<String, dynamic> state = {};
+  bool loading = true;
+  bool busy = false;
+  String? pendingText;
+
+  static const _toolNames = {
+    'get_account_summary': 'حساب شما',
+    'get_recent_sessions': 'سوابق شارژ',
+    'get_wallet_transactions': 'تراکنش‌ها',
+    'find_stations': 'ایستگاه‌ها',
+    'get_tariffs': 'تعرفه',
+    'list_my_tickets': 'تیکت‌ها',
+    'create_support_ticket': 'ثبت تیکت',
+  };
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  @override
+  void dispose() {
+    input.dispose();
+    scroll.dispose();
+    super.dispose();
+  }
+
+  void _toBottom() => WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (scroll.hasClients) scroll.animateTo(scroll.position.maxScrollExtent, duration: const Duration(milliseconds: 250), curve: Curves.easeOut);
+      });
+
+  Future<void> _load() async {
+    final res = await runAction(context, () => context.api.get('assistant'), showSuccess: false);
+    if (!mounted) return;
+    setState(() {
+      state = res ?? {};
+      loading = false;
+    });
+    _toBottom();
+  }
+
+  Future<void> _send([String? preset]) async {
+    final text = (preset ?? input.text).trim();
+    if (text.isEmpty || busy) return;
+    input.clear();
+    setState(() {
+      busy = true;
+      pendingText = text;
+    });
+    _toBottom();
+    final res = await runAction(context, () => context.api.post('assistant', {'message': text, 'conversation': state['conversation']}), showSuccess: false);
+    if (!mounted) return;
+    setState(() {
+      busy = false;
+      pendingText = null;
+      if (res != null) state = res;
+    });
+    _toBottom();
+  }
+
+  Future<void> _escalate() async {
+    if (asList(state['messages']).isEmpty) return toast(context, 'ابتدا مشکل خود را بنویسید تا با متن گفتگو برای کارشناس ثبت شود.', error: true);
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        content: const Text('درخواست شما با متن همین گفتگو برای کارشناس پشتیبانی ثبت شود؟'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('انصراف')),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('ثبت')),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+    final res = await runAction(context, () => context.api.post('assistant/escalate', {'conversation': state['conversation']}));
+    if (res != null && mounted) setState(() => state = res);
+  }
+
+  Future<void> _reset() async {
+    final res = await runAction(context, () => context.api.post('assistant/reset'), showSuccess: false);
+    if (res != null && mounted) setState(() => state = res);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final messages = asList(state['messages']);
+    final ticket = state['ticket'] is Map ? asMap(state['ticket']) : null;
+    final suggestions = (state['suggestions'] as List?)?.map((e) => '$e').toList() ?? const <String>[];
+
+    Widget bubble(String text, {required bool me, List<String> tools = const [], String? time}) => Align(
+          alignment: me ? AlignmentDirectional.centerEnd : AlignmentDirectional.centerStart,
+          child: Column(crossAxisAlignment: me ? CrossAxisAlignment.end : CrossAxisAlignment.start, children: [
+            Container(
+              constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * .8),
+              margin: const EdgeInsets.only(top: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: me ? c.accent : c.surface,
+                border: me ? null : Border.all(color: c.border),
+                borderRadius: BorderRadius.circular(18),
+              ),
+              child: SelectableText(text, style: TextStyle(color: me ? Colors.white : c.text, height: 1.8, fontSize: 13.5)),
+            ),
+            if (tools.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 3),
+                child: Text('🔎 بررسی ${tools.map((t) => _toolNames[t] ?? t).join('، ')}', style: TextStyle(fontSize: 10.5, color: c.muted)),
+              ),
+            if (time != null) Text(fa(time), style: TextStyle(fontSize: 10, color: c.muted)),
+          ]),
+        );
+
+    return Scaffold(
+      body: SafeArea(
+        child: Column(children: [
+          PageHeader('دستیار هوشمند', subtitle: state['ai_enabled'] == false ? 'پاسخ از پرسش‌های متداول' : 'پاسخ فوری ۲۴ ساعته', actions: [
+            RoundIconButton(Icons.add_comment_outlined, onTap: _reset),
+          ]),
+          Expanded(
+            child: loading
+                ? const Center(child: CircularProgressIndicator())
+                : ListView(controller: scroll, padding: const EdgeInsets.fromLTRB(16, 4, 16, 16), children: [
+                    if (messages.isEmpty) ...[
+                      bubble('سلام! من دستیار هوشمند SafirCharge هستم ✦\nدربارهٔ شارژ، کیف پول، ایستگاه‌ها یا هر مشکلی بپرسید؛ اطلاعات حساب شما را هم بررسی می‌کنم.', me: false),
+                      const SizedBox(height: 12),
+                      Wrap(spacing: 8, runSpacing: 8, children: [
+                        for (final s in suggestions)
+                          ActionChip(
+                            label: Text(s, style: TextStyle(color: c.accentStrong, fontWeight: FontWeight.w700, fontSize: 12.5)),
+                            backgroundColor: c.accentSoft,
+                            side: BorderSide(color: c.accent),
+                            onPressed: () => _send(s),
+                          ),
+                      ]),
+                    ],
+                    for (final m in messages)
+                      bubble('${m['text']}', me: m['role'] == 'user', tools: (m['tools'] as List?)?.map((e) => '$e').toList() ?? const [], time: m['time']?.toString()),
+                    if (pendingText != null) bubble(pendingText!, me: true),
+                    if (busy)
+                      Align(
+                        alignment: AlignmentDirectional.centerStart,
+                        child: Container(
+                          margin: const EdgeInsets.only(top: 10),
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          decoration: BoxDecoration(color: c.surface, borderRadius: BorderRadius.circular(18), border: Border.all(color: c.border)),
+                          child: const SizedBox(width: 30, height: 14, child: LinearProgressIndicator()),
+                        ),
+                      ),
+                    if (ticket != null)
+                      Container(
+                        margin: const EdgeInsets.only(top: 14),
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(color: c.greenSoft, borderRadius: BorderRadius.circular(14)),
+                        child: Row(children: [
+                          const Icon(Icons.support_agent_rounded, color: Palette.green),
+                          const SizedBox(width: 10),
+                          Expanded(child: Text('درخواست شما با شمارهٔ ${fa(ticket['number'])} برای کارشناس ثبت شد.', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13))),
+                          TextButton(onPressed: () => openScreen(context, 'ticket', {'id': ticket['id']}), child: const Text('پیگیری')),
+                        ]),
+                      ),
+                  ]),
+          ),
+          if (ticket == null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 6, 14, 0),
+              child: OutlinedButton.icon(
+                onPressed: _escalate,
+                icon: const Icon(Icons.support_agent_rounded, size: 18),
+                label: const Text('گفتگو با کارشناس انسانی', style: TextStyle(fontWeight: FontWeight.w700)),
+                style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(40), side: BorderSide(color: c.border), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+              ),
+            ),
+          Container(
+            padding: const EdgeInsets.fromLTRB(14, 8, 14, 12),
+            decoration: BoxDecoration(color: c.surface),
+            child: Row(children: [
+              Expanded(
+                child: TextField(
+                  controller: input,
+                  minLines: 1,
+                  maxLines: 4,
+                  maxLength: 2000,
+                  textInputAction: TextInputAction.send,
+                  onSubmitted: (_) => _send(),
+                  decoration: const InputDecoration(hintText: 'سؤال خود را بپرسید…', counterText: ''),
+                ),
+              ),
+              const SizedBox(width: 10),
+              SizedBox(
+                width: 52,
+                height: 52,
+                child: FilledButton(
+                  style: FilledButton.styleFrom(padding: EdgeInsets.zero, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
+                  onPressed: busy ? null : _send,
+                  child: const Icon(Icons.send_rounded, size: 20),
                 ),
               ),
             ]),
