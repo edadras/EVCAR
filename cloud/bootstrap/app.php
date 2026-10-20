@@ -3,6 +3,7 @@
 use App\Http\Middleware\AuthenticateEdgeStation;
 use App\Http\Middleware\EnsureCustomerUser;
 use App\Http\Middleware\EnsurePartnerUser;
+use App\Enums\UserRole;
 use App\Http\Middleware\EnsureStaffUser;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -35,6 +36,17 @@ return Application::configure(basePath: dirname(__DIR__))
             }
 
             return route('admin.login');
+        });
+
+        $middleware->redirectUsersTo(function (Request $request): string {
+            $user = $request->user();
+
+            return match (true) {
+                $user?->isStaff() => route('admin.dashboard'),
+                $user?->role === UserRole::Partner => route('partner.dashboard'),
+                $user?->role === UserRole::Customer => route('app.home'),
+                default => '/',
+            };
         });
     })
     ->withExceptions(function (Exceptions $exceptions): void {
