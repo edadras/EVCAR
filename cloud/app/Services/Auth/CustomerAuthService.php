@@ -19,13 +19,13 @@ class CustomerAuthService
     {
         return array_values(array_filter(array_map(
             'trim',
-            explode(',', config('safircharge.auth.test_otp_codes', '111111,222222,333333'))
+            explode(',', (string) config('safircharge.auth.test_otp_codes', ''))
         )));
     }
 
     public function isTestOtpCode(string $code): bool
     {
-        return in_array($code, $this->testOtpCodes(), true);
+        return ! app()->isProduction() && in_array($code, $this->testOtpCodes(), true);
     }
 
     public function findByPhone(string $phone): ?User
@@ -85,7 +85,8 @@ class CustomerAuthService
             'backend' => 'cloud',
         ];
 
-        if (config('app.debug') || $this->testOtpCodes() !== []) {
+        // کد هرگز در production به کلاینت برگردانده نمی‌شود.
+        if (! app()->isProduction() && (config('app.debug') || $this->testOtpCodes() !== [] || config('services.gsm.driver') === 'log')) {
             $response['debug_code'] = $code;
             $response['test_codes_hint'] = $this->testOtpCodes();
         }

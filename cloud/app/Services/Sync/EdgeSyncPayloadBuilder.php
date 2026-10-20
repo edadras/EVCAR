@@ -4,7 +4,6 @@ namespace App\Services\Sync;
 
 use App\Enums\UserRole;
 use App\Models\Charger;
-use App\Models\Connector;
 use App\Models\EdgeStation;
 use App\Models\QrToken;
 use App\Models\RfidCard;
@@ -15,6 +14,7 @@ use App\Models\Vehicle;
 use App\Models\Wallet;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 class EdgeSyncPayloadBuilder
 {
@@ -117,7 +117,7 @@ class EdgeSyncPayloadBuilder
         Collection $tariffs,
         Collection $qrTokens,
     ): array {
-        $assignedTariffIds = \Illuminate\Support\Facades\DB::table('station_tariffs')
+        $assignedTariffIds = DB::table('station_tariffs')
             ->where('station_id', $station->id)
             ->where(fn ($q) => $q->whereNull('effective_from')->orWhere('effective_from', '<=', now()))
             ->where(fn ($q) => $q->whereNull('effective_until')->orWhere('effective_until', '>', now()))

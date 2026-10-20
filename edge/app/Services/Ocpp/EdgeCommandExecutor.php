@@ -7,6 +7,7 @@ use App\Models\EdgeCharger;
 use App\Models\EdgeChargingSession;
 use App\Models\EdgeConnector;
 use App\Services\Charging\EdgeChargingService;
+use Carbon\CarbonImmutable;
 
 /**
  * اجرای دستورهای مدیریتی (از پنل محلی یا ابر) روی شارژر.
@@ -35,7 +36,7 @@ class EdgeCommandExecutor
 
         if ($type === 'remote_start') {
             $requestedAt = $command['requested_at'] ?? null;
-            if ($requestedAt && now()->diffInSeconds(\Carbon\CarbonImmutable::parse($requestedAt), true) > 180) {
+            if ($requestedAt && now()->diffInSeconds(CarbonImmutable::parse($requestedAt), true) > 180) {
                 throw new \RuntimeException('درخواست شروع شارژ منقضی شده است.');
             }
 
@@ -117,11 +118,8 @@ class EdgeCommandExecutor
                 'target_soc' => isset($payload['target_soc']) ? (int) $payload['target_soc'] : null,
                 'requested_from' => 'cloud',
             ], fn ($v) => $v !== null),
+            ! empty($payload['cloud_session_uuid']) ? (string) $payload['cloud_session_uuid'] : null,
         );
-
-        if (! empty($payload['cloud_session_uuid'])) {
-            $session->update(['cloud_session_uuid' => (string) $payload['cloud_session_uuid']]);
-        }
 
         return [
             'session_uuid' => $session->uuid,

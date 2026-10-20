@@ -123,11 +123,14 @@ class PanelLiveService
         }
 
         $live = $this->charging->liveMetrics($session);
-        $power = (int) ($live['power'] ?: $maxKw);
+        // مقادیر اندازه‌گیری‌شدهٔ شارژر (MeterValues)؛ در نبود آن‌ها تخمین از توان.
+        $power = (int) $live['power'];
         $energy = (float) $live['energy'];
         $secs = (int) $live['secs'];
-        $voltage = $power > 0 ? 400 : 0;
-        $current = $power > 0 && $voltage > 0 ? (int) round(($power * 1000) / $voltage) : 0;
+        $voltage = (int) round((float) ($session->meta['voltage_v'] ?? ($power > 0 ? 400 : 0)));
+        $current = isset($session->meta['current_a'])
+            ? (int) round((float) $session->meta['current_a'])
+            : ($power > 0 && $voltage > 0 ? (int) round(($power * 1000) / $voltage) : 0);
 
         return [
             'power' => $power,

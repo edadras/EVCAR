@@ -73,8 +73,13 @@ class EdgeChargingService
      *
      * @param  array<string, mixed>  $extraMeta
      */
-    public function startOnConnector(CachedUser $user, EdgeConnector $connector, string $authMethod, array $extraMeta = []): EdgeChargingSession
-    {
+    public function startOnConnector(
+        CachedUser $user,
+        EdgeConnector $connector,
+        string $authMethod,
+        array $extraMeta = [],
+        ?string $cloudSessionUuid = null,
+    ): EdgeChargingSession {
         $connector->loadMissing('charger');
         $charger = $connector->charger;
 
@@ -101,6 +106,7 @@ class EdgeChargingService
 
         $session = EdgeChargingSession::create([
             'uuid' => (string) Str::uuid(),
+            'cloud_session_uuid' => $cloudSessionUuid,
             'charger_id' => $connector->charger_id,
             'connector_id' => $connector->id,
             'cached_user_uuid' => $user->uuid,

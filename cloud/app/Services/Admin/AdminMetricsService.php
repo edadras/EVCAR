@@ -14,7 +14,6 @@ use App\Models\Invoice;
 use App\Models\Partner;
 use App\Models\Payment;
 use App\Models\QrToken;
-use App\Services\Charging\ConnectorAvailabilityService;
 use App\Models\RepairOrder;
 use App\Models\Reservation;
 use App\Models\RfidCard;
@@ -26,10 +25,13 @@ use App\Models\SystemSetting;
 use App\Models\Tariff;
 use App\Models\User;
 use App\Models\UserNotification;
+use App\Models\Vehicle;
 use App\Models\Wallet;
 use App\Models\WalletTransaction;
+use App\Services\App\MobileAppPresenter;
+use App\Services\Audit\AuditService;
+use App\Services\Charging\ConnectorAvailabilityService;
 use App\Support\Persian;
-use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -38,6 +40,7 @@ class AdminMetricsService
     public function __construct(
         private ConnectorAvailabilityService $availability,
     ) {}
+
     public function networkKpis(): array
     {
         $totalChargers = Charger::count();
@@ -534,8 +537,8 @@ class AdminMetricsService
 
     public function teamIndex(): array
     {
-        $audit = app(\App\Services\Audit\AuditService::class);
-        $presenter = app(\App\Services\App\MobileAppPresenter::class);
+        $audit = app(AuditService::class);
+        $presenter = app(MobileAppPresenter::class);
 
         return [
             'staff' => User::whereNot('role', UserRole::Customer)->orderBy('name')->get(),
@@ -624,7 +627,7 @@ class AdminMetricsService
 
         return [
             'cameras' => max(0, $cameraCount),
-            'registered_plates' => \App\Models\Vehicle::count(),
+            'registered_plates' => Vehicle::count(),
             'auto_today' => (clone $eventBase)
                 ->whereDate('detected_at', today())
                 ->where(function ($q) {

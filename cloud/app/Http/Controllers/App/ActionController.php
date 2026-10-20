@@ -15,10 +15,12 @@ use App\Models\UserNotification;
 use App\Models\Vehicle;
 use App\Models\Wallet;
 use App\Models\WalletTransaction;
-use App\Services\Audit\AuditService;
 use App\Services\App\ChargingAuthorizationService;
+use App\Services\Audit\AuditService;
 use App\Services\Charging\CloudChargingSessionService;
 use App\Services\Charging\ConnectorAvailabilityService;
+use App\Services\ReservationService;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -107,7 +109,7 @@ class ActionController extends Controller
         return back()->with('success', 'رمز عبور با موفقیت تغییر کرد.');
     }
 
-    public function storeReservation(Request $request, \App\Services\ReservationService $reservations): RedirectResponse
+    public function storeReservation(Request $request, ReservationService $reservations): RedirectResponse
     {
         $data = $request->validate([
             'station_id' => ['required', 'exists:stations,id'],
@@ -116,8 +118,8 @@ class ActionController extends Controller
             'reserved_until' => ['required', 'date', 'after:reserved_from'],
         ]);
 
-        $from = \Carbon\Carbon::parse($data['reserved_from']);
-        $until = \Carbon\Carbon::parse($data['reserved_until']);
+        $from = Carbon::parse($data['reserved_from']);
+        $until = Carbon::parse($data['reserved_until']);
 
         if ($error = $reservations->validateNewReservation(
             $this->user()->id,
@@ -129,7 +131,7 @@ class ActionController extends Controller
             return back()->withErrors(['reservation' => $error])->withInput();
         }
 
-        $connector = \App\Models\Connector::findOrFail($data['connector_id']);
+        $connector = Connector::findOrFail($data['connector_id']);
 
         Reservation::create([
             'uuid' => (string) Str::uuid(),

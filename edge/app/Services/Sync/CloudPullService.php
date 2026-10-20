@@ -4,11 +4,16 @@ namespace App\Services\Sync;
 
 use App\Models\StationIdentity;
 use App\Models\SyncCursor;
+use App\Services\Station\StationConfigResolver;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Http;
 
 class CloudPullService
 {
-    public function __construct(private SnapshotApplier $applier) {}
+    public function __construct(
+        private SnapshotApplier $applier,
+        private StationConfigResolver $config,
+    ) {}
 
     /** @return array{mode:string,stats:array<string,int>,cursor:?string} */
     public function pull(): array
@@ -18,8 +23,11 @@ class CloudPullService
             throw new \RuntimeException('station_identity not configured');
         }
 
-        $base = rtrim(config('services.cloud.api_url', env('CLOUD_API_URL')), '/');
-        $token = config('services.cloud.sync_token', env('CLOUD_SYNC_TOKEN'));
+        $base = $this->config->cloudApiUrl();
+        $token = $this->config->cloudSyncToken();
+        if (! $base || ! $token) {
+            throw new \RuntimeException('آدرس یا توکن سینک ابر تنظیم نشده است (CLOUD_API_URL / CLOUD_SYNC_TOKEN).');
+        }
 
         $cursor = SyncCursor::firstOrCreate(
             ['stream' => 'cloud_pull'],
@@ -46,7 +54,7 @@ class CloudPullService
 
         $newCursor = $data['cursor'] ?? now()->toIso8601String();
         $cursor->update([
-            'last_synced_at' => \Carbon\Carbon::parse($newCursor),
+            'last_synced_at' => Carbon::parse($newCursor),
             'cursor_position' => $cursor->cursor_position + 1,
         ]);
 

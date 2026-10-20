@@ -4,6 +4,7 @@ namespace App\Services\Sync;
 
 use App\Models\PanelCommandLog;
 use App\Services\Ocpp\EdgeCommandExecutor;
+use App\Services\Station\StationConfigResolver;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -11,13 +12,16 @@ use Illuminate\Support\Str;
 
 class CloudCommandPullService
 {
-    public function __construct(private EdgeCommandExecutor $executor) {}
+    public function __construct(
+        private EdgeCommandExecutor $executor,
+        private StationConfigResolver $config,
+    ) {}
 
     /** @return array{pulled:int,ok:int,failed:int} */
     public function pullAndExecute(): array
     {
-        $base = rtrim((string) config('services.cloud.api_url', env('CLOUD_API_URL')), '/');
-        $token = config('services.cloud.sync_token', env('CLOUD_SYNC_TOKEN'));
+        $base = $this->config->cloudApiUrl();
+        $token = $this->config->cloudSyncToken();
 
         if (! $token) {
             throw new \RuntimeException('CLOUD_SYNC_TOKEN not configured');

@@ -3,7 +3,8 @@
 return [
 
     'auth' => [
-        'test_otp_codes' => env('SC_TEST_OTP_CODES', '111111,222222,333333'),
+        // کدهای ثابت تست فقط خارج از محیط production فعال‌اند.
+        'test_otp_codes' => env('SC_TEST_OTP_CODES', env('APP_ENV', 'production') === 'production' ? '' : '111111,222222,333333'),
     ],
 
     /*
