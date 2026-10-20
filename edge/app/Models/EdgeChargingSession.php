@@ -23,6 +23,7 @@ class EdgeChargingSession extends Model
         return [
             'started_at' => 'datetime',
             'stopped_at' => 'datetime',
+            'synced_at' => 'datetime',
             'energy_kwh' => 'decimal:3',
             'cost_amount' => 'decimal:2',
             'meta' => 'array',

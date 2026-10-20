@@ -39,6 +39,8 @@ curl http://localhost:8182/health
 | Edge MySQL | 3318 |
 | Cloud Redis | 6380 |
 | Edge Redis | 6381 |
+| Edge OCPP (WebSocket شارژرها) | 9000 |
+| Edge2 OCPP | 9001 |
 
 ## دستورات مفید
 
@@ -121,7 +123,51 @@ docker compose restart cloud-app
 
 (همین کار را برای `edge-app` در صورت نیاز تکرار کنید.)
 
+## اتصال شارژرهای واقعی (OCPP 1.6J)
+
+هر Edge یک **سرور مرکزی OCPP 1.6J داخلی** دارد (`php artisan ocpp:serve`) که در Docker به‌صورت سرویس `edge-ocpp` اجرا می‌شود.
+
+| مورد | مقدار |
+|------|-------|
+| آدرس شارژر (Central System URL) | `ws://<IP-ایستگاه>:9000/ocpp/<ChargePointId>` یا از طریق nginx: `ws://<IP-ایستگاه>:8182/ocpp/<ChargePointId>` |
+| زیرپروتکل | `ocpp1.6` |
+| ChargePointId | باید دقیقاً با «شناسه OCPP» شارژر در پنل ادمین ابر یکی باشد (پس از سینک به Edge می‌رسد) |
+| رمز (اختیاری) | `meta.ocpp_password` شارژر → Basic Auth (Security Profile 1) |
+| TLS (wss) | پشت nginx/reverse proxy با گواهی |
+
+جریان کامل:
+
+1. شارژر وصل می‌شود ← `BootNotification` پذیرفته می‌شود ← وضعیت کانکتورها با `StatusNotification` زنده می‌شود (و به ابر سینک می‌شود).
+2. کاربر از اپ (محلی یا آنلاین) شروع می‌کند ← Edge دستور `RemoteStartTransaction` می‌فرستد ← شارژر `StartTransaction` می‌دهد.
+3. انرژی و هزینه از `MeterValues` خود شارژر محاسبه می‌شود؛ اگر موجودی تمام شود Edge خودکار `RemoteStopTransaction` می‌فرستد.
+4. توقف ← `StopTransaction` با مقدار نهایی کنتور ← برداشت یک‌باره از کیف پول ← سینک به ابر.
+5. کارت RFID روی خود شارژر (حتی بدون اینترنت) با `Authorize`/`StartTransaction` از کش محلی تأیید می‌شود.
+
+اپ آنلاین (ابر) هرگز مستقیم به شارژر وصل نمی‌شود: دستور `remote_start`/`remote_stop` برای Edge صف می‌شود (Edge هر ۵ ثانیه می‌خواند). اگر Edge ظرف ۳ دقیقه پاسخ ندهد، درخواست بدون هزینه بسته می‌شود.
+
+متغیرهای مهم Edge (`edge/.env.example`): `OCPP_DRIVER` (`builtin` | `gateway` | `simulator`)، `OCPP_LISTEN_PORT`، `OCPP_ALLOW_UNKNOWN_CHARGERS`، `OCPP_START_TIMEOUT_MINUTES`، `SC_MIN_WALLET_BALANCE`.
+
+### تست بدون سخت‌افزار
+
+```powershell
+# شبیه‌ساز شارژر واقعی OCPP (از همان پروتکل WebSocket استفاده می‌کند)
+docker compose exec edge-app php artisan ocpp:simulate-charger CP-1001 --url=ws://sc_edge_ocpp:9000/ocpp --connectors=2 --power=50
+# کارت RFID روی دستگاه:
+docker compose exec edge-app php artisan ocpp:simulate-charger CP-1002 --url=ws://sc_edge_ocpp:9000/ocpp --rfid=RFID-DEMO-002
+```
+
+### تست‌های خودکار
+
+```powershell
+docker compose exec edge-app php artisan test
+docker compose exec cloud-app php artisan test
+```
+
+لاگ خام پیام‌های OCPP برای عیب‌یابی در جدول `ocpp_message_logs` ذخیره می‌شود.
+
+> نکته امنیتی: در `APP_ENV=production` کدهای OTP تستی غیرفعال‌اند و کد OTP هرگز در پاسخ API برنمی‌گردد. ارسال واقعی پیامک باید با درایور GSM/SMS واقعی تنظیم شود.
+
 ## پروژه‌های مرجع خارجی
 
-- شارژر (OCPP): `C:\Project\Charger`
+- شارژر (OCPP): `C:\Project\Charger` — اختیاری؛ با `OCPP_DRIVER=gateway`. پیش‌فرض، سرور OCPP داخلی Edge است.
 - پلاک‌خوان: `C:\Project\Pelak\...\lite`
