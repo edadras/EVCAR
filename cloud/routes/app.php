@@ -10,7 +10,7 @@ use App\Http\Controllers\App\NavigatorController;
 use App\Http\Controllers\App\PageController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware('guest')->group(function () {
+Route::middleware('panel.guest:app')->group(function () {
     Route::get('login', [AuthController::class, 'showLogin'])->name('login');
     Route::post('login', [AuthController::class, 'login']);
 

@@ -5,7 +5,7 @@ use App\Http\Controllers\Partner\DashboardController;
 use App\Http\Controllers\Partner\PageController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware('guest')->group(function () {
+Route::middleware('panel.guest:partner')->group(function () {
     Route::get('login', [AuthController::class, 'showLogin'])->name('login');
     Route::post('login', [AuthController::class, 'login']);
 });

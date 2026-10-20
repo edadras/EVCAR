@@ -5,6 +5,7 @@ use App\Http\Middleware\EnsureCustomerUser;
 use App\Http\Middleware\EnsurePartnerUser;
 use App\Enums\UserRole;
 use App\Http\Middleware\EnsureStaffUser;
+use App\Http\Middleware\RedirectIfPanelUser;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -25,6 +26,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'partner' => EnsurePartnerUser::class,
             'customer' => EnsureCustomerUser::class,
             'edge' => AuthenticateEdgeStation::class,
+            'panel.guest' => RedirectIfPanelUser::class,
         ]);
 
         $middleware->redirectGuestsTo(function (Request $request): string {
