@@ -934,14 +934,10 @@ class SettingsScreen extends StatelessWidget {
           ),
         ]),
       ),
-      const SecTitle('زبان و واحدها'),
+      const SecTitle('واحدها'),
       AppCard(
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text('زبان', style: TextStyle(fontWeight: FontWeight.w700)),
-          const SizedBox(height: 8),
-          seg('lang', const [('fa', 'فارسی'), ('en', 'English')], 'fa'),
-          const SizedBox(height: 14),
-          const Text('واحد انرژی', style: TextStyle(fontWeight: FontWeight.w700)),
+          const Text('نمایش انرژی تحویلی هنگام شارژ', style: TextStyle(fontWeight: FontWeight.w700)),
           const SizedBox(height: 8),
           seg('energy_unit', const [('kwh', 'kWh'), ('pct', 'درصد')], 'kwh'),
         ]),

@@ -26,6 +26,19 @@ class _MapTabState extends State<MapTab> {
   final mapCtl = MapController();
   final search = TextEditingController();
   String filter = 'all';
+  LatLng? me;
+
+  Future<void> _locate() async {
+    final p = await context.app.location.current();
+    if (!mounted) return;
+    if (p == null) {
+      toast(context, 'دسترسی به موقعیت مکانی داده نشده یا GPS خاموش است.', error: true);
+      return;
+    }
+    setState(() => me = LatLng(p.lat, p.lng));
+    mapCtl.move(me!, 13);
+    context.app.location.sync(context.api, force: true);
+  }
 
   @override
   void dispose() {
@@ -56,6 +69,13 @@ class _MapTabState extends State<MapTab> {
             children: [
               TileLayer(urlTemplate: kTileUrl, userAgentPackageName: kTileUa),
               MarkerLayer(markers: [
+                if (me != null)
+                  Marker(
+                    point: me!,
+                    width: 22,
+                    height: 22,
+                    child: Container(decoration: BoxDecoration(color: const Color(0xFF2563EB), shape: BoxShape.circle, border: Border.all(color: Colors.white, width: 3), boxShadow: const [BoxShadow(color: Color(0x552563EB), blurRadius: 10, spreadRadius: 4)])),
+                  ),
                 for (final s in all)
                   if (s['lat'] != null && s['lng'] != null && codes.contains(s['code']))
                     Marker(
@@ -110,11 +130,16 @@ class _MapTabState extends State<MapTab> {
                 height: 40,
                 child: ListView(scrollDirection: Axis.horizontal, children: [
                   _Chip('مسیریاب برقی', gradient: true, onTap: () => openScreen(context, 'navigator')),
-                  for (final (v, l) in const [('all', 'همه'), ('fast', 'شارژ سریع'), ('free', 'آزاد اکنون'), ('public', 'عمومی')])
+                  for (final (v, l) in const [('all', 'همه'), ('fast', 'شارژ سریع'), ('free', 'آزاد اکنون'), ('fav', 'علاقه‌مندی‌ها'), ('public', 'عمومی')])
                     _Chip(l, selected: filter == v, onTap: () => setState(() => filter = v)),
                 ]),
               ),
             ]),
+          ),
+          PositionedDirectional(
+            top: 112,
+            end: 16,
+            child: RoundIconButton(Icons.my_location_rounded, onTap: _locate),
           ),
           DraggableScrollableSheet(
             initialChildSize: .42,

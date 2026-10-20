@@ -22,6 +22,12 @@
 			</array>
 		</dict>
 	</array>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>برای نمایش نزدیک‌ترین ایستگاه‌های شارژ و فاصلهٔ آن‌ها به موقعیت شما نیاز است.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+	</array>
 	<key>NSCameraUsageDescription</key>
 	<string>برای اسکن کد QR شارژر و شروع شارژ به دوربین نیاز است.</string>
 	<key>LSApplicationQueriesSchemes</key>

@@ -56,7 +56,12 @@ class _ShellState extends State<Shell> {
   void initState() {
     super.initState();
     // مانند edge-router وب‌اپ: لبهٔ محلی ایستگاه به‌طور دوره‌ای جست‌وجو می‌شود.
-    WidgetsBinding.instance.addPostFrameCallback((_) => context.app.edge.discover());
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final app = context.app;
+      app.edge.discover();
+      // موقعیت واقعی گوشی جایگزین موقعیت مرجع می‌شود تا فاصله‌ها درست باشند.
+      if (await app.location.sync(app.api)) ShellController.instance.refresh();
+    });
     _discover = Timer.periodic(const Duration(seconds: 30), (_) {
       if (mounted) context.app.edge.discover(force: true);
     });

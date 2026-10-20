@@ -76,7 +76,14 @@ class _WalletTabState extends State<WalletTab> {
           Row(children: [
             Expanded(child: AppButton('افزایش موجودی', icon: Icons.add, kind: BtnKind.orange, onPressed: () => _topupSheet(context))),
             const SizedBox(width: 10),
-            SizedBox(width: 56, child: AppButton('', icon: Icons.download_outlined, kind: BtnKind.ghost, onPressed: () => openScreen(context, 'history'))),
+            SizedBox(
+              width: 56,
+              child: AppButton('', icon: Icons.download_outlined, kind: BtnKind.ghost, onPressed: () {
+                // صورت‌حساب تراکنش‌ها به‌صورت CSV (قابل باز شدن در اکسل) از برگهٔ اشتراک سیستم.
+                final rows = asList(d['transactions']).map((t) => '${t['d']},"${t['t']}",${enDigits('${t['a']}').replaceAll(',', '').replaceAll('−', '-')}');
+                shareText(context, ['تاریخ,شرح,مبلغ (تومان)', ...rows].join('\n'));
+              }),
+            ),
           ]),
           const SizedBox(height: 16),
           Container(

@@ -26,6 +26,7 @@ class StationCard extends StatelessWidget {
         Expanded(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(children: [
+              if (s['favorite'] == true) const Padding(padding: EdgeInsetsDirectional.only(end: 4), child: Icon(Icons.star_rounded, color: Palette.orange, size: 18)),
               Expanded(child: Text('${s['name'] ?? '—'}', style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800))),
               Pill.web('${s['status'] ?? ''}', '${s['status_pill'] ?? 'pill-green'}'),
             ]),
@@ -56,6 +57,7 @@ List<Map<String, dynamic>> filterStations(List<Map<String, dynamic>> list, Strin
       'fast' => s['cat'] == 'fast',
       'public' => s['cat'] == 'public',
       'free' => s['has_free'] == true,
+      'fav' => s['favorite'] == true,
       _ => true,
     };
     final okQuery = q.isEmpty || '${s['name']} ${s['type']} ${s['code']}'.contains(q);

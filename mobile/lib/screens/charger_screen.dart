@@ -25,6 +25,21 @@ class _ChargerScreenState extends State<ChargerScreen> {
   int startSoc = 20;
   bool starting = false;
   bool qrConsumed = false;
+  bool? favorite;
+
+  Future<void> _toggleFavorite(Map<String, dynamic> st) async {
+    final res = await runAction(context, () => context.api.post('favorites/${st['code']}'));
+    if (res != null && mounted) setState(() => favorite = res['favorite'] == true);
+  }
+
+  void _share(Map<String, dynamic> st) {
+    final lat = st['lat'], lng = st['lng'];
+    shareText(context, [
+      'ایستگاه شارژ ${st['name']} — SafirCharge',
+      if (st['address'] != null) '${st['city'] ?? ''}، ${st['address']}',
+      if (lat != null) 'https://www.google.com/maps/search/?api=1&query=$lat,$lng',
+    ].join('\n'));
+  }
   String? stationCode;
 
   static const _stateLabels = {
@@ -103,6 +118,11 @@ class _ChargerScreenState extends State<ChargerScreen> {
                     child: RoundIconButton(Icons.chevron_right_rounded, size: 24, onTap: () => Navigator.maybePop(context)),
                   ),
                   PositionedDirectional(
+                    top: MediaQuery.of(context).padding.top + 12,
+                    end: 18,
+                    child: RoundIconButton(Icons.share_outlined, onTap: () => _share(st)),
+                  ),
+                  PositionedDirectional(
                     bottom: 16,
                     start: 18,
                     child: Pill('${fa(d['free_count'])} کانکتور آزاد', dot: true),
@@ -126,6 +146,11 @@ class _ChargerScreenState extends State<ChargerScreen> {
                     Expanded(child: AppButton('مسیریابی', icon: Icons.navigation_outlined, kind: BtnKind.soft, height: 48, onPressed: st['lat'] == null ? null : () => _navigate(st))),
                     const SizedBox(width: 10),
                     Expanded(child: AppButton('رزرو', icon: Icons.calendar_month_outlined, kind: BtnKind.soft, height: 48, onPressed: () => openScreen(context, 'reserve', {'station': st['code']}))),
+                    const SizedBox(width: 10),
+                    SizedBox(
+                      width: 48,
+                      child: AppButton('', icon: favorite ?? st['favorite'] == true ? Icons.star_rounded : Icons.star_outline_rounded, kind: BtnKind.ghost, height: 48, onPressed: () => _toggleFavorite(st)),
+                    ),
                   ]),
                   const SizedBox(height: 20),
                   AppCard(

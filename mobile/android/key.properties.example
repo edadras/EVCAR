@@ -1,0 +1,7 @@
+# کپی به android/key.properties و پر کردن مقادیر (این فایل در git ثبت نمی‌شود).
+# ساخت کلید:
+#   keytool -genkey -v -keystore ~/safircharge-upload.jks -keyalg RSA -keysize 2048 -validity 10000 -alias upload
+storePassword=
+keyPassword=
+keyAlias=upload
+storeFile=/home/you/safircharge-upload.jks

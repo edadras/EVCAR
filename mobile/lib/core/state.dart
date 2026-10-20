@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'api.dart';
+import 'device_services.dart';
 import 'edge.dart';
 
 /// آدرس پیش‌فرض سرور ابری؛ در زمان build با `--dart-define=API_BASE_URL=https://...` تنظیم می‌شود.
@@ -19,7 +20,9 @@ class AppState extends ChangeNotifier {
           token: _prefs.getString('token'),
           client: client,
         ),
-        edge = EdgeManager(_prefs, client: client) {
+        edge = EdgeManager(_prefs, client: client),
+        notifications = NotificationsService(_prefs),
+        location = LocationService(_prefs) {
     api.onUnauthorized = () {
       if (api.token != null) logoutLocal();
     };
@@ -34,6 +37,10 @@ class AppState extends ChangeNotifier {
 
   /// لبهٔ محلی ایستگاه (شارژ روی WiFi ایستگاه، حتی بدون اینترنت).
   final EdgeManager edge;
+
+  /// اعلان پوش/محلی و موقعیت مکانی گوشی.
+  final NotificationsService notifications;
+  final LocationService location;
 
   Map<String, dynamic>? user;
   Map<String, dynamic> prefs = {};
@@ -68,6 +75,7 @@ class AppState extends ChangeNotifier {
     _applyUser(response['user'] as Map<String, dynamic>?);
     notifyListeners();
     refreshConnectivity();
+    notifications.start(api);
   }
 
   /// گرفتن امضای روزانهٔ لبه و فهرست لبه‌ها از سرور برای استفادهٔ آفلاین.
@@ -97,6 +105,7 @@ class AppState extends ChangeNotifier {
       _applyUser(res['user'] as Map<String, dynamic>?);
       notifyListeners();
       await refreshConnectivity();
+      notifications.start(api);
     } on ApiException catch (e) {
       if (e.unauthorized) await logoutLocal();
       // بدون اینترنت: اگر لبهٔ محلی در دسترس باشد، شارژ محلی ممکن است.
@@ -126,6 +135,7 @@ class AppState extends ChangeNotifier {
   }
 
   Future<void> logout() async {
+    await notifications.stop();
     try {
       await api.post('auth/logout');
     } catch (_) {}

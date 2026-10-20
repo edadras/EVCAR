@@ -22,12 +22,19 @@ class _HistoryScreenState extends State<HistoryScreen> {
     super.dispose();
   }
 
+  List<Map<String, dynamic>> _sessions = [];
+
+  void _export() {
+    final rows = _sessions.map((h) => '${enDigits('${h['date']}')},"${h['n']}",${enDigits('${h['en']}').replaceAll(' kWh', '')},${enDigits('${h['dur']}')},${enDigits('${h['amt']}').replaceAll(',', '')},${h['m']}');
+    shareText(context, ['تاریخ,ایستگاه,انرژی (kWh),مدت,هزینه (تومان),روش', ...rows].join('\n'));
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
         child: Column(children: [
-          const PageHeader('سوابق شارژ'),
+          PageHeader('سوابق شارژ', actions: [RoundIconButton(Icons.download_outlined, onTap: _export)]),
           Expanded(
             child: AsyncBody(
               load: () => context.api.get('history'),
@@ -35,7 +42,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 final c = context.c;
                 final m = asMap(d['month_stats']);
                 final q = search.text.trim();
-                final list = asList(d['sessions']).where((h) => q.isEmpty || '${h['n']} ${h['date']} ${h['m']}'.contains(q) || enDigits('${h['date']}').contains(enDigits(q))).toList();
+                _sessions = asList(d['sessions']);
+                final list = _sessions.where((h) => q.isEmpty || '${h['n']} ${h['date']} ${h['m']}'.contains(q) || enDigits('${h['date']}').contains(enDigits(q))).toList();
 
                 Widget item(String v, String l) => Expanded(
                       child: Column(children: [

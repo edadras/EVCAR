@@ -228,6 +228,15 @@ class _ChargingScreenState extends State<ChargingScreen> {
         ]),
       );
 
+  /// «انرژی افزوده‌شده» بر اساس تنظیم کاربر: کیلووات‌ساعت یا درصد ظرفیت باتری.
+  String _addedLabel(double energy) {
+    final battery = asDouble(live['battery_kwh']);
+    if (context.app.prefs['energy_unit'] == 'pct' && battery > 0) {
+      return '+${fa((energy / battery * 100).toStringAsFixed(1))}٪ باتری افزوده شد';
+    }
+    return '+${kwh(energy, energy < 10 ? 2 : 1)} kWh افزوده شد';
+  }
+
   Widget _empty(double top) => Column(children: [
         _header(top, error != null ? 'خطا' : 'شارژ فعال نیست'),
         Expanded(
@@ -300,7 +309,7 @@ class _ChargingScreenState extends State<ChargingScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
                   decoration: BoxDecoration(color: Palette.green.withValues(alpha: .18), borderRadius: BorderRadius.circular(20)),
-                  child: Text('+${kwh(energy, energy < 10 ? 2 : 1)} kWh افزوده شد', style: const TextStyle(color: Color(0xFF7EE2A6), fontSize: 12, fontWeight: FontWeight.w700)),
+                  child: Text(_addedLabel(energy), style: const TextStyle(color: Color(0xFF7EE2A6), fontSize: 12, fontWeight: FontWeight.w700)),
                 ),
               ]),
             ),
