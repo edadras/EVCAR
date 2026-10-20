@@ -152,7 +152,7 @@ class OcppSimulateCharger extends Command
                 ['key' => 'MeterValueSampleInterval', 'readonly' => false, 'value' => (string) $this->option('meter-interval')],
             ]],
             'TriggerMessage', 'Reset', 'UnlockConnector', 'ChangeAvailability', 'SetChargingProfile',
-            'ChangeConfiguration', 'ClearCache', 'ClearChargingProfile' => ['status' => $action === 'UnlockConnector' ? 'Unlocked' : 'Accepted'],
+            'ChangeConfiguration', 'ClearCache', 'ClearChargingProfile', 'ReserveNow', 'CancelReservation' => ['status' => $action === 'UnlockConnector' ? 'Unlocked' : 'Accepted'],
             'GetDiagnostics' => ['fileName' => 'diag.log'],
             default => [],
         };

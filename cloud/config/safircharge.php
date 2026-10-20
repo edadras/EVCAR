@@ -65,6 +65,11 @@ return [
         'test_otp_codes' => env('SC_TEST_OTP_CODES', env('APP_ENV', 'production') === 'production' ? '' : '111111,222222,333333'),
     ],
 
+    'finance' => [
+        // نرخ مالیات بر ارزش افزوده برای گزارش مالیاتی (مبالغ شامل مالیات فرض می‌شوند)
+        'vat_percent' => (float) env('SC_VAT_PERCENT', 10),
+    ],
+
     'payment' => [
         'gateways' => ['mellat', 'saman', 'zarin'],
         'gateway_aliases' => [

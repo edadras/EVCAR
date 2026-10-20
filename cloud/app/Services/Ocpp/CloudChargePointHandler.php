@@ -9,6 +9,7 @@ use App\Models\OcppCall;
 use App\Models\OcppMessageLog;
 use App\Models\OcppTransaction;
 use App\Services\Charging\DirectChargingService;
+use App\Services\Charging\ReservationDispatcher;
 use App\Services\Monitoring\AlertService;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
@@ -87,6 +88,8 @@ class CloudChargePointHandler
 
     public function housekeeping(): void
     {
+        app(CloudLoadBalancer::class)->apply();
+
         $minutes = max(1, (int) $this->commander->setting('start_timeout_minutes', 3));
         ChargingSession::where('status', 'active')
             ->whereNull('ocpp_transaction_id')
@@ -192,7 +195,7 @@ class CloudChargePointHandler
         $meterStart = max(0, (int) $payload['meterStart']);
         $startedAt = $this->timestamp($payload['timestamp']);
 
-        return DB::transaction(function () use ($charger, $number, $idTag, $meterStart, $startedAt) {
+        $result = DB::transaction(function () use ($charger, $number, $idTag, $meterStart, $startedAt) {
             $connector = Connector::where('charger_id', $charger->id)->where('connector_number', $number)->first();
             $tx = OcppTransaction::create([
                 'charge_point_id' => $charger->charge_point_id,
@@ -224,6 +227,9 @@ class CloudChargePointHandler
                     'meta' => array_merge($session->meta ?? [], ['edge_state' => 'charging']),
                 ]);
                 $tx->update(['charging_session_id' => $session->id]);
+                if ($session->user_id) {
+                    ReservationDispatcher::checkIn($session->user_id, $session->station_id);
+                }
             }
             $tx->update(['id_tag_status' => $status]);
             if ($connector && $status === 'Accepted') {
@@ -232,6 +238,10 @@ class CloudChargePointHandler
 
             return ['transactionId' => $tx->id, 'idTagInfo' => ['status' => $status]];
         });
+
+        app(CloudLoadBalancer::class)->apply($charger->station_id);
+
+        return $result;
     }
 
     /** @return array<string, mixed> */
@@ -281,6 +291,7 @@ class CloudChargePointHandler
                     }
                 }
                 $this->charging->finalize($session, $meterStop, $stoppedAt, $reason);
+                app(CloudLoadBalancer::class)->apply($charger->station_id);
             }
         } else {
             Log::warning('ocpp.cloud.stop_unknown_transaction', ['charge_point' => $charger->charge_point_id]);

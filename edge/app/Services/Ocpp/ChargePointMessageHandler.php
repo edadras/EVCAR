@@ -103,6 +103,8 @@ class ChargePointMessageHandler
     /** نگهداری دوره‌ای: لغو شروع‌های بی‌پاسخ و پاک‌سازی لاگ‌ها. */
     public function housekeeping(): void
     {
+        app(LoadBalancer::class)->apply();
+
         $minutes = max(1, (int) $this->commander->setting('start_timeout_minutes', 3));
 
         EdgeChargingSession::query()
@@ -141,6 +143,13 @@ class ChargePointMessageHandler
                 'meter_type' => $payload['meterType'] ?? null,
                 'meter_serial_number' => $payload['meterSerialNumber'] ?? null,
             ], fn ($v) => $v !== null)),
+        ]);
+
+        // نمونه‌برداری کنتور برای صورتحساب دقیق و نمایش زنده.
+        $this->commander->dispatch($charger->charge_point_id, 'ChangeConfiguration', ['key' => 'MeterValueSampleInterval', 'value' => '30']);
+        $this->commander->dispatch($charger->charge_point_id, 'ChangeConfiguration', [
+            'key' => 'MeterValuesSampledData',
+            'value' => 'Energy.Active.Import.Register,Power.Active.Import,Current.Import,Voltage,SoC',
         ]);
 
         return [
@@ -196,6 +205,10 @@ class ChargePointMessageHandler
         $connector->save();
 
         $charger->update(['last_heartbeat_at' => now()]);
+        $active = EdgeChargingSession::where('connector_id', $connector->id)->where('status', 'active')->first();
+        if ($active) {
+            $this->charging->markIdle($active, in_array($status, ['SuspendedEV', 'Finishing'], true));
+        }
         $this->emitConnectorStatus($connector);
 
         return [];
@@ -218,7 +231,7 @@ class ChargePointMessageHandler
         $meterStart = max(0, (int) $payload['meterStart']);
         $startedAt = $this->timestamp($payload['timestamp']);
 
-        return DB::transaction(function () use ($charger, $connectorNumber, $idTag, $meterStart, $startedAt) {
+        $result = DB::transaction(function () use ($charger, $connectorNumber, $idTag, $meterStart, $startedAt) {
             $connector = EdgeConnector::where('charger_id', $charger->id)
                 ->where('connector_number', $connectorNumber)
                 ->first();
@@ -271,6 +284,10 @@ class ChargePointMessageHandler
                 'idTagInfo' => ['status' => $status],
             ];
         });
+
+        app(LoadBalancer::class)->apply(); // Smart Charging: سهم توان جلسه‌ها بازتقسیم می‌شود
+
+        return $result;
     }
 
     /** @return array<string, mixed> */
@@ -339,6 +356,7 @@ class ChargePointMessageHandler
 
                 if ($session->status === 'active') {
                     $this->charging->finalize($session, $meterStop, $stoppedAt, $reason);
+                    app(LoadBalancer::class)->apply();
                 } else {
                     Log::info('ocpp.stop_after_local_close', [
                         'session' => $session->uuid,

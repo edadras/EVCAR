@@ -2,7 +2,6 @@
 
 namespace App\Services\Panel;
 
-use App\Models\EdgeCharger;
 use App\Models\EdgeConnector;
 use App\Models\PanelCommandLog;
 use App\Models\User;

@@ -18,7 +18,8 @@ class EdgeCommandService
     public const TYPES = [
         'reset', 'unlock', 'remote_stop', 'change_availability',
         'set_charging_profile', 'get_diagnostics', 'update_firmware',
-        'remote_start', 'trigger_status',
+        'remote_start', 'trigger_status', 'get_configuration', 'change_configuration',
+        'reserve_now', 'cancel_reservation', 'clear_charging_profile',
     ];
 
     public function queue(

@@ -7,6 +7,7 @@ use App\Models\EdgeCharger;
 use App\Models\EdgeConnector;
 use App\Models\GsmMessageLog;
 use App\Models\GsmModemConfig;
+use App\Models\OcppMessageLog;
 use App\Models\StationIdentity;
 use App\Services\Anpr\AnprIngestService;
 use App\Services\Anpr\PlprLiteClient;
@@ -232,7 +233,7 @@ class PanelSetupService
         $driver = (string) ($this->config->ocpp()['driver'] ?? 'builtin');
         if ($driver === 'builtin') {
             $online = EdgeCharger::where('is_online', true)->pluck('charge_point_id')->all();
-            $lastMessage = \App\Models\OcppMessageLog::max('created_at');
+            $lastMessage = OcppMessageLog::max('created_at');
 
             return [
                 'ok' => $online !== [],

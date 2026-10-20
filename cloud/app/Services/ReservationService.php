@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Connector;
 use App\Models\Reservation;
 use App\Services\Charging\ConnectorAvailabilityService;
+use App\Services\Charging\ReservationDispatcher;
 use Carbon\Carbon;
 
 class ReservationService
@@ -58,6 +59,7 @@ class ReservationService
 
     public function cancel(Reservation $reservation, ?int $cancelledByAdminId = null): void
     {
+        $reservation->refresh();
         $meta = $reservation->meta ?? [];
         if ($cancelledByAdminId) {
             $meta['cancelled_by_admin'] = $cancelledByAdminId;
@@ -68,5 +70,7 @@ class ReservationService
             'cancelled_at' => now(),
             'meta' => $meta,
         ]);
+
+        app(ReservationDispatcher::class)->cancelOnCharger($reservation->fresh());
     }
 }

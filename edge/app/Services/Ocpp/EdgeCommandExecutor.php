@@ -47,31 +47,7 @@ class EdgeCommandExecutor
             return $this->remoteStop($chargePointId, $connectorNumber, $payload);
         }
 
-        [$action, $ocppPayload] = match ($type) {
-            'reset' => ['Reset', ['type' => in_array($payload['type'] ?? 'Soft', ['Soft', 'Hard'], true) ? ($payload['type'] ?? 'Soft') : 'Soft']],
-            'unlock' => ['UnlockConnector', ['connectorId' => $connectorNumber]],
-            'change_availability' => ['ChangeAvailability', [
-                'connectorId' => $connectorNumber,
-                'type' => ($payload['type'] ?? 'Inoperative') === 'Operative' ? 'Operative' : 'Inoperative',
-            ]],
-            'set_charging_profile' => ['SetChargingProfile', $this->chargingProfile($connectorNumber, $payload)],
-            'get_diagnostics' => ['GetDiagnostics', ['location' => (string) ($payload['location'] ?? 'ftp://diagnostics/')]],
-            'update_firmware' => ['UpdateFirmware', [
-                'location' => (string) ($payload['location'] ?? ''),
-                'retrieveDate' => (string) ($payload['retrieveDate'] ?? now()->utc()->format('Y-m-d\TH:i:s\Z')),
-            ]],
-            'trigger_status' => ['TriggerMessage', ['requestedMessage' => 'StatusNotification', 'connectorId' => $connectorNumber]],
-            'get_configuration' => ['GetConfiguration', isset($payload['key']) ? ['key' => array_values((array) $payload['key'])] : []],
-            'change_configuration' => ['ChangeConfiguration', [
-                'key' => (string) ($payload['key'] ?? ''),
-                'value' => (string) ($payload['value'] ?? ''),
-            ]],
-            default => throw new \InvalidArgumentException('نوع دستور ناشناخته: '.$type),
-        };
-
-        if ($action === 'UpdateFirmware' && $ocppPayload['location'] === '') {
-            throw new \InvalidArgumentException('آدرس فایل Firmware (location) الزامی است.');
-        }
+        [$action, $ocppPayload] = OcppCommandMap::build($type, $connectorNumber, $payload);
 
         return $this->send($chargePointId, $action, $ocppPayload);
     }
@@ -192,33 +168,5 @@ class EdgeCommandExecutor
         }
 
         return $connector;
-    }
-
-    /**
-     * @param  array<string, mixed>  $payload
-     * @return array<string, mixed>
-     */
-    private function chargingProfile(int $connectorNumber, array $payload): array
-    {
-        $maxKw = (float) ($payload['max_kw'] ?? $payload['max_power_kw'] ?? 0);
-        if ($maxKw <= 0) {
-            throw new \InvalidArgumentException('max_kw برای پروفایل شارژ الزامی است.');
-        }
-
-        return [
-            'connectorId' => $connectorNumber,
-            'csChargingProfiles' => [
-                'chargingProfileId' => 1,
-                'stackLevel' => 0,
-                'chargingProfilePurpose' => 'TxDefaultProfile',
-                'chargingProfileKind' => 'Absolute',
-                'chargingSchedule' => [
-                    'chargingRateUnit' => 'W',
-                    'chargingSchedulePeriod' => [
-                        ['startPeriod' => 0, 'limit' => round($maxKw * 1000, 1)],
-                    ],
-                ],
-            ],
-        ];
     }
 }

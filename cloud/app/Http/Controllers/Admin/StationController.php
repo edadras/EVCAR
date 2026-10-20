@@ -3,8 +3,11 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Partner;
 use App\Models\Station;
+use App\Models\Tariff;
 use App\Services\Admin\AdminMetricsService;
+use App\Services\Admin\AdminViewDataService;
 use App\Services\Stations\StationAnprService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -24,7 +27,7 @@ class StationController extends Controller
             $this->metrics->stationsIndex(),
             [
                 'kpis' => $this->metrics->networkKpis(),
-                'stationsJs' => app(\App\Services\Admin\AdminViewDataService::class)->stationsPageJs(),
+                'stationsJs' => app(AdminViewDataService::class)->stationsPageJs(),
             ]
         ));
     }
@@ -32,8 +35,8 @@ class StationController extends Controller
     public function create(): View
     {
         return view('admin.stations.create', [
-            'partners' => \App\Models\Partner::orderBy('name')->get(),
-            'tariffs' => \App\Models\Tariff::where('status', 'active')->orderBy('name')->get(),
+            'partners' => Partner::orderBy('name')->get(),
+            'tariffs' => Tariff::where('status', 'active')->orderBy('name')->get(),
         ]);
     }
 
@@ -51,12 +54,16 @@ class StationController extends Controller
             'wifi_ssid' => ['nullable', 'string', 'max:64'],
             'local_hostname' => ['nullable', 'string', 'max:128'],
             'partner_id' => ['nullable', 'exists:partners,id'],
+            'grid_limit_kw' => ['nullable', 'numeric', 'min:0', 'max:100000'],
         ]);
+        $gridLimit = $data['grid_limit_kw'] ?? null;
+        unset($data['grid_limit_kw']);
 
         if (empty($data['code'])) {
             $data['code'] = 'ST-'.Str::upper(Str::random(6));
         }
 
+        $data['meta'] = array_filter(['grid_limit_kw' => $gridLimit !== null ? (float) $gridLimit : null], fn ($v) => $v !== null);
         $station = Station::create($data);
 
         return redirect()
@@ -77,8 +84,8 @@ class StationController extends Controller
 
         return view('admin.stations.create', [
             'station' => $station,
-            'partners' => \App\Models\Partner::orderBy('name')->get(),
-            'tariffs' => \App\Models\Tariff::where('status', 'active')->orderBy('name')->get(),
+            'partners' => Partner::orderBy('name')->get(),
+            'tariffs' => Tariff::where('status', 'active')->orderBy('name')->get(),
             'anprCameras' => $station->edgeStation
                 ? $this->anpr->camerasFor($station->edgeStation)
                 : $this->anpr->defaultCameras($station->name),
@@ -101,8 +108,18 @@ class StationController extends Controller
             'wifi_ssid' => ['nullable', 'string', 'max:64'],
             'local_hostname' => ['nullable', 'string', 'max:128'],
             'partner_id' => ['nullable', 'exists:partners,id'],
+            'grid_limit_kw' => ['nullable', 'numeric', 'min:0', 'max:100000'],
         ]);
+        $gridLimit = $data['grid_limit_kw'] ?? null;
+        unset($data['grid_limit_kw']);
 
+        $meta = $station->meta ?? [];
+        if ($gridLimit !== null && (float) $gridLimit > 0) {
+            $meta['grid_limit_kw'] = (float) $gridLimit;
+        } else {
+            unset($meta['grid_limit_kw']);
+        }
+        $data['meta'] = $meta;
         $station->update($data);
 
         if ($request->has('anpr_enabled')) {

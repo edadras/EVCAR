@@ -28,7 +28,7 @@ class TariffController extends Controller
             Tariff::where('is_default', true)->update(['is_default' => false]);
         }
 
-        Tariff::create([
+        $tariff = Tariff::create([
             'uuid' => (string) Str::uuid(),
             'name' => $data['name'],
             'code' => $data['code'],
@@ -41,7 +41,9 @@ class TariffController extends Controller
             'is_default' => $request->boolean('is_default'),
             'status' => $data['status'],
             'valid_from' => now(),
+            'meta' => $this->metaFrom($data, []),
         ]);
+        $this->syncRules($tariff, $data);
 
         return redirect()
             ->route('admin.tariffs.index')
@@ -73,7 +75,9 @@ class TariffController extends Controller
             'member_discount_percent' => $data['member_discount_percent'] ?? 0,
             'is_default' => $request->boolean('is_default'),
             'status' => $data['status'],
+            'meta' => $this->metaFrom($data, $tariff->meta ?? []),
         ]);
+        $this->syncRules($tariff, $data);
 
         return redirect()
             ->route('admin.tariffs.index')
@@ -108,6 +112,51 @@ class TariffController extends Controller
             'member_discount_percent' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'is_default' => ['nullable', 'boolean'],
             'status' => ['required', 'in:active,inactive,draft'],
+            'peak_multiplier' => ['nullable', 'numeric', 'min:0', 'max:10'],
+            'peak_start' => ['nullable', 'date_format:H:i'],
+            'peak_end' => ['nullable', 'date_format:H:i'],
+            'offpeak_multiplier' => ['nullable', 'numeric', 'min:0', 'max:10'],
+            'offpeak_start' => ['nullable', 'date_format:H:i'],
+            'offpeak_end' => ['nullable', 'date_format:H:i'],
+            'idle_fee_per_minute' => ['nullable', 'numeric', 'min:0'],
+            'idle_grace_minutes' => ['nullable', 'integer', 'min:0', 'max:240'],
         ]);
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @param  array<string, mixed>  $meta
+     * @return array<string, mixed>
+     */
+    private function metaFrom(array $data, array $meta): array
+    {
+        $meta['idle_fee_per_minute'] = (float) ($data['idle_fee_per_minute'] ?? 0);
+        $meta['idle_grace_minutes'] = (int) ($data['idle_grace_minutes'] ?? 10);
+        if (! empty($data['offpeak_start']) && ! empty($data['offpeak_end'])) {
+            $meta['off_peak_hours'] = $data['offpeak_start'].' تا '.$data['offpeak_end'];
+        }
+
+        return $meta;
+    }
+
+    /** قوانین ساعتی اوج/کم‌باری (در محاسبهٔ هزینه روی ابر و Edge اعمال می‌شوند). */
+    private function syncRules(Tariff $tariff, array $data): void
+    {
+        foreach (['peak' => 'peak', 'off_peak' => 'offpeak'] as $type => $prefix) {
+            $multiplier = $data[$prefix.'_multiplier'] ?? null;
+            if ($multiplier === null || $multiplier === '' || empty($data[$prefix.'_start']) || empty($data[$prefix.'_end'])) {
+                $tariff->rules()->where('rule_type', $type)->delete();
+
+                continue;
+            }
+
+            $tariff->rules()->updateOrCreate(['rule_type' => $type], [
+                'start_time' => $data[$prefix.'_start'],
+                'end_time' => $data[$prefix.'_end'],
+                'multiplier' => (float) $multiplier,
+                'price_per_kwh' => null,
+                'priority' => $type === 'peak' ? 2 : 1,
+            ]);
+        }
     }
 }

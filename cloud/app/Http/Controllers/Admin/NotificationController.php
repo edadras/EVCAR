@@ -4,13 +4,12 @@ namespace App\Http\Controllers\Admin;
 
 use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
-use App\Models\ChargingSession;
-use App\Models\Station;
 use App\Models\User;
 use App\Models\UserNotification;
 use App\Models\Wallet;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
 
@@ -72,7 +71,7 @@ class NotificationController extends Controller
         ];
     }
 
-    /** @return \Illuminate\Support\Collection<int, User> */
+    /** @return Collection<int, User> */
     private function resolveAudience(string $audience)
     {
         $query = User::where('role', UserRole::Customer);

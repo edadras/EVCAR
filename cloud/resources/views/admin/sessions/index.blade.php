@@ -92,7 +92,9 @@ window.__SESSIONS = {!! json_encode(app(App\Services\Admin\AdminViewDataService:
     return '<tr data-search="'+r.id+' '+r.user+' '+r.station+' '+r.charger+'"><td class="mono">'+r.id+'</td><td><div class="cell-user"><span class="uavatar" style="background:'+cols[i%cols.length]+'">'+r.initials+'</span><span class="cell-strong">'+r.user+'</span></div></td><td><div class="cell-strong">'+r.station+'</div><div class="cell-muted mono">'+r.charger+'</div></td><td><span class="tag">'+r.connector+'</span></td><td><span class="tag">'+r.auth+'</span></td><td style="min-width:120px"><div class="bar '+bar+'"><i style="width:'+prog+'%"></i></div><div class="cell-muted tnum" style="margin-top:4px">'+fa(prog)+'٪ · '+stPill+'</div></td><td class="tnum">'+r.energy+' kWh</td><td class="tnum">'+r.power+' kW</td><td class="tnum">'+fa(r.duration)+' دق</td><td class="tnum cell-strong">'+fa(r.cost)+'</td><td>'+stopBtn+'</td></tr>';
   }
   function rowHist(r,j){
-      var st=r.status==='completed'?['تکمیل‌شده','pill-green','completed']:(r.status==='failed'?['ناموفق','pill-red','failed']:['متوقف‌شده','pill-amber','stopped']);
+      // جلسه‌ای که با تحویل انرژی بسته شده «تکمیل‌شده» است؛ بدون انرژی = لغو/متوقف.
+      var done=r.status==='completed'||(r.status==='stopped'&&parseFloat(String(r.energy_raw!=null?r.energy_raw:r.energy||0).replace(/[^\d.]/g,''))>0);
+      var st=done?['تکمیل‌شده','pill-green','completed']:(r.status==='failed'?['ناموفق','pill-red','failed']:['متوقف/لغو','pill-amber','stopped']);
       return '<tr data-status="'+st[2]+'" data-search="'+r.id+' '+r.user+' '+r.station+'"><td class="mono">'+r.id+'</td><td><div class="cell-user"><span class="uavatar" style="background:'+cols[j%cols.length]+'">'+r.initials+'</span><span class="cell-strong">'+r.user+'</span></div></td><td>'+r.station+'</td><td class="cell-muted tnum">'+r.started+'</td><td class="tnum">'+fa(r.duration)+' دق</td><td class="tnum cell-strong">'+r.energy+' kWh</td><td><span class="tag">'+r.auth+'</span></td><td class="tnum cell-strong">'+fa(r.cost)+'</td><td><span class="pill '+st[1]+'">'+st[0]+'</span></td></tr>';
   }
   var liveRows=(DB.live&&DB.live.length)?DB.live:[];

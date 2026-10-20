@@ -17,6 +17,8 @@ class EdgeCommandsController extends Controller
         /** @var EdgeStation $edge */
         $edge = $request->attributes->get('edge_station');
         $limit = min(50, max(1, (int) $request->query('limit', 20)));
+        // Edge هر چند ثانیه دستورها را می‌خواند؛ همین درخواست نشانهٔ زنده بودن آن است.
+        $edge->forceFill(['last_heartbeat_at' => now(), 'sync_status' => 'online'])->save();
 
         $pending = $this->commands->pullPending($edge, $limit);
 

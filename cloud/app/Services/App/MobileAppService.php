@@ -256,6 +256,7 @@ class MobileAppService
             'freeCount' => $station ? $this->presenter->stationFreeCount($station) : 0,
             'tariffEnergy' => $tariff['energy'],
             'tariffIdle' => $tariff['idle'],
+            'tariffIdleGrace' => $tariff['idle_grace'] ?? null,
             'tariffOffpeak' => $tariff['offpeak'],
             'tariffOffpeakHours' => $tariff['offpeak_hours'],
         ];

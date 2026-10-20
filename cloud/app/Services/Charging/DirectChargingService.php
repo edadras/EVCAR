@@ -25,7 +25,8 @@ use Illuminate\Support\Str;
  */
 class DirectChargingService
 {
-    private const BLOCKED_STATUSES = ['Faulted', 'Unavailable', 'Charging', 'SuspendedEV', 'SuspendedEVSE', 'Reserved'];
+    // «Reserved» مسدود نمی‌شود: خود شارژر فقط idTag صاحب رزرو را می‌پذیرد.
+    private const BLOCKED_STATUSES = ['Faulted', 'Unavailable', 'Charging', 'SuspendedEV', 'SuspendedEVSE'];
 
     public function __construct(
         private CloudOcppCommander $commander,
@@ -397,7 +398,7 @@ class DirectChargingService
     {
         $tariff = app(CloudChargingSessionService::class)->tariffFor($session);
 
-        return $this->tariffs->cost($tariff, $energyKwh, $secs, $session->started_at, $idleSeconds);
+        return $this->tariffs->cost($tariff, $energyKwh, $secs, $session->started_at, $idleSeconds, app(CloudChargingSessionService::class)->isMember($session));
     }
 
     /** @param array<string, mixed> $meta */

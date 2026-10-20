@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Partner;
 
 use App\Http\Controllers\Controller;
+use App\Models\Station;
 use App\Services\Partner\PartnerMetricsService;
 use Illuminate\View\View;
 
@@ -20,7 +21,7 @@ class PageController extends Controller
         $data = $this->metrics->stations($this->partner());
         $partnerId = $this->partner()->id;
         $data['mapMarkers'] = collect($data['mapMarkers'])->filter(
-            fn ($m) => \App\Models\Station::find($m['id'])?->partner_id === $partnerId
+            fn ($m) => Station::find($m['id'])?->partner_id === $partnerId
         )->values()->all();
 
         return view('partner.stations', $data);

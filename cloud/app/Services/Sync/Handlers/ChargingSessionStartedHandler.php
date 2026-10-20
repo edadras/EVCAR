@@ -8,6 +8,7 @@ use App\Models\Connector;
 use App\Models\EdgeStation;
 use App\Models\Tariff;
 use App\Models\User;
+use App\Services\Charging\ReservationDispatcher;
 use Illuminate\Support\Str;
 
 class ChargingSessionStartedHandler
@@ -70,6 +71,9 @@ class ChargingSessionStartedHandler
         ]);
 
         $this->markCharging($connector, $charger);
+        if ($session->user_id) {
+            ReservationDispatcher::checkIn($session->user_id, $session->station_id);
+        }
 
         return $session;
     }

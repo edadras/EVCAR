@@ -225,7 +225,7 @@ class AdminMetricsService
 
     public function sessionsIndex(): array
     {
-        $completedScope = ChargingSession::where('status', 'completed')
+        $completedScope = ChargingSession::whereIn('status', ['completed', 'stopped'])
             ->where('started_at', '>=', now()->subDays(30));
 
         return [

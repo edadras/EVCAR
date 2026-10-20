@@ -20,7 +20,7 @@ class TariffCalculator
      * @param  array<string, mixed>|null  $rules  قوانین سریال‌شده (برای Edge) — در ابر از رابطه خوانده می‌شود
      * @return array{energy:float,time:float,idle:float,fee:float,total:float,price_per_kwh:float,rule:?string}
      */
-    public function breakdown(?Tariff $tariff, float $energyKwh, int $durationSeconds, ?CarbonInterface $startedAt = null, int $idleSeconds = 0): array
+    public function breakdown(?Tariff $tariff, float $energyKwh, int $durationSeconds, ?CarbonInterface $startedAt = null, int $idleSeconds = 0, bool $member = false): array
     {
         $energyKwh = max(0.0, $energyKwh);
         $minutes = $durationSeconds > 0 ? (int) ceil($durationSeconds / 60) : 0;
@@ -36,6 +36,11 @@ class TariffCalculator
             default => $energyKwh * ($perKwh ?? self::FALLBACK_PRICE_PER_KWH),
         };
         $timeCost = in_array($model, ['time', 'mixed'], true) ? $minutes * $perMinute : 0.0;
+
+        // تخفیف اعضای سازمانی روی هزینهٔ انرژی/زمان (نه هزینه‌های ثابت و اشغال)
+        $discount = $member ? max(0, min(100, (float) ($tariff?->member_discount_percent ?? 0))) : 0.0;
+        $energyCost *= (1 - $discount / 100);
+        $timeCost *= (1 - $discount / 100);
 
         $meta = $tariff?->meta ?? [];
         $idleFee = (float) ($meta['idle_fee_per_minute'] ?? 0);
@@ -57,9 +62,9 @@ class TariffCalculator
         ];
     }
 
-    public function cost(?Tariff $tariff, float $energyKwh, int $durationSeconds, ?CarbonInterface $startedAt = null, int $idleSeconds = 0): float
+    public function cost(?Tariff $tariff, float $energyKwh, int $durationSeconds, ?CarbonInterface $startedAt = null, int $idleSeconds = 0, bool $member = false): float
     {
-        return $this->breakdown($tariff, $energyKwh, $durationSeconds, $startedAt, $idleSeconds)['total'];
+        return $this->breakdown($tariff, $energyKwh, $durationSeconds, $startedAt, $idleSeconds, $member)['total'];
     }
 
     /** @return array{0:?float,1:?string} */

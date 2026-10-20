@@ -5,12 +5,15 @@ namespace App\Services\Sync\Handlers;
 use App\Models\Charger;
 use App\Models\Connector;
 use App\Models\EdgeStation;
+use App\Services\Monitoring\AlertService;
 
 /**
  * وضعیت زندهٔ شارژر/کانکتور که Edge مستقیماً از شارژر (OCPP) دریافت کرده است.
  */
 class DeviceStatusHandler
 {
+    public function __construct(private AlertService $alerts) {}
+
     /** @param  array<string, mixed>  $payload */
     public function connector(EdgeStation $edge, array $payload): void
     {
@@ -28,6 +31,14 @@ class DeviceStatusHandler
             'ocpp_status' => (string) ($payload['ocpp_status'] ?? $connector->ocpp_status),
             'status_updated_at' => $at,
         ]);
+
+        $connector->loadMissing('charger');
+        $key = $connector->charger?->charge_point_id.'#'.$connector->connector_number;
+        if (($payload['ocpp_status'] ?? null) === 'Faulted') {
+            $this->alerts->raise('connector_faulted', $key, 'critical', 'خطای کانکتور '.$key.': '.($payload['error_code'] ?? 'Faulted'), $edge->station_id);
+        } else {
+            $this->alerts->resolve('connector_faulted', $key);
+        }
     }
 
     /** @param  array<string, mixed>  $payload */
@@ -49,6 +60,12 @@ class DeviceStatusHandler
         }
 
         $charger->update($updates);
+
+        if ($updates['is_online']) {
+            $this->alerts->resolve('charger_offline', $charger->charge_point_id);
+        } else {
+            $this->alerts->raise('charger_offline', $charger->charge_point_id, 'warning', 'شارژر '.$charger->charge_point_id.' از کنترلر ایستگاه قطع شد.', $edge->station_id);
+        }
     }
 
     /** @param  array<string, mixed>  $payload */

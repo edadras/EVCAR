@@ -50,7 +50,7 @@ class AlertService
     {
         $count = 0;
         foreach (EdgeStation::with('station')->get() as $edge) {
-            $last = $edge->last_sync_at ?? $edge->last_heartbeat_at;
+            $last = collect([$edge->last_sync_at, $edge->last_heartbeat_at])->filter()->max();
             if ($last && $last->lt(now()->subMinutes($minutes))) {
                 $this->raise('edge_offline', $edge->edge_code, 'critical', 'کنترلر ایستگاه '.($edge->station?->name ?? $edge->edge_code).' از '.$last->diffForHumans().' با مرکز سینک نکرده است.', $edge->station_id);
                 $count++;

@@ -44,8 +44,14 @@ class WebSocketCentralSystemTest extends TestCase
         $this->assertSame('{}', json_encode((object) $status[2]));
 
         // Central System → Charger
+        OcppCall::query()->delete();
         $call = app(OcppCallQueue::class)->enqueue('CP-T1', 'Reset', ['type' => 'Soft']);
-        $incoming = $this->receive($client);
+        do {
+            $incoming = $this->receive($client);
+            if ($incoming[0] === 2 && $incoming[2] !== 'Reset') {
+                $client->send(json_encode([3, $incoming[1], ['status' => 'Accepted']]));
+            }
+        } while ($incoming[0] !== 2 || $incoming[2] !== 'Reset');
         $this->assertSame(2, $incoming[0]);
         $this->assertSame('Reset', $incoming[2]);
         $client->send(json_encode([3, $incoming[1], ['status' => 'Accepted']]));
@@ -146,10 +152,21 @@ class WebSocketCentralSystemTest extends TestCase
     {
         $id = bin2hex(random_bytes(4));
         $client->send(json_encode([2, $id, $action, (object) $payload]));
-        $answer = $this->receive($client);
-        $this->assertSame($id, $answer[1]);
 
-        return $answer;
+        // مانند شارژر واقعی: درخواست‌های سرور (مثلاً ChangeConfiguration پس از Boot) را پاسخ می‌دهیم.
+        for ($i = 0; $i < 10; $i++) {
+            $answer = $this->receive($client);
+            if ($answer[0] === 2) {
+                $client->send(json_encode([3, $answer[1], ['status' => 'Accepted']]));
+
+                continue;
+            }
+            $this->assertSame($id, $answer[1]);
+
+            return $answer;
+        }
+
+        $this->fail('No answer for '.$action);
     }
 
     /** @return list<mixed> */

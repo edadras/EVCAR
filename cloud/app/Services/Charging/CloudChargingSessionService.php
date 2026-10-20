@@ -209,7 +209,13 @@ class CloudChargingSessionService
         $tariff = $this->tariffFor($session);
         $secs = $session->started_at ? (int) $session->started_at->diffInSeconds($session->stopped_at ?? now(), true) : 0;
 
-        return app(TariffCalculator::class)->cost($tariff, $energyKwh, $secs, $session->started_at, (int) ($session->meta['idle_seconds'] ?? 0));
+        return app(TariffCalculator::class)->cost($tariff, $energyKwh, $secs, $session->started_at, (int) ($session->meta['idle_seconds'] ?? 0), $this->isMember($session));
+    }
+
+    /** کاربر عضو یک حساب سازمانی است (تخفیف اعضا). */
+    public function isMember(ChargingSession $session): bool
+    {
+        return $session->user_id !== null && User::whereKey($session->user_id)->whereNotNull('organization_id')->exists();
     }
 
     public function tariffFor(ChargingSession $session): ?Tariff

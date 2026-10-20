@@ -132,6 +132,7 @@ class EdgeSyncPayloadBuilder
                 'name' => $station->name,
                 'wifi_ssid' => $station->wifi_ssid,
                 'local_hostname' => $station->local_hostname,
+                'grid_limit_kw' => isset($station->meta['grid_limit_kw']) ? (float) $station->meta['grid_limit_kw'] : null,
             ],
             'edge' => [
                 'uuid' => $edge->uuid,
@@ -228,8 +229,9 @@ class EdgeSyncPayloadBuilder
             'price_per_kwh' => $t->price_per_kwh,
             'price_per_minute' => $t->price_per_minute,
             'session_fee' => $t->session_fee,
+            'meta' => array_intersect_key($t->meta ?? [], array_flip(['idle_fee_per_minute', 'idle_grace_minutes'])),
             'rules' => $t->rules()->get()->map->only([
-                'rule_type', 'day_of_week', 'start_time', 'end_time', 'price_per_kwh', 'price_per_minute', 'multiplier',
+                'rule_type', 'day_of_week', 'start_time', 'end_time', 'price_per_kwh', 'price_per_minute', 'multiplier', 'priority',
             ])->values()->all(),
         ];
     }
@@ -258,6 +260,9 @@ class EdgeSyncPayloadBuilder
             'charge_point_id' => $ch->charge_point_id,
             'max_power_kw' => $ch->max_power_kw,
             'is_online' => $ch->is_online,
+            'connector_type' => $ch->connector_type,
+            // رمز Basic Auth شارژر (OCPP Security Profile 1) برای بررسی روی Edge
+            'ocpp_password' => $ch->meta['ocpp_password'] ?? null,
             'connectors' => $ch->connectors->map(fn ($cn) => [
                 'uuid' => $cn->uuid,
                 'connector_number' => $cn->connector_number,

@@ -17,6 +17,7 @@ use App\Services\Ocpp\TariffCalculator;
 use App\Services\Sync\SyncOutboxService;
 use App\Services\Sync\SyncPushRunner;
 use App\Support\ChargeEstimator;
+use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -32,7 +33,8 @@ use Illuminate\Support\Str;
 class EdgeChargingService
 {
     /** وضعیت‌های کانکتور که شروع شارژ را مجاز نمی‌کنند. */
-    private const BLOCKED_CONNECTOR_STATUSES = ['Faulted', 'Unavailable', 'Charging', 'SuspendedEV', 'SuspendedEVSE', 'Reserved'];
+    // «Reserved» مسدود نمی‌شود: خود شارژر فقط idTag صاحب رزرو را می‌پذیرد.
+    private const BLOCKED_CONNECTOR_STATUSES = ['Faulted', 'Unavailable', 'Charging', 'SuspendedEV', 'SuspendedEVSE'];
 
     public function __construct(
         private SyncOutboxService $outbox,
@@ -302,11 +304,15 @@ class EdgeChargingService
 
             $startedAt = $locked->started_at ?? $stoppedAt;
             $duration = max(0, (int) $startedAt->diffInSeconds($stoppedAt, true));
-            $cost = $this->costFor($locked, $energyKwh, $duration);
+            $idle = $this->idleSeconds($locked->meta ?? [], $stoppedAt);
+            // بدون تحویل انرژی (لغو، کابل وصل نشد، رد شدن) هیچ هزینه‌ای گرفته نمی‌شود.
+            $cost = $energyKwh > 0 ? $this->costFor($locked, $energyKwh, $duration, $idle) : 0.0;
 
             $meta = $locked->meta ?? [];
             $meta['ocpp_state'] = 'finished';
             $meta['power_kw'] = 0;
+            $meta['idle_seconds'] = $idle;
+            unset($meta['idle_since']);
             if (($meta['soc_source'] ?? null) !== 'charger') {
                 $meta['soc'] = ChargeEstimator::socPercent(null, (float) ($meta['start_soc'] ?? ChargeEstimator::DEFAULT_START_SOC), $energyKwh, $this->batteryKwh($locked));
                 $meta['soc_source'] = 'estimate';
@@ -397,7 +403,7 @@ class EdgeChargingService
         }
 
         $energy = (float) ($updates['energy_kwh'] ?? $session->energy_kwh);
-        $updates['cost_amount'] = $this->costFor($session, $energy, $this->elapsedSeconds($session));
+        $updates['cost_amount'] = $energy > 0 ? $this->costFor($session, $energy, $this->elapsedSeconds($session), $this->idleSeconds($meta, now())) : 0.0;
         $updates['meta'] = $meta;
         $session->update($updates);
 
@@ -494,7 +500,8 @@ class EdgeChargingService
             return $card;
         }
 
-        return 'SC'.strtoupper(substr(str_replace('-', '', (string) $user->uuid), 0, 18));
+        // همان قاعدهٔ ابر (شناسهٔ کاربر ابری) تا رزرو ReserveNow و شروع از ابر/Edge یک idTag داشته باشند.
+        return 'SC'.strtoupper(substr(str_replace('-', '', (string) ($user->cloud_user_uuid ?: $user->uuid)), 0, 18));
     }
 
     public function minimumBalance(): float
@@ -632,13 +639,39 @@ class EdgeChargingService
         }
     }
 
-    private function costFor(EdgeChargingSession $session, float $energyKwh, int $durationSeconds): float
+    /** ثبت شروع/پایان «اشغال بدون شارژ» (خودرو پر شده ولی کابل وصل است) برای هزینهٔ اشغال. */
+    public function markIdle(EdgeChargingSession $session, bool $idle): void
+    {
+        $meta = $session->meta ?? [];
+        if ($idle && empty($meta['idle_since'])) {
+            $meta['idle_since'] = now()->toIso8601String();
+        } elseif (! $idle && ! empty($meta['idle_since'])) {
+            $meta['idle_seconds'] = $this->idleSeconds($meta, now());
+            unset($meta['idle_since']);
+        } else {
+            return;
+        }
+        $session->update(['meta' => $meta]);
+    }
+
+    /** @param array<string, mixed> $meta */
+    private function idleSeconds(array $meta, CarbonInterface $until): int
+    {
+        $total = (int) ($meta['idle_seconds'] ?? 0);
+        if (! empty($meta['idle_since'])) {
+            $total += (int) CarbonImmutable::parse($meta['idle_since'])->diffInSeconds($until, true);
+        }
+
+        return $total;
+    }
+
+    private function costFor(EdgeChargingSession $session, float $energyKwh, int $durationSeconds, int $idleSeconds = 0): float
     {
         $tariff = $session->cached_tariff_uuid
             ? CachedTariff::where('uuid', $session->cached_tariff_uuid)->first()
             : null;
 
-        return $this->tariffs->cost($tariff ?? $this->tariffs->current(), $energyKwh, $durationSeconds);
+        return $this->tariffs->cost($tariff ?? $this->tariffs->current(), $energyKwh, $durationSeconds, $session->started_at, $idleSeconds);
     }
 
     private function elapsedSeconds(EdgeChargingSession $session): int

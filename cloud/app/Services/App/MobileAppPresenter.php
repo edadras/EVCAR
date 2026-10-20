@@ -281,20 +281,25 @@ class MobileAppPresenter
             ];
         }
 
-        $idle = $tariff->price_per_minute
-            ? (int) round((float) $tariff->price_per_minute / 10)
-            : (int) round($energy * 0.15);
+        // فقط مقادیر واقعاً تنظیم‌شده نمایش داده می‌شوند (نه درصد فرضی از قیمت انرژی).
+        $idle = (int) round((float) ($tariff->meta['idle_fee_per_minute'] ?? 0) / 10);
 
         $offpeakRule = $tariff->rules()->where('rule_type', 'off_peak')->first();
-        $offpeak = $offpeakRule && $offpeakRule->price_per_kwh
-            ? (int) round((float) $offpeakRule->price_per_kwh / 10)
-            : (int) round($energy * 0.65);
+        $offpeak = 0;
+        if ($offpeakRule) {
+            $offpeak = $offpeakRule->price_per_kwh
+                ? (int) round((float) $offpeakRule->price_per_kwh / 10)
+                : (int) round($energy * (float) ($offpeakRule->multiplier ?: 1));
+        }
 
-        $hours = $tariff->meta['off_peak_hours'] ?? '00:00 تا 06:00';
+        $hours = $offpeakRule
+            ? substr((string) $offpeakRule->start_time, 0, 5).' تا '.substr((string) $offpeakRule->end_time, 0, 5)
+            : '—';
 
         return [
             'energy' => $energy,
             'idle' => $idle,
+            'idle_grace' => $idle > 0 ? (int) ($tariff->meta['idle_grace_minutes'] ?? 10) : null,
             'offpeak' => $offpeak,
             'offpeak_hours' => Persian::digits($hours),
         ];

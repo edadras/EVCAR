@@ -48,6 +48,10 @@ class SnapshotApplier
             if (! empty($st['local_hostname'])) {
                 $updates['local_hostname'] = $st['local_hostname'];
             }
+            if (array_key_exists('grid_limit_kw', $st)) {
+                // سقف توان انشعاب ایستگاه برای تقسیم هوشمند توان بین کانکتورها
+                $updates['meta'] = array_merge($station->meta ?? [], ['grid_limit_kw' => $st['grid_limit_kw']]);
+            }
             $station->update($updates);
         }
 
@@ -163,6 +167,7 @@ class SnapshotApplier
                     'session_fee' => $t['session_fee'] ?? 0,
                     'rules' => $t['rules'] ?? [],
                     'is_default' => (bool) ($t['is_default'] ?? false),
+                    'meta' => is_array($t['meta'] ?? null) ? $t['meta'] : null,
                     'station_assigned' => (bool) ($t['station_assigned'] ?? false),
                     'synced_at' => now(),
                 ]
@@ -186,6 +191,14 @@ class SnapshotApplier
             }
             $charger->cloud_charger_uuid = $ch['uuid'];
             $charger->max_power_kw = $ch['max_power_kw'] ?? 0;
+            $chargerMeta = $charger->meta ?? [];
+            if (array_key_exists('ocpp_password', $ch)) {
+                $chargerMeta['ocpp_password'] = $ch['ocpp_password'] ?: null;
+            }
+            if (! empty($ch['connector_type'])) {
+                $chargerMeta['connector_type'] = $ch['connector_type'];
+            }
+            $charger->meta = array_filter($chargerMeta, fn ($v) => $v !== null);
             $charger->save();
             $stats['chargers']++;
 

@@ -85,13 +85,13 @@
         </div>
         <div class="lrow">
             <div class="l-ic ic-amber" data-ic="clock"></div>
-            <div class="l-main"><div class="l-title">هزینهٔ اشغال</div><div class="l-sub">پس از پایان شارژ</div></div>
+            <div class="l-main"><div class="l-title">هزینهٔ اشغال</div><div class="l-sub">پس از پایان شارژ@if(($tariffIdleGrace ?? null)) · {{ Persian::digits($tariffIdleGrace) }} دقیقه رایگان@endif</div></div>
             <div class="l-end tnum">@if($tariffIdle){{ Persian::money($tariffIdle) }} <span class="fs12 muted">ت/دقیقه</span>@else—@endif</div>
         </div>
         <div class="lrow" style="padding-bottom:0">
             <div class="l-ic ic-green" data-ic="leaf"></div>
             <div class="l-main"><div class="l-title">ساعات کم‌باری</div><div class="l-sub">{{ $tariffOffpeakHours }}</div></div>
-            <div class="l-end tnum" style="color:var(--green)">{{ Persian::money($tariffOffpeak) }} <span class="fs12 muted">ت/kWh</span></div>
+            <div class="l-end tnum" style="color:var(--green)">@if($tariffOffpeak){{ Persian::money($tariffOffpeak) }} <span class="fs12 muted">ت/kWh</span>@else—@endif</div>
         </div>
     </div>
 
