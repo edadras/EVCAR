@@ -65,6 +65,13 @@ return [
         'test_otp_codes' => env('SC_TEST_OTP_CODES', env('APP_ENV', 'production') === 'production' ? '' : '111111,222222,333333'),
     ],
 
+    // OCPI 2.2.1 برای رومینگ (توکن‌های شرکای رومینگ، جداشده با کاما)
+    'ocpi' => [
+        'tokens' => env('OCPI_TOKENS', ''),
+        'country_code' => env('OCPI_COUNTRY_CODE', 'IR'),
+        'party_id' => env('OCPI_PARTY_ID', 'SFC'),
+    ],
+
     'finance' => [
         // نرخ مالیات بر ارزش افزوده برای گزارش مالیاتی (مبالغ شامل مالیات فرض می‌شوند)
         'vat_percent' => (float) env('SC_VAT_PERCENT', 10),

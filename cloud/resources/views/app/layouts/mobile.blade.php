@@ -8,6 +8,11 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/assets/mobile/app-mobile.css">
+    <link rel="manifest" href="/app.webmanifest">
+    <meta name="theme-color" content="#0e63c9">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="SafirCharge">
+    <link rel="apple-touch-icon" href="/assets/pwa/apple-touch-icon.png">
     @stack('styles')
 </head>
 <body
@@ -57,6 +62,11 @@ window.SC_API = {
 <script src="/assets/mobile/arrival-monitor.js"></script>
 @endif
 @stack('scripts')
+<script>
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
+  window.addEventListener('load', function () { navigator.serviceWorker.register('/app-sw.js', { scope: '/app' }).catch(function () {}); });
+}
+</script>
 <style>
 .sc-backend-badge{position:fixed;bottom:calc(92px + env(safe-area-inset-bottom,0));left:max(12px,calc(50% - var(--phone-w,430px)/2 + 12px));z-index:300;opacity:.92;border:none;border-radius:20px;padding:4px 12px;font-family:inherit;font-size:11px;font-weight:800;letter-spacing:.02em;cursor:pointer;box-shadow:var(--shadow-md)}
 body[data-no-tab] .sc-backend-badge{bottom:calc(120px + env(safe-area-inset-bottom,0))}
