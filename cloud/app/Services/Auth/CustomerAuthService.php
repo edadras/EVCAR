@@ -159,6 +159,7 @@ class CustomerAuthService
         string $registrationToken,
         ?string $name = null,
         ?string $registrationProof = null,
+        bool $startWebSession = true,
     ): array {
         $normalized = PhoneNormalizer::normalize($phone);
         $payload = Cache::get($this->registrationCacheKey($registrationToken));
@@ -197,11 +198,14 @@ class CustomerAuthService
 
         Cache::forget($this->registrationCacheKey($registrationToken));
 
-        Auth::login($user, true);
+        if ($startWebSession) {
+            Auth::login($user, true);
+        }
 
         return [
             'message' => 'ثبت‌نام موفق',
             'user' => ['uuid' => $user->uuid, 'name' => $user->name],
+            'user_id' => $user->id,
         ];
     }
 

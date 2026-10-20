@@ -5,12 +5,20 @@ namespace App\Services\App;
 use App\Models\Connector;
 use App\Models\QrToken;
 use App\Models\User;
+use Illuminate\Support\Facades\Cache;
 
 class ChargingAuthorizationService
 {
     private const TTL_MINUTES = 20;
 
-    private const SESSION_KEY = 'sc_connector_grants';
+    /**
+     * مجوزها به کاربر گره خورده‌اند (نه به نشست مرورگر) تا اپ موبایل با توکن هم
+     * پس از اسکن QR بتواند شارژ را شروع کند.
+     */
+    private function key(int $userId): string
+    {
+        return 'sc_connector_grants:'.$userId;
+    }
 
     /** @return array{type: string, connector_id: int, connector_uuid: string}|null */
     public function tryGrantFromQrToken(?string $qrToken): ?array
@@ -47,7 +55,7 @@ class ChargingAuthorizationService
 
     public function grant(User $user, Connector $connector, string $type): void
     {
-        $grants = session(self::SESSION_KEY, []);
+        $grants = Cache::get($this->key($user->id), []);
         $grants[$connector->id] = [
             'type' => $type,
             'connector_id' => $connector->id,
@@ -55,7 +63,7 @@ class ChargingAuthorizationService
             'user_id' => $user->id,
             'expires_at' => now()->addMinutes(self::TTL_MINUTES)->timestamp,
         ];
-        session([self::SESSION_KEY => $grants]);
+        Cache::put($this->key($user->id), $grants, now()->addMinutes(self::TTL_MINUTES));
     }
 
     public function canStart(User $user, Connector $connector): bool
@@ -78,7 +86,8 @@ class ChargingAuthorizationService
     /** @return array<string, mixed>|null */
     public function activeGrant(int $connectorId): ?array
     {
-        $grant = session(self::SESSION_KEY, [])[$connectorId] ?? null;
+        $userId = auth()->id();
+        $grant = $userId ? (Cache::get($this->key((int) $userId), [])[$connectorId] ?? null) : null;
         if (! $grant) {
             return null;
         }
