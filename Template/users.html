@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SafirCharge — کاربران و سازمان‌ها</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/app.css">
+</head>
+<body data-page="users" data-title="کاربران و سازمان‌ها" data-crumb="عملیات">
+<div class="main">
+  <div class="content">
+
+    <div class="tabs mt-8" id="tabs" style="margin-bottom:18px">
+      <button class="active" data-tab="users">کاربران</button>
+      <button data-tab="org">حساب‌های سازمانی</button>
+    </div>
+
+    <!-- کاربران -->
+    <section data-pane="users">
+      <div class="kpi-grid" style="margin-bottom:16px">
+        <div class="mini-stat"><div class="ms-ic ic-blue" data-ic="users"></div><div><div class="ms-v tnum">۴۲٬۸۶۰</div><div class="ms-l">کل کاربران</div></div></div>
+        <div class="mini-stat"><div class="ms-ic ic-green" data-ic="activity"></div><div><div class="ms-v tnum">۲۸٬۴۱۰</div><div class="ms-l">کاربر فعال (۳۰ روز)</div></div></div>
+        <div class="mini-stat"><div class="ms-ic ic-orange" data-ic="plus"></div><div><div class="ms-v tnum">۱٬۲۴۰</div><div class="ms-l">عضویت جدید این ماه</div></div></div>
+        <div class="mini-stat"><div class="ms-ic ic-violet" data-ic="coins"></div><div><div class="ms-v tnum">۱٫۹ <small>م</small></div><div class="ms-l">میانگین موجودی کیف پول</div></div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div><h3>فهرست کاربران</h3></div>
+          <div class="head-actions">
+            <div class="seg" id="roleSeg"><button class="active">همه</button><button>عادی</button><button>سازمانی</button></div>
+            <a href="user-new.html" class="btn btn-sm btn-primary"><span class="bic" data-ic="plus"></span> کاربر جدید</a>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="tbl">
+            <thead><tr><th>کاربر</th><th>شماره موبایل</th><th>پلاک خودرو</th><th>نقش</th><th>شارژ خودکار</th><th>موجودی کیف پول</th><th>جلسات</th><th>وضعیت</th><th></th></tr></thead>
+            <tbody id="userBody"></tbody>
+          </table>
+        </div>
+        <div class="flex between items-center" style="padding:14px 18px;border-top:1px solid var(--border-2)">
+          <span class="muted fs12">نمایش ۱ تا ۸ از ۴۲٬۸۶۰</span>
+          <div class="flex gap-8"><button class="btn btn-sm">قبلی</button><button class="btn btn-sm btn-primary">۱</button><button class="btn btn-sm">۲</button><button class="btn btn-sm">۳</button><button class="btn btn-sm">بعدی</button></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- سازمان‌ها -->
+    <section data-pane="org" style="display:none">
+      <div class="grid g-3" id="orgCards"></div>
+      <div class="card mt-16">
+        <div class="card-head"><div><h3>نقش‌های سامانه</h3><div class="ch-sub">سطوح دسترسی و مدیریت</div></div></div>
+        <div class="card-pad">
+          <div class="grid g-3" id="roleCards"></div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</div>
+
+<style>
+.bic{display:inline-grid;width:16px;height:16px}.bic svg{width:16px;height:16px}
+.mini-stat{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:16px;display:flex;align-items:center;gap:13px;box-shadow:var(--shadow-sm)}
+.ms-ic{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;flex:none}.ms-ic svg{width:22px;height:22px}
+.ms-v{font-size:22px;font-weight:800}.ms-v small{font-size:12px;font-weight:600;color:var(--text-2)}.ms-l{font-size:12px;color:var(--muted)}
+
+.org-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:18px;box-shadow:var(--shadow-sm)}
+.org-top{display:flex;align-items:center;gap:12px}
+.org-logo{width:46px;height:46px;border-radius:13px;display:grid;place-items:center;color:#fff;font-weight:800;font-size:16px;flex:none}
+.org-stats{display:flex;gap:18px;margin-top:16px;padding-top:14px;border-top:1px solid var(--border-2)}
+.org-stats>div{flex:1}.org-stats .v{font-size:17px;font-weight:800}.org-stats .l{font-size:11px;color:var(--muted)}
+
+.role-card{border:1px solid var(--border);border-radius:14px;padding:16px}
+.role-card h4{font-size:14px}.role-card .rd{font-size:12px;color:var(--muted);margin-top:4px;line-height:1.6}
+.role-card .rc{display:inline-flex;align-items:center;gap:6px;margin-top:10px;font-size:11.5px;color:var(--text-2)}
+</style>
+
+<script src="assets/app.js"></script>
+<script>
+(function(){
+  document.querySelectorAll('[data-ic]').forEach(function(el){el.innerHTML=window.icon(el.getAttribute('data-ic'));});
+  function init(s){return s.split(' ').map(function(w){return w[0];}).join('.');}
+
+  var users=[
+    {n:'مهدی احمدی',m:'۰۹۱۲ ۳۴۵ ۶۷۸۹',r:['عادی','tag'],pl:{d2:'۱۲','let':'س',d3:'۳۴۵',prov:'۱۱'},auto:true,w:'۲٬۴۸۰٬۰۰۰',s:'۱۸',st:['فعال','pill-green'],c:'#0E6BA8'},
+    {n:'سارا رحیمی',m:'۰۹۱۲ ۱۱۱ ۲۲۳۳',r:['عادی','tag'],pl:{d2:'۴۵','let':'ب',d3:'۱۲۸',prov:'۲۲'},auto:true,w:'۸۹۰٬۰۰۰',s:'۴۲',st:['فعال','pill-green'],c:'#16A34A'},
+    {n:'علی کریمی',m:'۰۹۳۵ ۸۷۶ ۵۴۳۲',r:['سازمانی','pill-accent'],pl:{d2:'۲۳','let':'ل',d3:'۴۵۶',prov:'۱۳'},auto:true,w:'۵٬۰۰۰٬۰۰۰',s:'۱۳۶',st:['فعال','pill-green'],c:'#F97316'},
+    {n:'زهرا موسوی',m:'۰۹۱۹ ۴۴۴ ۵۵۶۶',r:['عادی','tag'],pl:{d2:'۶۷','let':'ن',d3:'۸۹۰',prov:'۱۱'},auto:false,w:'۱٬۲۰۰٬۰۰۰',s:'۲۷',st:['فعال','pill-green'],c:'#7C3AED'},
+    {n:'حسین نوری',m:'۰۹۳۹ ۳۳۳ ۲۲۱۱',r:['عادی','tag'],pl:{d2:'۸۱','let':'و',d3:'۲۳۴',prov:'۱۲'},auto:false,w:'۳۲۰٬۰۰۰',s:'۹',st:['غیرفعال','pill'],c:'#0891B2'},
+    {n:'نگار صادقی',m:'۰۹۱۲ ۷۷۷ ۸۸۹۹',r:['عادی','tag'],pl:{d2:'۳۴','let':'م',d3:'۶۷۸',prov:'۱۰'},auto:true,w:'۴٬۱۰۰٬۰۰۰',s:'۶۸',st:['فعال','pill-green'],c:'#DC2626'},
+    {n:'امیر تهرانی',m:'۰۹۱۲ ۲۲۲ ۱۱۰۰',r:['سازمانی','pill-accent'],pl:{d2:'۱۰','let':'ط',d3:'۲۳۴',prov:'۱۲'},auto:true,w:'۲٬۸۵۰٬۰۰۰',s:'۱۹۲',st:['فعال','pill-green'],c:'#D97706'},
+    {n:'فاطمه قاسمی',m:'۰۹۱۹ ۶۶۶ ۵۵۴۴',r:['عادی','tag'],pl:null,auto:false,w:'۶۷۰٬۰۰۰',s:'۱۴',st:['فعال','pill-green'],c:'#0E6BA8'},
+  ];
+  document.getElementById('userBody').innerHTML=users.map(function(u){
+    return '<tr data-role="'+(u.r[0]==='سازمانی'?'org':'normal')+'">'+
+      '<td><div class="cell-user"><span class="uavatar" style="background:'+u.c+'">'+init(u.n)+'</span><span class="cell-strong">'+u.n+'</span></div></td>'+
+      '<td class="mono cell-muted">'+u.m+'</td>'+
+      '<td>'+(u.pl?window.plate(Object.assign({size:'sm'},u.pl)):'<span class="muted fs12">—</span>')+'</td>'+
+      '<td><span class="'+(u.r[1]==='tag'?'tag':'pill '+u.r[1])+'">'+u.r[0]+'</span></td>'+
+      '<td>'+(u.auto?'<span class="pill pill-green"><span class="pdot"></span>فعال</span>':'<span class="pill">غیرفعال</span>')+'</td>'+
+      '<td class="tnum cell-strong">'+u.w+'</td>'+
+      '<td class="tnum">'+u.s+'</td>'+
+      '<td><span class="pill '+u.st[1]+'">'+(u.st[1]==='pill-green'?'<span class="pdot"></span>':'')+u.st[0]+'</span></td>'+
+      '<td><button class="btn btn-sm">پروفایل</button></td></tr>';
+  }).join('');
+
+  var orgs=[
+    {n:'شهرداری تهران',t:'سازمان دولتی',d:248,c:'#0E6BA8',cars:'۲۴۸ خودرو',cards:'۳۱۲ کارت',cap:'۵۰ م/ماه',spent:'۳۲ م'},
+    {n:'تاکسی برقی سبز',t:'حمل‌ونقل',d:140,c:'#16A34A',cars:'۱۴۰ خودرو',cards:'۱۴۰ کارت',cap:'۸۰ م/ماه',spent:'۵۸ م'},
+    {n:'هلدینگ فناوری پاسارگاد',t:'شرکت خصوصی',d:36,c:'#7C3AED',cars:'۳۶ خودرو',cards:'۴۲ کارت',cap:'۲۰ م/ماه',spent:'۱۴ م'},
+  ];
+  document.getElementById('orgCards').innerHTML=orgs.map(function(o){
+    return '<div class="org-card">'+
+      '<div class="org-top"><div class="org-logo" style="background:'+o.c+'">'+o.n[0]+'</div>'+
+      '<div><div class="fw7">'+o.n+'</div><div class="muted fs12">'+o.t+'</div></div>'+
+      '<span class="pill pill-green" style="margin-inline-start:auto"><span class="pdot"></span>فعال</span></div>'+
+      '<div class="org-stats"><div><div class="v tnum">'+o.cars+'</div><div class="l">ناوگان</div></div>'+
+      '<div><div class="v tnum">'+o.cards+'</div><div class="l">کارت RFID</div></div></div>'+
+      '<div class="org-stats" style="border-top:none;padding-top:0;margin-top:10px"><div><div class="v tnum">'+o.cap+'</div><div class="l">سقف مصرف</div></div>'+
+      '<div><div class="v tnum">'+o.spent+'</div><div class="l">مصرف این ماه</div></div></div>'+
+      '</div>';
+  }).join('');
+
+  var roles=[
+    {t:'مدیر کل (Super Admin)',d:'دسترسی کامل به تمام بخش‌های سامانه، تنظیمات و کاربران.',n:'۳ نفر'},
+    {t:'مدیر مالی',d:'دسترسی به دفتر کل، تسویه‌ها، فاکتورها و گزارش‌های مالیاتی.',n:'۶ نفر'},
+    {t:'اپراتور ایستگاه',d:'مدیریت و کنترل شارژرهای ایستگاه‌های تحت پوشش.',n:'۴۸ نفر'},
+    {t:'پشتیبانی',d:'مشاهدهٔ خطاها، تیکت‌ها و کنترل از راه دور شارژرها.',n:'۲۲ نفر'},
+    {t:'مدیر سازمان',d:'مدیریت رانندگان، کارت‌ها و گزارش‌های سازمان مربوطه.',n:'۸۴ نفر'},
+    {t:'کاربر نهایی',d:'استفاده از اپلیکیشن، کیف پول و شارژ خودرو.',n:'۴۲٬۸۶۰ نفر'},
+  ];
+  document.getElementById('roleCards').innerHTML=roles.map(function(r){
+    return '<div class="role-card"><h4>'+r.t+'</h4><div class="rd">'+r.d+'</div><div class="rc">'+window.icon('users')+' '+r.n+'</div></div>';
+  }).join('');
+  document.querySelectorAll('.rc svg').forEach(function(s){s.style.width='15px';s.style.height='15px';});
+
+  document.querySelectorAll('#roleSeg button').forEach(function(b,idx){
+    b.addEventListener('click',function(){
+      document.querySelectorAll('#roleSeg button').forEach(function(x){x.classList.remove('active');});b.classList.add('active');
+      document.querySelectorAll('#userBody tr').forEach(function(tr){
+        var role=tr.getAttribute('data-role');
+        var show=idx===0||(idx===1&&role==='normal')||(idx===2&&role==='org');
+        tr.style.display=show?'':'none';
+      });
+    });
+  });
+  document.querySelectorAll('#tabs button').forEach(function(b){
+    b.addEventListener('click',function(){
+      document.querySelectorAll('#tabs button').forEach(function(x){x.classList.remove('active');});b.classList.add('active');
+      var t=b.getAttribute('data-tab');
+      document.querySelectorAll('[data-pane]').forEach(function(p){p.style.display=p.getAttribute('data-pane')===t?'':'none';});
+    });
+  });
+})();
+</script>
+</body>
+</html>

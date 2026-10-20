@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SafirCharge — ورود</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/app-mobile.css">
+</head>
+<body data-no-tab>
+<div class="phone login-phone">
+  <div class="login-top">
+    <div class="logo-mark" data-ic="bolt"></div>
+    <div class="logo-name">SafirCharge</div>
+    <div class="logo-sub">شارژ هوشمند خودرو برقی</div>
+  </div>
+
+  <div class="login-sheet">
+    <!-- مرحله ۱: موبایل -->
+    <div id="step1">
+      <h2 style="font-size:22px">ورود / ثبت‌نام</h2>
+      <p class="muted fs13 mt8">شماره موبایل خود را وارد کنید. کد تأیید برایتان پیامک می‌شود.</p>
+      <div class="field mt20">
+        <label>شماره موبایل</label>
+        <input class="input tnum" id="phone" inputmode="numeric" value="۰۹۱۲ ۳۴۵ ۶۷۸۹" dir="ltr" style="text-align:left">
+      </div>
+      <button class="btn" id="next1">دریافت کد تأیید</button>
+      <div class="offline-note mt16">
+        <span data-ic="shield"></span>
+        <span>در حالت <b>آفلاین</b> نیز با اتصال به WiFi ایستگاه می‌توانید ثبت‌نام و شارژ کنید.</span>
+      </div>
+      <div class="center-col mt20">
+        <span class="fs12 muted">با ورود، <span style="color:var(--accent);font-weight:600">قوانین و مقررات</span> را می‌پذیرید.</span>
+      </div>
+    </div>
+
+    <!-- مرحله ۲: OTP -->
+    <div id="step2" style="display:none">
+      <button class="txt-back" id="back2"><span data-ic="back"></span> تغییر شماره</button>
+      <h2 style="font-size:22px;margin-top:12px">کد تأیید</h2>
+      <p class="muted fs13 mt8">کد ۴ رقمی ارسال‌شده به <b class="tnum" style="color:var(--text)">۰۹۱۲ ۳۴۵ ۶۷۸۹</b> را وارد کنید.</p>
+      <div class="otp mt20" id="otp">
+        <div class="cell filled">۸</div><div class="cell filled">۳</div><div class="cell filled">۲</div><div class="cell">_</div>
+      </div>
+      <div class="center-col mt16">
+        <span class="fs13 muted">ارسال مجدد کد تا <b class="tnum" id="timer" style="color:var(--accent)">۰۰:۴۸</b></span>
+      </div>
+      <a href="home.html" class="btn mt20">تأیید و ورود</a>
+    </div>
+  </div>
+</div>
+
+<style>
+.login-phone{background:linear-gradient(165deg,var(--accent),color-mix(in srgb,var(--accent) 50%,var(--orange)))}
+.login-top{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;gap:6px}
+.logo-mark{width:84px;height:84px;border-radius:26px;background:rgba(255,255,255,.16);display:grid;place-items:center;margin-bottom:10px;backdrop-filter:blur(6px)}
+.logo-mark svg{width:44px;height:44px;fill:#fff;stroke:#fff}
+.logo-name{font-size:30px;font-weight:800;letter-spacing:-.02em}
+.logo-sub{font-size:14px;opacity:.9}
+
+.login-sheet{background:var(--surface);border-radius:30px 30px 0 0;padding:28px 24px calc(34px + env(safe-area-inset-bottom,0));box-shadow:0 -10px 40px rgba(0,0,0,.18);flex:none}
+
+.offline-note{display:flex;align-items:flex-start;gap:10px;background:var(--surface-2);border:1px solid var(--border-2);border-radius:14px;padding:13px;font-size:12.5px;color:var(--text-2);line-height:1.6}
+.offline-note svg{width:20px;height:20px;color:var(--green);flex:none;margin-top:1px}
+
+.txt-back{background:none;border:none;color:var(--accent);font-weight:600;font-size:13px;display:inline-flex;align-items:center;gap:4px;padding:0}
+.txt-back svg{width:16px;height:16px}
+</style>
+
+<script src="../assets/app-mobile.js"></script>
+<script>
+(function(){
+  document.getElementById('next1').addEventListener('click',function(){
+    document.getElementById('step1').style.display='none';
+    document.getElementById('step2').style.display='';
+    // شمارش معکوس
+    var t=48;var el=document.getElementById('timer');
+    var iv=setInterval(function(){
+      t--; if(t<0){clearInterval(iv);el.textContent='۰۰:۰۰';return;}
+      var s=t<10?'۰'+t.toLocaleString('fa-IR'):t.toLocaleString('fa-IR');
+      el.textContent='۰۰:'+s;
+    },1000);
+  });
+  document.getElementById('back2').addEventListener('click',function(){
+    document.getElementById('step2').style.display='none';
+    document.getElementById('step1').style.display='';
+  });
+})();
+</script>
+</body>
+</html>

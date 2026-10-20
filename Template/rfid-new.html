@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SafirCharge — صدور کارت RFID</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/app.css">
+</head>
+<body data-page="tariffs" data-title="صدور کارت RFID جدید" data-crumb="تعرفه‌ها و RFID">
+<div class="main">
+  <div class="content">
+
+    <div class="flex items-center gap-12 mt-8" style="margin-bottom:18px">
+      <a href="tariffs.html" class="btn btn-sm"><span class="bic" data-ic="dots"></span> بازگشت به کارت‌ها</a>
+    </div>
+
+    <div class="grid col-2-1">
+      <div style="display:flex;flex-direction:column;gap:16px">
+        <!-- نوع کارت -->
+        <div class="card">
+          <div class="card-head"><h3>نوع و دارندهٔ کارت</h3></div>
+          <div class="card-pad">
+            <div class="ffield col-span" style="margin-bottom:16px">
+              <label>نوع کارت</label>
+              <div class="card-types" id="cardTypes">
+                <button type="button" class="ct active" data-t="personal"><span class="ct-ic ic-blue" data-ic="chip"></span><span class="fw7">شخصی</span><span class="fs12 muted">متصل به یک کاربر</span></button>
+                <button type="button" class="ct" data-t="org"><span class="ct-ic ic-violet" data-ic="users"></span><span class="fw7">سازمانی</span><span class="fs12 muted">ناوگان سازمان</span></button>
+                <button type="button" class="ct" data-t="anon"><span class="ct-ic ic-orange" data-ic="card"></span><span class="fw7">بی‌نام</span><span class="fs12 muted">شارژ مهمان</span></button>
+              </div>
+            </div>
+            <div class="form-grid">
+              <div class="ffield"><label>کاربر / دارنده <span class="req">*</span></label><input class="finput" placeholder="جستجوی نام یا موبایل…"></div>
+              <div class="ffield"><label>سازمان (در صورت سازمانی)</label><select class="fselect"><option>—</option><option>شهرداری تهران</option><option>تاکسی برقی سبز</option><option>هلدینگ پاسارگاد</option></select></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- شماره کارت -->
+        <div class="card">
+          <div class="card-head"><div><h3>شمارهٔ کارت</h3><div class="ch-sub">از طریق خواندن کارت با ریدر یا ورود دستی</div></div></div>
+          <div class="card-pad">
+            <div class="ffield col-span" style="margin-bottom:14px">
+              <div class="seg" style="width:100%"><button type="button" class="active" id="mAuto" style="flex:1">صدور خودکار شماره</button><button type="button" id="mManual" style="flex:1">خواندن با ریدر</button></div>
+            </div>
+            <div class="form-grid">
+              <div class="ffield"><label>شمارهٔ کارت (UID)</label><input class="finput tnum" dir="ltr" style="text-align:right" id="uid" value="CN‑۱۸۴۲۱" readonly></div>
+              <div class="ffield"><label>تاریخ انقضا</label><input class="finput tnum" dir="ltr" style="text-align:right" value="۱۴۰۵/۰۹/۱۵"></div>
+            </div>
+            <div class="reader-box mt-12" id="readerBox" style="display:none">
+              <div class="reader-pulse"><span></span><span></span><span data-ic="chip"></span></div>
+              <div class="fw7 mt-12">کارت را روی ریدر USB قرار دهید…</div>
+              <div class="fs12 muted">UID به‌صورت خودکار خوانده می‌شود</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- تنظیمات -->
+        <div class="card">
+          <div class="card-head"><h3>تنظیمات شارژ</h3></div>
+          <div class="card-pad">
+            <div class="form-grid">
+              <div class="ffield"><label>کیف پول متصل</label><select class="fselect"><option>کیف پول کاربر</option><option>اعتبار سازمانی</option><option>پیش‌پرداخت کارت</option></select></div>
+              <div class="ffield"><label>سقف مصرف ماهانه (تومان)</label><input class="finput tnum" dir="ltr" style="text-align:right" placeholder="بدون محدودیت"></div>
+            </div>
+            <label class="toggle-row mt-8">
+              <div><div class="fw7 fs13">مجاز در حالت آفلاین</div><div class="fhint">امکان شارژ حتی هنگام قطع ارتباط ایستگاه با سرور</div></div>
+              <span class="switch on" data-sw><i></i></span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- پیش‌نمایش کارت -->
+      <div style="display:flex;flex-direction:column;gap:16px;align-self:start;position:sticky;top:84px">
+        <div class="rfid-preview">
+          <div class="flex between items-center" style="position:relative;z-index:1">
+            <span style="font-size:13px;opacity:.9">SafirCharge RFID</span>
+            <span class="rp-chip" data-ic="chip"></span>
+          </div>
+          <div class="rp-uid tnum" id="pvUid">CN ۱۸۴۲۱</div>
+          <div class="flex between" style="position:relative;z-index:1">
+            <div><div class="rp-l">دارنده</div><div class="rp-v" id="pvHolder">—</div></div>
+            <div><div class="rp-l">نوع</div><div class="rp-v" id="pvType">شخصی</div></div>
+          </div>
+        </div>
+        <button class="btn btn-primary" style="height:48px"><span class="bic" data-ic="plus"></span> صدور و چاپ کارت</button>
+        <button class="btn">ذخیره بدون چاپ</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<style>
+.bic{display:inline-grid;width:16px;height:16px}.bic svg{width:16px;height:16px}
+.card-types{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.ct{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;padding:15px 8px;border:1.5px solid var(--border);border-radius:14px;background:var(--surface);font-family:inherit}
+.ct.active{border-color:var(--accent);background:var(--accent-soft)}
+.ct-ic{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;margin-bottom:3px}.ct-ic svg{width:21px;height:21px}
+.toggle-row{display:flex;align-items:center;justify-content:space-between;gap:16px;background:var(--surface-2);border:1px solid var(--border-2);border-radius:12px;padding:13px 15px;cursor:pointer}
+.switch{width:44px;height:25px;border-radius:20px;background:var(--surface-3);position:relative;flex:none;transition:background .15s}
+.switch i{position:absolute;top:3px;inset-inline-start:3px;width:19px;height:19px;border-radius:50%;background:#fff;box-shadow:var(--shadow-sm);transition:transform .16s}
+.switch.on{background:var(--green)}
+html[dir=rtl] .switch.on i{transform:translateX(-19px)}
+
+.reader-box{text-align:center;padding:22px;border-radius:14px;background:var(--surface-2);border:1.5px dashed var(--border)}
+.reader-pulse{position:relative;display:grid;place-items:center;height:70px}
+.reader-pulse span:nth-child(1),.reader-pulse span:nth-child(2){position:absolute;width:56px;height:56px;border-radius:18px;border:2px solid var(--accent);opacity:0;animation:rpulse 2s ease-out infinite}
+.reader-pulse span:nth-child(2){animation-delay:1s}
+.reader-pulse [data-ic]{width:48px;height:48px;border-radius:15px;background:var(--accent-soft);color:var(--accent-strong);display:grid;place-items:center;z-index:1}
+.reader-pulse [data-ic] svg{width:24px;height:24px}
+@keyframes rpulse{0%{opacity:.5;transform:scale(1)}100%{opacity:0;transform:scale(2)}}
+
+.rfid-preview{position:relative;overflow:hidden;border-radius:20px;padding:22px;color:#fff;background:linear-gradient(135deg,var(--accent),color-mix(in srgb,var(--accent) 45%,var(--violet)));box-shadow:var(--shadow-lg);display:flex;flex-direction:column;gap:22px;min-height:180px}
+.rfid-preview::after{content:"";position:absolute;inset:0;background:radial-gradient(circle at 85% 0%,rgba(255,255,255,.2),transparent 45%)}
+.rp-chip{display:inline-grid;width:32px;height:26px;color:#ffe7a8}.rp-chip svg{width:32px;height:26px}
+.rp-uid{font-size:21px;font-weight:700;letter-spacing:.12em;position:relative;z-index:1;direction:ltr;text-align:left}
+.rp-l{font-size:11px;opacity:.85}.rp-v{font-size:14px;font-weight:700;margin-top:2px}
+</style>
+
+<script src="assets/app.js"></script>
+<script>
+(function(){
+  document.querySelectorAll('[data-ic]').forEach(function(el){el.innerHTML=window.icon(el.getAttribute('data-ic'));});
+  var typeNames={personal:'شخصی',org:'سازمانی',anon:'بی‌نام'};
+  document.querySelectorAll('#cardTypes .ct').forEach(function(b){
+    b.addEventListener('click',function(){
+      document.querySelectorAll('#cardTypes .ct').forEach(function(x){x.classList.remove('active');});b.classList.add('active');
+      document.getElementById('pvType').textContent=typeNames[b.getAttribute('data-t')];
+    });
+  });
+  var holderI=document.querySelector('.form-grid .finput');
+  holderI.addEventListener('input',function(){document.getElementById('pvHolder').textContent=this.value||'—';});
+  document.getElementById('uid').addEventListener('input',function(){document.getElementById('pvUid').textContent=this.value.replace(/‑/g,' ');});
+  document.getElementById('mAuto').addEventListener('click',function(){this.classList.add('active');document.getElementById('mManual').classList.remove('active');document.getElementById('readerBox').style.display='none';document.getElementById('uid').readOnly=true;});
+  document.getElementById('mManual').addEventListener('click',function(){this.classList.add('active');document.getElementById('mAuto').classList.remove('active');document.getElementById('readerBox').style.display='block';document.getElementById('uid').readOnly=false;document.getElementById('uid').value='';});
+  document.querySelectorAll('[data-sw]').forEach(function(s){s.closest('.toggle-row').addEventListener('click',function(){s.classList.toggle('on');});});
+})();
+</script>
+</body>
+</html>

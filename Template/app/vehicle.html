@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SafirCharge — خودروهای من</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/app-mobile.css">
+</head>
+<body data-no-tab>
+<div class="phone">
+  <div class="appbar" style="padding-top:2px">
+    <button class="ab-btn" onclick="location.href='account.html'"><span data-ic="back"></span></button>
+    <div style="flex:1"><div class="ab-title">خودروهای من</div></div>
+  </div>
+
+  <div class="screen">
+    <div class="fs12 muted" style="margin-bottom:12px">خودروی پیش‌فرض برای شارژ خودکار با پلاک استفاده می‌شود.</div>
+    <div style="display:flex;flex-direction:column;gap:12px" id="garage"></div>
+    <button class="add-veh mt16" id="addBtn"><span data-ic="plus"></span> افزودن خودروی جدید</button>
+  </div>
+</div>
+
+<!-- شیت افزودن خودرو -->
+<div class="sheet-overlay" id="sheet">
+  <div class="sheet">
+    <div class="sheet-grab"></div>
+    <div class="sheet-head"><h3>افزودن خودرو</h3><button class="ab-btn" id="closeSheet"><span data-ic="back"></span></button></div>
+
+    <label class="fld-l">برند و مدل</label>
+    <select class="input" id="modelSel"></select>
+
+    <label class="fld-l mt16">شماره پلاک</label>
+    <div class="plate-edit" id="plateEdit">
+      <span class="pe-flag"><i></i><i></i><i></i></span>
+      <span class="pe-seg"><input class="pe-d2 tnum" maxlength="2" value="۱۲" inputmode="numeric"><small>دو رقم</small></span>
+      <span class="pe-seg"><select class="pe-let"><option>الف</option><option>ب</option><option>ج</option><option>د</option><option selected>س</option><option>ص</option><option>ط</option><option>ق</option><option>ل</option><option>م</option><option>ن</option><option>و</option><option>ه</option><option>ی</option></select><small>حرف</small></span>
+      <span class="pe-seg"><input class="pe-d3 tnum" maxlength="3" value="۳۴۵" inputmode="numeric"><small>سه رقم</small></span>
+      <span class="pe-seg"><input class="pe-prov tnum" maxlength="2" value="۱۱" inputmode="numeric"><small>استان</small></span>
+    </div>
+
+    <label class="set-default"><span class="fw7 fs13">تنظیم به‌عنوان خودروی پیش‌فرض</span><span class="switch on" data-sw id="defSw"><i></i></span></label>
+
+    <button class="btn btn-orange sheet-cta" id="saveVeh"><span data-ic="check"></span> افزودن خودرو</button>
+  </div>
+</div>
+
+<style>
+.gveh{display:flex;flex-direction:column;gap:12px;padding:16px;border:1.5px solid var(--border);border-radius:18px;background:var(--surface);box-shadow:var(--shadow-sm)}
+.gveh.default{border-color:var(--accent)}
+.gv-top{display:flex;align-items:center;gap:13px}
+.gv-ic{width:48px;height:48px;border-radius:14px;display:grid;place-items:center;flex:none;background:var(--accent-soft);color:var(--accent-strong)}.gv-ic svg{width:24px;height:24px}
+.gv-badge{margin-inline-start:auto;flex:none}
+.gv-del{width:34px;height:34px;border-radius:10px;border:1px solid var(--border);background:var(--surface);color:var(--red);display:grid;place-items:center;flex:none}.gv-del svg{width:17px;height:17px}
+.gv-bottom{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-top:12px;border-top:1px solid var(--border-2)}
+.set-def{border:1px solid var(--accent);background:var(--accent-soft);color:var(--accent-strong);font-family:inherit;font-weight:700;font-size:12px;padding:7px 13px;border-radius:9px}
+.add-veh{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;height:50px;border-radius:15px;border:1.5px dashed var(--border);background:var(--surface-2);color:var(--accent);font-weight:700;font-size:14px}
+.add-veh svg{width:18px;height:18px}
+
+.sheet-overlay{position:absolute;inset:0;background:rgba(8,16,24,.5);backdrop-filter:blur(2px);display:flex;align-items:flex-end;opacity:0;visibility:hidden;transition:opacity .22s;z-index:60}
+.sheet-overlay.open{opacity:1;visibility:visible}
+.sheet-overlay .sheet{width:100%;background:var(--surface);border-radius:26px 26px 0 0;padding:10px 20px calc(20px + env(safe-area-inset-bottom,0));transform:translateY(100%);transition:transform .28s cubic-bezier(.2,.7,.3,1)}
+.sheet-overlay.open .sheet{transform:none}
+.sheet-grab{width:42px;height:5px;border-radius:5px;background:var(--border);margin:4px auto 12px}
+.sheet-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}.sheet-head h3{font-size:17px}
+.fld-l{display:block;font-size:12.5px;color:var(--muted);font-weight:600;margin-bottom:8px}
+.input{width:100%;border:1.5px solid var(--border);background:var(--surface-2);border-radius:13px;padding:0 14px;height:50px;font-family:inherit;font-size:14px;color:var(--text);outline:none;appearance:none}
+.input:focus{border-color:var(--accent)}
+.plate-edit{display:flex;align-items:stretch;height:66px;border:2px solid var(--border);border-radius:13px;overflow:hidden;background:var(--surface-2);direction:ltr}
+.plate-edit:focus-within{border-color:var(--accent)}
+.pe-flag{width:28px;background:#0b5fa5;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:6px;gap:2px}
+.pe-flag i{width:14px;height:3px;border-radius:1px}.pe-flag i:nth-child(1){background:#16A34A}.pe-flag i:nth-child(2){background:#fff}.pe-flag i:nth-child(3){background:#DC2626}
+.pe-seg{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border-left:1px solid var(--border)}
+.pe-seg:last-child{border-left:none}
+.pe-seg input,.pe-seg select{border:none;background:transparent;font-family:inherit;font-weight:800;font-size:19px;text-align:center;color:var(--text);outline:none;width:100%;padding:0 3px}
+.pe-seg .pe-let{font-size:16px;color:var(--accent)}
+.pe-seg small{font-size:9px;color:var(--muted);font-weight:600}
+.set-default{display:flex;align-items:center;justify-content:space-between;margin-top:18px;padding:13px 15px;background:var(--surface-2);border:1px solid var(--border-2);border-radius:13px}
+.switch{width:46px;height:26px;border-radius:20px;background:var(--surface-3);position:relative;flex:none;cursor:pointer;transition:background .15s}
+.switch i{position:absolute;top:3px;inset-inline-start:3px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:var(--shadow-sm);transition:transform .18s}
+.switch.on{background:var(--green)}
+html[dir=rtl] .switch.on i{transform:translateX(-20px)}
+.sheet-cta{width:100%;height:52px;margin-top:20px;font-size:15px}.sheet-cta svg{width:18px;height:18px}
+</style>
+
+<script src="../assets/app-mobile.js"></script>
+<script>
+(function(){
+  document.querySelectorAll('[data-ic]').forEach(function(el){el.innerHTML=window.icon(el.getAttribute('data-ic'));});
+
+  var MODELS=['ایویکو اسکایول ET5','کرمان موتور KMC EV','دیگنیتی الکتریک','کیا EV6','هیوندای آیونیک ۵','تسلا مدل ۳','BYD اتو ۳','MG 4'];
+  document.getElementById('modelSel').innerHTML=MODELS.map(function(m){return '<option>'+m+'</option>';}).join('');
+
+  var garage=[
+    {n:'ایویکو اسکایول ET5',b:'CCS2 · ۸۲ kWh',plate:{d2:'۱۲','let':'س',d3:'۳۴۵',prov:'۱۱'},def:true},
+    {n:'کیا EV6',b:'CCS2 · ۷۷ kWh',plate:{d2:'۸۸','let':'ق',d3:'۱۲۳',prov:'۲۲'},def:false}
+  ];
+
+  function render(){
+    document.getElementById('garage').innerHTML=garage.map(function(v,i){
+      return '<div class="gveh'+(v.def?' default':'')+'">'+
+        '<div class="gv-top"><div class="gv-ic">'+window.icon('car')+'</div>'+
+        '<div style="flex:1"><div class="fw7" style="font-size:15px">'+v.n+'</div><div class="fs12 muted mt4">'+v.b+'</div></div>'+
+        (v.def?'<span class="pill pill-accent gv-badge">پیش‌فرض</span>':'<button class="gv-del" data-del="'+i+'">✕</button>')+
+        '</div>'+
+        '<div class="gv-bottom">'+window.plate(v.plate)+
+        (v.def?'<span class="fs12 muted">خودروی فعال</span>':'<button class="set-def" data-def="'+i+'">تنظیم پیش‌فرض</button>')+
+        '</div></div>';
+    }).join('');
+    document.querySelectorAll('[data-def]').forEach(function(b){b.addEventListener('click',function(){garage.forEach(function(v){v.def=false;});garage[+b.getAttribute('data-def')].def=true;render();});});
+    document.querySelectorAll('[data-del]').forEach(function(b){b.addEventListener('click',function(){garage.splice(+b.getAttribute('data-del'),1);if(garage.length&&!garage.some(function(v){return v.def;}))garage[0].def=true;render();});});
+  }
+  render();
+
+  // شیت
+  var sheet=document.getElementById('sheet');
+  document.getElementById('addBtn').addEventListener('click',function(){sheet.classList.add('open');});
+  document.getElementById('closeSheet').addEventListener('click',function(){sheet.classList.remove('open');});
+  sheet.addEventListener('click',function(e){if(e.target===sheet)sheet.classList.remove('open');});
+  document.querySelectorAll('[data-sw]').forEach(function(s){s.addEventListener('click',function(){s.classList.toggle('on');});});
+
+  document.getElementById('saveVeh').addEventListener('click',function(){
+    var pe=document.getElementById('plateEdit');
+    var model=document.getElementById('modelSel').value;
+    var def=document.getElementById('defSw').classList.contains('on');
+    if(def)garage.forEach(function(v){v.def=false;});
+    garage.push({n:model,b:'CCS2 · EV',plate:{d2:pe.querySelector('.pe-d2').value||'۱۲','let':pe.querySelector('.pe-let').value,d3:pe.querySelector('.pe-d3').value||'۳۴۵',prov:pe.querySelector('.pe-prov').value||'۱۱'},def:def});
+    sheet.classList.remove('open');render();
+  });
+})();
+</script>
+</body>
+</html>

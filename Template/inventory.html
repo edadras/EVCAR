@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SafirCharge — انبار و دستگاه‌ها</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/app.css">
+</head>
+<body data-page="inventory" data-title="انبار و دستگاه‌ها" data-crumb="انبار و دارایی">
+<div class="main">
+  <div class="content">
+
+    <div class="flex between items-center mt-8" style="margin-bottom:18px">
+      <div class="tabs" id="tabs">
+        <button class="active" data-tab="stock">موجودی انبار</button>
+        <button data-tab="assign">واگذاری به شرکا</button>
+        <button data-tab="history">تاریخچه دستگاه</button>
+      </div>
+      <div class="flex gap-8">
+        <button class="btn btn-sm"><span class="bic" data-ic="download"></span> خروجی</button>
+        <button class="btn btn-sm btn-primary" id="addBtn"><span class="bic" data-ic="plus"></span> ثبت ورود کالا</button>
+      </div>
+    </div>
+
+    <!-- KPI -->
+    <div class="kpi-grid">
+      <div class="mini-stat"><div class="ms-ic ic-blue" data-ic="box"></div><div><div class="ms-v tnum">۲۴۸</div><div class="ms-l">دستگاه در انبار</div></div></div>
+      <div class="mini-stat"><div class="ms-ic ic-orange" data-ic="wrench"></div><div><div class="ms-v tnum">۱٬۸۴۰</div><div class="ms-l">قطعهٔ یدکی</div></div></div>
+      <div class="mini-stat"><div class="ms-ic ic-green" data-ic="truck"></div><div><div class="ms-v tnum">۲۱۶</div><div class="ms-l">واگذارشده به شرکا</div></div></div>
+      <div class="mini-stat"><div class="ms-ic ic-violet" data-ic="coins"></div><div><div class="ms-v tnum">۴۸٫۶ <small>میلیارد</small></div><div class="ms-l">ارزش موجودی</div></div></div>
+    </div>
+
+    <!-- موجودی -->
+    <section data-pane="stock">
+      <div class="card mt-16">
+        <div class="card-head">
+          <div><h3>موجودی انبار</h3><div class="ch-sub">دستگاه‌ها و قطعات با قیمت خرید</div></div>
+          <div class="head-actions">
+            <div class="seg" id="stockSeg"><button class="active">همه</button><button>دستگاه شارژر</button><button>قطعات</button><button>کم‌موجودی</button></div>
+            <div class="search" style="max-width:200px"><input id="stockSearch" placeholder="جستجوی کالا…"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></div>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="tbl">
+            <thead><tr><th>کد کالا</th><th>نام</th><th>دسته</th><th>تأمین‌کننده</th><th>موجودی</th><th>قیمت خرید واحد</th><th>ارزش کل</th><th>تاریخ ورود</th><th>وضعیت</th></tr></thead>
+            <tbody id="stockBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- واگذاری -->
+    <section data-pane="assign" style="display:none">
+      <div class="card mt-16">
+        <div class="card-head">
+          <div><h3>واگذاری دستگاه به شرکا و مالکین</h3><div class="ch-sub">دستگاه، قیمت واگذاری، تاریخ و شریک دریافت‌کننده</div></div>
+          <div class="head-actions"><button class="btn btn-sm btn-primary" id="assignBtn"><span class="bic" data-ic="plus"></span> واگذاری جدید</button></div>
+        </div>
+        <div class="table-wrap">
+          <table class="tbl">
+            <thead><tr><th>کد واگذاری</th><th>دستگاه</th><th>شماره سریال</th><th>شریک / مالک</th><th>قیمت خرید</th><th>قیمت واگذاری</th><th>تاریخ واگذاری</th><th>وضعیت</th><th></th></tr></thead>
+            <tbody id="assignBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- تاریخچه -->
+    <section data-pane="history" style="display:none">
+      <div class="grid col-1-2 mt-16">
+        <!-- انتخاب دستگاه -->
+        <div class="card" style="align-self:start">
+          <div class="card-head"><h3>انتخاب دستگاه</h3></div>
+          <div class="scroll-y" style="max-height:520px" id="devPicker"></div>
+        </div>
+        <!-- تایم‌لاین -->
+        <div class="card">
+          <div class="card-head">
+            <div><h3 id="histName">شارژر CP‑۹۱۰۱</h3><div class="ch-sub" id="histMeta">DC CCS2 · ۱۸۰kW · سریال SN‑۸۸۲۱۰۴</div></div>
+            <div class="head-actions"><span class="pill pill-green" id="histStatus"><span class="pdot"></span>واگذارشده</span></div>
+          </div>
+          <div class="card-pad">
+            <div class="grid g-3" style="margin-bottom:18px">
+              <div class="det-stat"><div class="ds-l">قیمت خرید</div><div class="ds-v tnum">۱۸۵ <small>م</small></div></div>
+              <div class="det-stat"><div class="ds-l">قیمت واگذاری</div><div class="ds-v tnum">۲۲۰ <small>م</small></div></div>
+              <div class="det-stat"><div class="ds-l">هزینهٔ تعمیرات</div><div class="ds-v tnum">۱۲٫۴ <small>م</small></div></div>
+            </div>
+            <div class="section-title" style="margin-bottom:12px">رویدادهای دستگاه</div>
+            <div class="timeline" id="histTimeline"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</div>
+
+<!-- مودال ثبت ورود کالا -->
+<div class="modal-overlay" id="addModal">
+  <div class="modal" style="max-width:600px">
+    <div class="modal-head"><h3>ثبت ورود کالا به انبار</h3><button class="icon-btn" id="closeAdd" style="width:34px;height:34px"><span data-ic="x"></span></button></div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="ffield"><label>نوع کالا</label><select class="fselect"><option>دستگاه شارژر</option><option>قطعهٔ یدکی</option><option>کابل و کانکتور</option><option>تجهیزات جانبی</option></select></div>
+        <div class="ffield"><label>نام کالا <span class="req">*</span></label><input class="finput" placeholder="مثلاً شارژر DC ۱۸۰kW"></div>
+        <div class="ffield"><label>تأمین‌کننده</label><input class="finput" placeholder="نام شرکت تأمین‌کننده"></div>
+        <div class="ffield"><label>تعداد <span class="req">*</span></label><input class="finput tnum" dir="ltr" style="text-align:right" value="۱"></div>
+        <div class="ffield"><label>قیمت خرید واحد (تومان) <span class="req">*</span></label><input class="finput tnum" dir="ltr" style="text-align:right" placeholder="۱۸۵٬۰۰۰٬۰۰۰"></div>
+        <div class="ffield"><label>تاریخ ورود</label><input class="finput tnum" dir="ltr" style="text-align:right" value="۱۴۰۳/۰۹/۲۳"></div>
+        <div class="ffield col-span"><label>شماره فاکتور خرید</label><input class="finput" placeholder="اختیاری"></div>
+      </div>
+    </div>
+    <div class="modal-foot"><button class="btn" id="cancelAdd">انصراف</button><button class="btn btn-primary"><span class="bic" data-ic="check"></span> ثبت در انبار</button></div>
+  </div>
+</div>
+
+<!-- مودال واگذاری -->
+<div class="modal-overlay" id="assignModal">
+  <div class="modal" style="max-width:600px">
+    <div class="modal-head"><h3>واگذاری دستگاه به شریک</h3><button class="icon-btn" id="closeAssign" style="width:34px;height:34px"><span data-ic="x"></span></button></div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="ffield col-span"><label>دستگاه از انبار <span class="req">*</span></label><select class="fselect"><option>شارژر DC CCS2 ۱۸۰kW · SN‑۸۸۲۱۰۴ (خرید: ۱۸۵ م)</option><option>شارژر DC CHAdeMO ۵۰kW · SN‑۸۸۲۱۰۵ (خرید: ۹۸ م)</option><option>شارژر AC Type2 ۲۲kW · SN‑۸۸۲۱۰۶ (خرید: ۴۲ م)</option></select></div>
+        <div class="ffield"><label>شریک / مالک <span class="req">*</span></label><select class="fselect"><option>پارکینگ مرکزی پاسداران</option><option>هتل اسپیناس</option><option>مجتمع تجاری کوروش</option><option>تاکسی برقی سبز</option></select></div>
+        <div class="ffield"><label>قیمت واگذاری (تومان) <span class="req">*</span></label><input class="finput tnum" dir="ltr" style="text-align:right" placeholder="۲۲۰٬۰۰۰٬۰۰۰"></div>
+        <div class="ffield"><label>تاریخ واگذاری</label><input class="finput tnum" dir="ltr" style="text-align:right" value="۱۴۰۳/۰۹/۲۳"></div>
+        <div class="ffield"><label>نوع واگذاری</label><select class="fselect"><option>فروش</option><option>اجاره</option><option>امانی (مشارکت)</option></select></div>
+        <div class="ffield col-span"><label>توضیحات</label><input class="finput" placeholder="اختیاری"></div>
+      </div>
+    </div>
+    <div class="modal-foot"><button class="btn" id="cancelAssign">انصراف</button><button class="btn btn-primary"><span class="bic" data-ic="check"></span> ثبت واگذاری</button></div>
+  </div>
+</div>
+
+<style>
+.bic{display:inline-grid;width:16px;height:16px}.bic svg{width:16px;height:16px}
+.mini-stat{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:16px;display:flex;align-items:center;gap:13px;box-shadow:var(--shadow-sm)}
+.ms-ic{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;flex:none}.ms-ic svg{width:22px;height:22px}
+.ms-v{font-size:22px;font-weight:800}.ms-v small{font-size:12px;font-weight:600;color:var(--text-2)}.ms-l{font-size:12px;color:var(--muted)}
+.ic-violet{background:color-mix(in srgb,var(--violet) 12%,white);color:var(--violet)}
+html[data-theme="dark"] .ic-violet{background:color-mix(in srgb,var(--violet) 26%,#0e1a26);color:#b794f4}
+.det-stat{background:var(--surface-2);border:1px solid var(--border-2);border-radius:var(--r);padding:13px 14px}
+.ds-l{font-size:11.5px;color:var(--muted)}.ds-v{font-size:19px;font-weight:800;margin-top:3px}.ds-v small{font-size:11px;font-weight:600;color:var(--text-2)}
+.dev-pick-row{display:flex;align-items:center;gap:11px;padding:13px 16px;border-bottom:1px solid var(--border-2);cursor:pointer;transition:background .12s}
+.dev-pick-row:last-child{border-bottom:none}
+.dev-pick-row:hover{background:var(--surface-2)}
+.dev-pick-row.active{background:var(--accent-softer);box-shadow:inset 3px 0 0 var(--accent)}
+.dev-pick-row .dp-ic{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;flex:none;background:var(--accent-soft);color:var(--accent-strong)}.dp-ic svg{width:19px;height:19px}
+.dev-pick-row .dp-n{font-weight:700;font-size:13px}.dev-pick-row .dp-s{font-size:11.5px;color:var(--muted)}
+.timeline{position:relative;padding-inline-start:6px}
+.tl-item{display:flex;gap:13px;padding-bottom:18px;position:relative}
+.tl-item:last-child{padding-bottom:0}
+.tl-item::before{content:"";position:absolute;inset-inline-start:5px;top:20px;bottom:-2px;width:2px;background:var(--border)}
+.tl-item:last-child::before{display:none}
+.tl-dot{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;flex:none;z-index:1}.tl-dot svg{width:15px;height:15px}
+.tl-body{flex:1;padding-bottom:2px}
+.tl-title{font-weight:700;font-size:13.5px}
+.tl-desc{font-size:12px;color:var(--text-2);margin-top:3px;line-height:1.7}
+.tl-meta{display:flex;gap:12px;margin-top:6px;font-size:11.5px;color:var(--muted)}
+.tl-cost{font-weight:700;color:var(--text-2)}
+</style>
+
+<script src="assets/app.js"></script>
+<script>
+(function(){
+  document.querySelectorAll('[data-ic]').forEach(function(el){el.innerHTML=window.icon(el.getAttribute('data-ic'));});
+
+  // موجودی
+  var stock=[
+    ['DV‑۸۸۲۱','شارژر DC CCS2 ۱۸۰kW','device','زیمنس','۱۲','۱۸۵٬۰۰۰٬۰۰۰','۲٬۲۲۰٬۰۰۰٬۰۰۰','۱۴۰۳/۰۸/۱۰',['موجود','pill-green']],
+    ['DV‑۸۸۲۲','شارژر DC CHAdeMO ۵۰kW','device','ABB','۸','۹۸٬۰۰۰٬۰۰۰','۷۸۴٬۰۰۰٬۰۰۰','۱۴۰۳/۰۸/۱۰',['موجود','pill-green']],
+    ['DV‑۸۸۲۳','شارژر AC Type2 ۲۲kW','device','کرمان‌موتور','۲۴','۴۲٬۰۰۰٬۰۰۰','۱٬۰۰۸٬۰۰۰٬۰۰۰','۱۴۰۳/۰۸/۱۵',['موجود','pill-green']],
+    ['PT‑۴۱۰۱','کانکتور CCS2','part','فونیکس','۴۸','۸٬۵۰۰٬۰۰۰','۴۰۸٬۰۰۰٬۰۰۰','۱۴۰۳/۰۹/۰۱',['موجود','pill-green']],
+    ['PT‑۴۱۰۲','کابل شارژ DC','part','فونیکس','۶','۱۴٬۰۰۰٬۰۰۰','۸۴٬۰۰۰٬۰۰۰','۱۴۰۳/۰۹/۰۱',['کم‌موجودی','pill-amber']],
+    ['PT‑۴۱۰۳','برد کنترل اصلی','part','زیمنس','۳','۳۲٬۰۰۰٬۰۰۰','۹۶٬۰۰۰٬۰۰۰','۱۴۰۳/۰۹/۰۵',['کم‌موجودی','pill-amber']],
+    ['PT‑۴۱۰۴','کنتور توان','part','ABB','۲۲','۶٬۸۰۰٬۰۰۰','۱۴۹٬۶۰۰٬۰۰۰','۱۴۰۳/۰۹/۱۰',['موجود','pill-green']],
+    ['PT‑۴۱۰۵','فن خنک‌کننده','part','بومی','۰','۲٬۴۰۰٬۰۰۰','۰','۱۴۰۳/۰۹/۱۲',['ناموجود','pill-red']]
+  ];
+  var catMap={device:['دستگاه','tag'],part:['قطعه','tag']};
+  function renderStock(filter,q){
+    document.getElementById('stockBody').innerHTML=stock.filter(function(r){
+      var fOk=filter==='all'||(filter==='device'&&r[2]==='device')||(filter==='part'&&r[2]==='part')||(filter==='low'&&(r[8][0]==='کم‌موجودی'||r[8][0]==='ناموجود'));
+      var qOk=!q||(r[0]+r[1]+r[3]).toLowerCase().indexOf(q)>-1;
+      return fOk&&qOk;
+    }).map(function(r){
+      return '<tr><td class="mono">'+r[0]+'</td><td class="cell-strong">'+r[1]+'</td>'+
+        '<td><span class="tag">'+catMap[r[2]][0]+'</span></td><td class="cell-muted">'+r[3]+'</td>'+
+        '<td class="tnum '+(r[4]==='۰'?'':'cell-strong')+'">'+r[4]+'</td><td class="tnum">'+r[5]+'</td><td class="tnum cell-strong">'+r[6]+'</td>'+
+        '<td class="cell-muted">'+r[7]+'</td><td><span class="pill '+r[8][1]+'">'+(r[8][1]==='pill-green'?'<span class="pdot"></span>':'')+r[8][0]+'</span></td></tr>';
+    }).join('');
+  }
+  renderStock('all','');
+  var sk=['all','device','part','low'];
+  document.querySelectorAll('#stockSeg button').forEach(function(b,i){b.addEventListener('click',function(){document.querySelectorAll('#stockSeg button').forEach(function(x){x.classList.remove('active');});b.classList.add('active');renderStock(sk[i],document.getElementById('stockSearch').value.trim().toLowerCase());});});
+  document.getElementById('stockSearch').addEventListener('input',function(){var a=document.querySelector('#stockSeg button.active');renderStock(sk[[].indexOf.call(a.parentNode.children,a)],this.value.trim().toLowerCase());});
+
+  // واگذاری‌ها
+  var assigns=[
+    ['AS‑۹۲۰۱','شارژر DC CCS2 ۱۸۰kW','SN‑۸۸۲۱۰۴','پارکینگ پاسداران','۱۸۵٬۰۰۰٬۰۰۰','۲۲۰٬۰۰۰٬۰۰۰','۱۴۰۳/۰۸/۲۰',['نصب‌شده','pill-green']],
+    ['AS‑۹۲۰۲','شارژر DC CHAdeMO ۵۰kW','SN‑۸۸۲۱۰۵','هتل اسپیناس','۹۸٬۰۰۰٬۰۰۰','۱۲۵٬۰۰۰٬۰۰۰','۱۴۰۳/۰۸/۲۵',['نصب‌شده','pill-green']],
+    ['AS‑۹۲۰۳','شارژر AC Type2 ۲۲kW','SN‑۸۸۲۱۰۶','مجتمع کوروش','۴۲٬۰۰۰٬۰۰۰','۵۸٬۰۰۰٬۰۰۰','۱۴۰۳/۰۹/۰۲',['در حال ارسال','pill-amber']],
+    ['AS‑۹۲۰۴','شارژر AC Type2 ۲۲kW','SN‑۸۸۲۱۰۷','تاکسی برقی سبز','۴۲٬۰۰۰٬۰۰۰','۵۵٬۰۰۰٬۰۰۰','۱۴۰۳/۰۹/۱۰',['نصب‌شده','pill-green']],
+    ['AS‑۹۲۰۵','شارژر DC CCS2 ۱۲۰kW','SN‑۸۸۲۱۰۸','پارکینگ پاسداران','۱۴۲٬۰۰۰٬۰۰۰','۱۷۵٬۰۰۰٬۰۰۰','۱۴۰۳/۰۹/۱۵',['در انتظار نصب','pill-accent']]
+  ];
+  document.getElementById('assignBody').innerHTML=assigns.map(function(r){
+    var profit=' (سود '+'+'+')';
+    return '<tr><td class="mono">'+r[0]+'</td><td class="cell-strong">'+r[1]+'</td><td class="mono cell-muted">'+r[2]+'</td>'+
+      '<td>'+r[3]+'</td><td class="tnum cell-muted">'+r[4]+'</td><td class="tnum cell-strong" style="color:var(--green)">'+r[5]+'</td>'+
+      '<td class="cell-muted">'+r[6]+'</td><td><span class="pill '+r[7][1]+'">'+(r[7][1]==='pill-green'?'<span class="pdot"></span>':'')+r[7][0]+'</span></td>'+
+      '<td><button class="btn btn-sm">جزئیات</button></td></tr>';
+  }).join('');
+
+  // تاریخچهٔ دستگاه — انتخابگر
+  var devices=[
+    {n:'شارژر CP‑۹۱۰۱',s:'DC CCS2 · SN‑۸۸۲۱۰۴',st:['واگذارشده','pill-green']},
+    {n:'شارژر CP‑۹۱۰۲',s:'DC CCS2 · SN‑۸۸۲۱۰۸',st:['واگذارشده','pill-green']},
+    {n:'شارژر CP‑۲۲۰۴',s:'DC CHAdeMO · SN‑۸۸۲۱۰۵',st:['در تعمیر','pill-amber']},
+    {n:'شارژر CP‑۴۴۲۰',s:'AC Type2 · SN‑۸۸۲۱۰۶',st:['واگذارشده','pill-green']},
+    {n:'شارژر CP‑۵۵۰۰',s:'AC Type2 · SN‑۸۸۲۱۰۹',st:['در انبار','pill-accent']}
+  ];
+  document.getElementById('devPicker').innerHTML=devices.map(function(d,i){
+    return '<div class="dev-pick-row'+(i===0?' active':'')+'" data-i="'+i+'"><div class="dp-ic">'+window.icon('station')+'</div>'+
+      '<div style="flex:1"><div class="dp-n">'+d.n+'</div><div class="dp-s">'+d.s+'</div></div>'+
+      '<span class="pill '+d.st[1]+'" style="font-size:10.5px">'+d.st[0]+'</span></div>';
+  }).join('');
+
+  // تایم‌لاین رویدادها
+  var histData=[
+    [
+      {ic:'box',c:'ic-blue',t:'ورود به انبار',d:'خرید از زیمنس · فاکتور INV‑۴۸۲۱',date:'۱۴۰۳/۰۸/۱۰',cost:'۱۸۵٬۰۰۰٬۰۰۰'},
+      {ic:'check',c:'ic-green',t:'تست و آماده‌سازی',d:'تست فنی موفق · میان‌افزار v۲٫۴',date:'۱۴۰۳/۰۸/۱۵',cost:null},
+      {ic:'truck',c:'ic-violet',t:'واگذاری به شریک',d:'پارکینگ پاسداران · فروش',date:'۱۴۰۳/۰۸/۲۰',cost:'۲۲۰٬۰۰۰٬۰۰۰'},
+      {ic:'plug',c:'ic-green',t:'نصب و راه‌اندازی',d:'نصب در میدان آزادی · کانکتور A1',date:'۱۴۰۳/۰۸/۲۲',cost:null},
+      {ic:'wrench',c:'ic-orange',t:'تعمیر — تعویض فن خنک‌کننده',d:'خطای دما · قطعهٔ PT‑۴۱۰۵ از انبار',date:'۱۴۰۳/۰۹/۱۲',cost:'۴٬۲۰۰٬۰۰۰'},
+      {ic:'wrench',c:'ic-orange',t:'سرویس دوره‌ای',d:'بازدید و کالیبراسیون کنتور',date:'۱۴۰۳/۰۹/۲۰',cost:'۸٬۲۰۰٬۰۰۰'}
+    ]
+  ];
+  function renderHist(i){
+    var d=devices[i];
+    document.getElementById('histName').textContent=d.n;
+    document.getElementById('histMeta').textContent=d.s;
+    var hs=document.getElementById('histStatus');hs.className='pill '+d.st[1];hs.innerHTML=(d.st[1]==='pill-green'?'<span class="pdot"></span>':'')+d.st[0];
+    var events=histData[0];
+    document.getElementById('histTimeline').innerHTML=events.map(function(e){
+      return '<div class="tl-item"><div class="tl-dot '+e.c+'">'+window.icon(e.ic)+'</div>'+
+        '<div class="tl-body"><div class="tl-title">'+e.t+'</div><div class="tl-desc">'+e.d+'</div>'+
+        '<div class="tl-meta"><span>'+e.date+'</span>'+(e.cost?'<span class="tl-cost">'+e.cost+' تومان</span>':'')+'</div></div></div>';
+    }).join('');
+  }
+  renderHist(0);
+  document.querySelectorAll('.dev-pick-row').forEach(function(el){el.addEventListener('click',function(){document.querySelectorAll('.dev-pick-row').forEach(function(x){x.classList.remove('active');});el.classList.add('active');renderHist(+el.getAttribute('data-i'));});});
+
+  // تب‌ها
+  document.querySelectorAll('#tabs button').forEach(function(b){
+    b.addEventListener('click',function(){
+      document.querySelectorAll('#tabs button').forEach(function(x){x.classList.remove('active');});b.classList.add('active');
+      var t=b.getAttribute('data-tab');
+      document.querySelectorAll('[data-pane]').forEach(function(p){p.style.display=p.getAttribute('data-pane')===t?'':'none';});
+    });
+  });
+
+  // مودال‌ها
+  function bindModal(openId,modalId,closeId,cancelId){
+    var m=document.getElementById(modalId);
+    document.getElementById(openId).addEventListener('click',function(){m.classList.add('open');});
+    document.getElementById(closeId).addEventListener('click',function(){m.classList.remove('open');});
+    document.getElementById(cancelId).addEventListener('click',function(){m.classList.remove('open');});
+    m.addEventListener('click',function(e){if(e.target===m)m.classList.remove('open');});
+  }
+  bindModal('addBtn','addModal','closeAdd','cancelAdd');
+  bindModal('assignBtn','assignModal','closeAssign','cancelAssign');
+})();
+</script>
+</body>
+</html>

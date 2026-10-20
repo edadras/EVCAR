@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SafirCharge — کارت RFID</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/app-mobile.css">
+</head>
+<body data-no-tab>
+<div class="phone">
+  <div class="appbar" style="padding-top:2px">
+    <button class="ab-btn" onclick="location.href='account.html'"><span data-ic="back"></span></button>
+    <div style="flex:1"><div class="ab-title">کارت RFID</div></div>
+  </div>
+
+  <div class="screen">
+    <!-- کارت فعلی -->
+    <div class="rfid-card rise">
+      <div class="row between" style="position:relative;z-index:1">
+        <span style="font-size:12px;opacity:.9">کارت متصل</span>
+        <span class="rc-chip" data-ic="chip"></span>
+      </div>
+      <div class="rc-num tnum">CN ۸۸۲۱ ۴۵۰۹ ۱۲۳۴</div>
+      <div class="row between" style="position:relative;z-index:1">
+        <div><div class="rc-l">دارنده</div><div class="rc-v">مهدی احمدی</div></div>
+        <span class="pill" style="background:rgba(255,255,255,.2);color:#fff"><span class="pdot" style="background:#7ee2a6"></span>فعال</span>
+      </div>
+    </div>
+
+    <!-- ثبت کارت جدید -->
+    <div class="sec-title">ثبت کارت جدید</div>
+    <div class="seg" style="margin-bottom:14px" id="mode">
+      <button class="active">اسکن NFC</button>
+      <button>ورود دستی</button>
+    </div>
+
+    <!-- اسکن NFC -->
+    <div data-pane="nfc">
+      <div class="nfc-zone">
+        <div class="nfc-rings"><span></span><span></span><span></span></div>
+        <div class="nfc-ic" data-ic="chip"></div>
+      </div>
+      <p class="nfc-hint">کارت RFID خود را به پشت گوشی نزدیک کنید تا به‌صورت خودکار شناسایی شود.</p>
+    </div>
+
+    <!-- ورود دستی -->
+    <div data-pane="manual" style="display:none">
+      <div class="card card-p">
+        <div class="field"><label>شمارهٔ کارت RFID</label><input class="input tnum" dir="ltr" style="text-align:center;letter-spacing:.1em" placeholder="CN‑۰۰۰۰"></div>
+        <div class="field" style="margin-bottom:0"><label>نام کارت (اختیاری)</label><input class="input" placeholder="مثلاً کارت اصلی"></div>
+      </div>
+    </div>
+
+    <!-- نکته -->
+    <div class="note-box mt16">
+      <span data-ic="shield"></span>
+      <span>کارت RFID برای شارژ در حالت آفلاین و بدون نیاز به گوشی استفاده می‌شود. کارت گم‌شده را می‌توانید از همین‌جا مسدود کنید.</span>
+    </div>
+
+    <button class="block-btn mt16"><span data-ic="x"></span> مسدودسازی کارت فعلی</button>
+  </div>
+
+  <div class="savebar">
+    <a href="account.html" class="btn"><span data-ic="check"></span> ثبت کارت</a>
+  </div>
+</div>
+
+<style>
+.rfid-card{position:relative;overflow:hidden;border-radius:20px;padding:20px;color:#fff;background:linear-gradient(135deg,#16A34A,#0e7a38);box-shadow:0 14px 30px rgba(22,163,74,.32);display:flex;flex-direction:column;gap:18px}
+.rfid-card::after{content:"";position:absolute;inset:0;background:radial-gradient(circle at 88% 0%,rgba(255,255,255,.2),transparent 45%)}
+.rc-chip{display:inline-grid;width:30px;height:24px;color:#ffe7a8}.rc-chip svg{width:30px;height:24px}
+.rc-num{font-size:18px;font-weight:700;letter-spacing:.12em;position:relative;z-index:1;direction:ltr;text-align:left}
+.rc-l{font-size:11px;opacity:.85}.rc-v{font-size:14px;font-weight:700;margin-top:2px}
+
+.nfc-zone{position:relative;height:200px;display:grid;place-items:center}
+.nfc-ic{width:84px;height:84px;border-radius:26px;background:var(--accent-soft);color:var(--accent-strong);display:grid;place-items:center;position:relative;z-index:1}
+.nfc-ic svg{width:42px;height:42px}
+.nfc-rings span{position:absolute;top:50%;left:50%;width:84px;height:84px;border-radius:30px;transform:translate(-50%,-50%);border:2px solid var(--accent);opacity:0;animation:nfc 2.4s ease-out infinite}
+.nfc-rings span:nth-child(2){animation-delay:.8s}.nfc-rings span:nth-child(3){animation-delay:1.6s}
+@keyframes nfc{0%{opacity:.5;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-50%) scale(2.6)}}
+.nfc-hint{text-align:center;color:var(--text-2);font-size:13px;line-height:1.7;max-width:260px;margin:0 auto}
+
+.note-box{display:flex;align-items:flex-start;gap:10px;background:var(--surface-2);border:1px solid var(--border-2);border-radius:14px;padding:13px;font-size:12px;color:var(--text-2);line-height:1.7}
+.note-box svg{width:19px;height:19px;color:var(--green);flex:none;margin-top:1px}
+.block-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;height:50px;border-radius:15px;background:var(--red-soft);color:var(--red);font-weight:700;font-size:14px;border:1px solid color-mix(in srgb,var(--red) 18%,transparent)}
+.block-btn svg{width:18px;height:18px}
+
+.savebar{position:absolute;bottom:0;left:0;right:0;background:color-mix(in srgb,var(--surface) 94%,transparent);backdrop-filter:blur(14px);border-top:1px solid var(--border);padding:14px 20px calc(20px + env(safe-area-inset-bottom,0));z-index:20}
+.savebar .btn svg{width:18px;height:18px}
+</style>
+
+<script src="../assets/app-mobile.js"></script>
+<script>
+document.querySelectorAll('#mode button').forEach(function(b,idx){
+  b.addEventListener('click',function(){
+    document.querySelectorAll('#mode button').forEach(function(x){x.classList.remove('active');});b.classList.add('active');
+    document.querySelector('[data-pane="nfc"]').style.display=idx===0?'':'none';
+    document.querySelector('[data-pane="manual"]').style.display=idx===1?'':'none';
+  });
+});
+</script>
+</body>
+</html>

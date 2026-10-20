@@ -1,0 +1,1086 @@
+یک صفحه در وب اپ درست کن و این بخش را در آن اضافه کن استایل را با سایر بخش های وب اگ حفظ کن هر جا هم نیاز به API داشتی راهنمایی کن که آن را برای شما ارسال کنم :# مشخصات فنی کامل: EV Navigator — سیستم مسیریابی هوشمند خودروی برقی
+
+---
+
+## ۱. خلاصه پروژه
+
+یک اپلیکیشن وب/موبایل که به رانندگان خودروهای برقی نشان می‌دهد:
+- از موقعیت فعلی تا مقصد چقدر انرژی مصرف می‌شود
+- در هر بخش از مسیر (سربالایی، سرازیری، باد، دما) مصرف چقدر تغییر می‌کند
+- با شارژ فعلی به کجا می‌رسند و کجا باید شارژ کنند
+- نزدیک‌ترین ایستگاه‌های شارژ کجاست و وضعیت آن‌ها چیست
+
+---
+
+## ۲. معماری کلی سیستم
+
+```
+[موبایل/مرورگر کاربر]
+        │
+        ▼
+[Backend API — Python FastAPI]
+        │
+   ┌────┴──────────────┐
+   │                   │
+[Smart Cache Layer]  [Orchestrator Service]
+ Redis (hot)              │
+ PostgreSQL (cold)    ┌───┼───┬──────────────┐
+                      │   │   │              │
+                  [OSRM] [Elev] [Weather] [Charger DB]
+                   API    API     API       API
+                    ↕      ↕       ↕           ↕
+              [route_cache] [elevation_tiles] [weather_cache] [stations_db]
+               PostgreSQL    PostgreSQL        PostgreSQL       PostgreSQL
+```
+
+### لایه‌های سیستم:
+
+| لایه | مسئولیت |
+|------|---------|
+| Frontend | نمایش نقشه، نمودار ارتفاع، وضعیت شارژ |
+| Backend Orchestrator | دریافت درخواست، فراخوانی APIها، ترکیب داده |
+| Smart Cache Layer | تصمیم‌گیری: آیا داده در DB هست یا باید از API بگیریم؟ |
+| Persistent Storage | PostgreSQL — ذخیره دائمی تمام داده‌های گران‌قیمت |
+| Hot Cache | Redis — ذخیره موقت داده‌های پرتکرار در RAM |
+| Calculation Engine | محاسبه مصرف واقعی هر بخش مسیر |
+
+---
+
+## ۳. استراتژی هوشمند کش و ذخیره‌سازی (Smart Caching Strategy)
+
+### ۳.۱ اصل کلی: کدام داده‌ها باید ذخیره شوند؟
+
+| نوع داده | تغییرپذیری | TTL Redis | ذخیره در DB | دلیل |
+|---------|-----------|-----------|-------------|------|
+| ارتفاع زمین | هرگز تغییر نمی‌کند | ∞ | بله، دائمی | جغرافیا ثابت است |
+| مسیر جاده‌ای (هندسه) | ندرتاً (سال‌ها) | 30 روز | بله، دائمی | جاده‌ها تغییر نمی‌کنند |
+| مسیر Google (هندسه) | ندرتاً (سال‌ها) | 30 روز | بله، دائمی | polyline جاده دائمی است |
+| ایستگاه‌های شارژ | هفتگی | 24 ساعت | بله، 7 روز | تعداد و مکان نسبتاً ثابت |
+| آب‌وهوا | هر ساعت | 1 ساعت | بله، 2 ساعت | داده لحظه‌ای، نگهداری کوتاه |
+
+### ۳.۲ سیستم سه لایه‌ای Cache
+
+```
+درخواست کاربر
+      │
+      ▼
+┌─────────────────────────────┐
+│  Layer 1: Redis (Hot Cache)  │  ← پاسخ در <1ms
+│  داده‌های پرتکرار در RAM     │
+└──────────────┬──────────────┘
+               │ نبود در Redis
+               ▼
+┌─────────────────────────────┐
+│  Layer 2: PostgreSQL (Cold) │  ← پاسخ در <10ms
+│  ذخیره دائمی در دیسک        │
+└──────────────┬──────────────┘
+               │ نبود در DB
+               ▼
+┌─────────────────────────────┐
+│  Layer 3: External API Call │  ← پاسخ در 200-2000ms
+│  دریافت از اینترنت + ذخیره  │    + هزینه API
+└─────────────────────────────┘
+```
+
+---
+
+## ۴. طراحی دیتابیس برای Persistent Cache
+
+### ۴.۱ جدول کش ارتفاع زمین
+
+```sql
+-- ذخیره ارتفاع با دقت Grid (هر سلول ~100 متر)
+CREATE TABLE elevation_cache (
+    id            BIGSERIAL PRIMARY KEY,
+
+    -- کلید جستجو: مختصات گرد شده به ۴ رقم اعشار (~11 متر دقت)
+    lat_rounded   DECIMAL(7,4) NOT NULL,
+    lng_rounded   DECIMAL(7,4) NOT NULL,
+
+    -- داده اصلی
+    elevation_m   DECIMAL(8,2) NOT NULL,
+
+    -- متادیتا
+    source        VARCHAR(30) DEFAULT 'opentopodata',  -- منبع داده
+    accuracy_m    DECIMAL(6,2) DEFAULT 30.0,           -- دقت متر
+    fetched_at    TIMESTAMP DEFAULT NOW(),
+
+    -- ارتفاع هرگز تغییر نمی‌کند، پس نیازی به TTL نیست
+    UNIQUE(lat_rounded, lng_rounded)
+);
+
+-- ایندکس ترکیبی برای جستجوی سریع
+CREATE INDEX idx_elevation_coords ON elevation_cache(lat_rounded, lng_rounded);
+
+-- ایندکس جغرافیایی برای جستجوی محدوده
+CREATE INDEX idx_elevation_spatial ON elevation_cache
+    USING BRIN(lat_rounded, lng_rounded);  -- بهینه برای داده‌های مرتب شده
+```
+
+**منطق گرد کردن مختصات:**
+```python
+def round_coord(value: float, precision: int = 4) -> float:
+    """
+    35.68923 → 35.6892  (دقت ~11 متر در عرض جغرافیایی)
+    این یعنی هر نقطه‌ای در شعاع 11 متر همان ارتفاع را برمی‌گرداند
+    برای مسیریابی خودرو کافی است
+    """
+    return round(value, precision)
+```
+
+### ۴.۲ جدول کش مسیرها
+
+```sql
+-- ذخیره مسیرهای کامل — دائمی (هندسه جاده تغییر نمی‌کند)
+CREATE TABLE route_cache (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    -- کلید: مبدا + مقصد گرد شده به ۳ رقم اعشار (~110 متر)
+    origin_lat      DECIMAL(6,3) NOT NULL,
+    origin_lng      DECIMAL(6,3) NOT NULL,
+    dest_lat        DECIMAL(6,3) NOT NULL,
+    dest_lng        DECIMAL(6,3) NOT NULL,
+
+    -- داده مسیر
+    distance_m      INTEGER NOT NULL,
+    duration_s      INTEGER NOT NULL,
+    polyline        TEXT NOT NULL,          -- GeoJSON رمزگذاری‌شده
+    waypoints       JSONB NOT NULL,         -- آرایه نقاط [lng, lat]
+    speed_profile   JSONB,                  -- سرعت مجاز هر بخش
+
+    -- متادیتا — بدون expires_at چون هندسه جاده دائمی است
+    source          VARCHAR(20) DEFAULT 'osrm',
+    fetched_at      TIMESTAMP DEFAULT NOW(),
+
+    UNIQUE(origin_lat, origin_lng, dest_lat, dest_lng)
+);
+
+CREATE INDEX idx_route_lookup ON route_cache(origin_lat, origin_lng, dest_lat, dest_lng);
+
+-- ─────────────────────────────────────────────────────────────
+-- جدول مسیر Google Directions — هندسه دائمی
+-- ─────────────────────────────────────────────────────────────
+CREATE TABLE google_directions_cache (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    origin_lat      DECIMAL(6,3) NOT NULL,
+    origin_lng      DECIMAL(6,3) NOT NULL,
+    dest_lat        DECIMAL(6,3) NOT NULL,
+    dest_lng        DECIMAL(6,3) NOT NULL,
+
+    -- هندسه مسیر — دائمی، جاده عوض نمی‌شود
+    distance_m      INTEGER NOT NULL,
+    polyline        TEXT NOT NULL,
+    waypoints       JSONB NOT NULL,
+    speed_limits    JSONB,                  -- سرعت مجاز هر بخش (ثابت)
+
+    fetched_at      TIMESTAMP DEFAULT NOW(),
+    -- بدون expires_at: هندسه دائمی است
+
+    UNIQUE(origin_lat, origin_lng, dest_lat, dest_lng)
+);
+
+CREATE INDEX idx_gdirections_lookup ON google_directions_cache
+    (origin_lat, origin_lng, dest_lat, dest_lng);
+```
+
+### ۴.۳ جدول کش آب‌وهوا
+
+```sql
+-- کش آب‌وهوا با TTL کوتاه
+CREATE TABLE weather_cache (
+    id              BIGSERIAL PRIMARY KEY,
+
+    -- کلید: مختصات گرد به ۲ رقم (~1.1 کیلومتر) + ساعت
+    lat_rounded     DECIMAL(5,2) NOT NULL,
+    lng_rounded     DECIMAL(5,2) NOT NULL,
+    hour_bucket     TIMESTAMP NOT NULL,     -- گرد شده به ساعت کامل
+
+    -- داده آب‌وهوا
+    temperature_c   DECIMAL(5,2),
+    wind_speed_ms   DECIMAL(6,2),
+    wind_dir_deg    SMALLINT,
+    pressure_hpa    DECIMAL(7,2),
+    humidity_pct    SMALLINT,
+
+    -- متادیتا
+    source          VARCHAR(30) DEFAULT 'open-meteo',
+    fetched_at      TIMESTAMP DEFAULT NOW(),
+    expires_at      TIMESTAMP DEFAULT NOW() + INTERVAL '2 hours',
+
+    UNIQUE(lat_rounded, lng_rounded, hour_bucket)
+);
+
+CREATE INDEX idx_weather_lookup ON weather_cache(lat_rounded, lng_rounded, hour_bucket);
+CREATE INDEX idx_weather_expiry ON weather_cache(expires_at);
+
+-- پاک‌سازی خودکار رکوردهای منقضی (اجرای روزانه)
+CREATE OR REPLACE FUNCTION cleanup_expired_weather() RETURNS void AS $$
+    DELETE FROM weather_cache WHERE expires_at < NOW();
+$$ LANGUAGE sql;
+```
+
+### ۴.۴ جدول ایستگاه‌های شارژ
+
+```sql
+CREATE EXTENSION IF NOT EXISTS postgis;
+
+CREATE TABLE charging_stations (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name            VARCHAR(200),
+    operator        VARCHAR(100),
+    location        GEOGRAPHY(POINT, 4326),
+    address         TEXT,
+    city            VARCHAR(100),
+    country_code    CHAR(2) DEFAULT 'IR',
+    total_ports     INT,
+    available_ports INT,
+    max_power_kw    DECIMAL(6,1),
+    connector_types TEXT[],
+    is_operational  BOOLEAN DEFAULT true,
+    is_free         BOOLEAN DEFAULT false,
+    price_per_kwh   DECIMAL(8,2),
+    source          VARCHAR(50),
+    external_id     VARCHAR(100),
+    last_synced     TIMESTAMP DEFAULT NOW(),
+    sync_expires_at TIMESTAMP DEFAULT NOW() + INTERVAL '7 days',
+    created_at      TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX idx_stations_geo ON charging_stations USING GIST(location);
+CREATE INDEX idx_stations_sync ON charging_stations(sync_expires_at);
+```
+
+---
+
+## ۵. سرویس Smart Cache (کد کامل)
+
+```python
+# smart_cache.py
+import asyncio
+import hashlib
+import json
+from datetime import datetime, timedelta
+from typing import Optional, List, Dict, Any
+
+import httpx
+from redis.asyncio import Redis
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import text
+
+
+class SmartCacheService:
+    """
+    سرویس مرکزی Cache — تمام تصمیم‌گیری‌های ذخیره/بازیابی اینجاست.
+    
+    اصل کار:
+    1. ابتدا Redis چک می‌کنیم (سریع‌ترین)
+    2. بعد PostgreSQL چک می‌کنیم (دائمی)
+    3. اگر هیچ‌کدام نبود، از API خارجی می‌گیریم و در هر دو ذخیره می‌کنیم
+    """
+
+    def __init__(self, redis: Redis, db: AsyncSession):
+        self.redis = redis
+        self.db = db
+        self.http = httpx.AsyncClient(timeout=15.0)
+
+    # ─────────────────────────────────────────────
+    # ارتفاع زمین
+    # ─────────────────────────────────────────────
+
+    async def get_elevations(self, points: List[tuple]) -> List[float]:
+        """
+        دریافت ارتفاع برای لیستی از نقاط.
+        نقاطی که در DB هستند از DB، بقیه از API گرفته و ذخیره می‌شوند.
+        """
+        results = {}
+        missing_points = []
+
+        # مرحله ۱: تبدیل به کلیدهای گرد شده
+        rounded = [(round(lat, 4), round(lng, 4)) for lat, lng in points]
+
+        # مرحله ۲: بررسی Redis برای همه نقاط (pipeline برای سرعت)
+        redis_keys = [f"elev:{lat},{lng}" for lat, lng in rounded]
+        cached_vals = await self.redis.mget(*redis_keys)
+
+        for i, val in enumerate(cached_vals):
+            if val is not None:
+                results[rounded[i]] = float(val)
+            else:
+                missing_points.append(rounded[i])
+
+        if not missing_points:
+            return [results[r] for r in rounded]
+
+        # مرحله ۳: بررسی PostgreSQL برای نقاط باقی‌مانده
+        placeholders = ",".join(
+            [f"({lat},{lng})" for lat, lng in missing_points]
+        )
+        sql = text(f"""
+            SELECT lat_rounded, lng_rounded, elevation_m
+            FROM elevation_cache
+            WHERE (lat_rounded, lng_rounded) IN ({placeholders})
+        """)
+        rows = await self.db.execute(sql)
+        db_missing = list(missing_points)
+
+        async with self.redis.pipeline() as pipe:
+            for row in rows:
+                key = (row.lat_rounded, row.lng_rounded)
+                results[key] = float(row.elevation_m)
+                db_missing.remove(key)
+                # ذخیره در Redis برای دفعات بعد
+                await pipe.set(
+                    f"elev:{key[0]},{key[1]}",
+                    str(row.elevation_m),
+                    ex=None  # ارتفاع هرگز expire نمی‌شود
+                )
+            await pipe.execute()
+
+        # مرحله ۴: فقط نقاطی که واقعاً گم هستند را از API بگیریم
+        if db_missing:
+            new_elevations = await self._fetch_elevations_from_api(db_missing)
+
+            # ذخیره در PostgreSQL (دائمی)
+            insert_values = []
+            for (lat, lng), elev in new_elevations.items():
+                insert_values.append(f"({lat}, {lng}, {elev}, 'opentopodata')")
+
+            if insert_values:
+                await self.db.execute(text(f"""
+                    INSERT INTO elevation_cache (lat_rounded, lng_rounded, elevation_m, source)
+                    VALUES {','.join(insert_values)}
+                    ON CONFLICT (lat_rounded, lng_rounded) DO NOTHING
+                """))
+                await self.db.commit()
+
+            # ذخیره در Redis (سریع)
+            async with self.redis.pipeline() as pipe:
+                for (lat, lng), elev in new_elevations.items():
+                    await pipe.set(f"elev:{lat},{lng}", str(elev))
+                    results[(lat, lng)] = elev
+                await pipe.execute()
+
+        return [results[r] for r in rounded]
+
+    async def _fetch_elevations_from_api(
+        self, points: List[tuple]
+    ) -> Dict[tuple, float]:
+        """دریافت ارتفاع از OpenTopoData به صورت batch"""
+        results = {}
+        for i in range(0, len(points), 100):  # هر بار 100 نقطه
+            batch = points[i:i + 100]
+            loc_str = "|".join([f"{lat},{lng}" for lat, lng in batch])
+            try:
+                resp = await self.http.get(
+                    f"https://api.opentopodata.org/v1/srtm30m?locations={loc_str}"
+                )
+                for j, result in enumerate(resp.json()['results']):
+                    results[batch[j]] = result['elevation']
+            except Exception as e:
+                print(f"Elevation API error: {e}")
+                for pt in batch:
+                    results[pt] = 0.0
+
+            if i + 100 < len(points):
+                await asyncio.sleep(1.1)  # rate limit رایگان
+
+        return results
+
+    # ─────────────────────────────────────────────
+    # Google Directions — هندسه دائمی
+    # ─────────────────────────────────────────────
+
+    async def get_google_route(self, origin: dict, destination: dict) -> dict:
+        """
+        مسیر Google Directions — فقط هندسه (polyline، waypoints، سرعت مجاز).
+        ترافیک حذف شده: تأثیری بر مصرف انرژی ندارد.
+        جاده هرگز عوض نمی‌شود → یک‌بار از API، برای همیشه در DB.
+        """
+        o_lat = round(origin['lat'], 3)
+        o_lng = round(origin['lng'], 3)
+        d_lat = round(destination['lat'], 3)
+        d_lng = round(destination['lng'], 3)
+        redis_key = f"groute:{o_lat},{o_lng}:{d_lat},{d_lng}"
+
+        # Layer 1: Redis (30 روز)
+        cached = await self.redis.get(redis_key)
+        if cached:
+            return json.loads(cached)
+
+        # Layer 2: PostgreSQL (دائمی)
+        row = (await self.db.execute(text("""
+            SELECT polyline, waypoints, distance_m, speed_limits
+            FROM google_directions_cache
+            WHERE origin_lat=:o_lat AND origin_lng=:o_lng
+              AND dest_lat=:d_lat   AND dest_lng=:d_lng
+        """), {"o_lat": o_lat, "o_lng": o_lng,
+               "d_lat": d_lat, "d_lng": d_lng})).fetchone()
+
+        if row:
+            geo = {
+                "polyline":    row.polyline,
+                "waypoints":   row.waypoints,
+                "distance_m":  row.distance_m,
+                "speed_limits": row.speed_limits,
+            }
+            await self.redis.setex(redis_key, 86400 * 30, json.dumps(geo))
+            return geo
+
+        # Layer 3: Google API — یک‌بار، برای همیشه
+        # departure_time حذف شد — ترافیک به مصرف انرژی ربط ندارد
+        raw = await self._call_google_directions(origin, destination)
+        geo = {
+            "polyline":    raw["polyline"],
+            "waypoints":   raw["waypoints"],
+            "distance_m":  raw["distance_m"],
+            "speed_limits": raw.get("speed_limits"),
+        }
+
+        # ذخیره دائمی در DB
+        await self.db.execute(text("""
+            INSERT INTO google_directions_cache
+                (origin_lat, origin_lng, dest_lat, dest_lng,
+                 distance_m, polyline, waypoints, speed_limits)
+            VALUES (:o_lat,:o_lng,:d_lat,:d_lng,:dist,:poly,:wp,:sl)
+            ON CONFLICT (origin_lat,origin_lng,dest_lat,dest_lng)
+            DO UPDATE SET
+                polyline=EXCLUDED.polyline,
+                waypoints=EXCLUDED.waypoints,
+                fetched_at=NOW()
+        """), {
+            "o_lat": o_lat, "o_lng": o_lng,
+            "d_lat": d_lat, "d_lng": d_lng,
+            "dist": geo["distance_m"],
+            "poly": geo["polyline"],
+            "wp":   json.dumps(geo["waypoints"]),
+            "sl":   json.dumps(geo["speed_limits"]),
+        })
+        await self.db.commit()
+        await self.redis.setex(redis_key, 86400 * 30, json.dumps(geo))
+
+        return geo
+
+    # ─────────────────────────────────────────────
+    # مسیریابی
+    # ─────────────────────────────────────────────
+
+    async def get_route(self, origin: dict, destination: dict) -> dict:
+        """دریافت مسیر — کش سه لایه‌ای"""
+        # کلید با دقت ۳ رقم اعشار (~110 متر)
+        o_lat = round(origin['lat'], 3)
+        o_lng = round(origin['lng'], 3)
+        d_lat = round(destination['lat'], 3)
+        d_lng = round(destination['lng'], 3)
+        redis_key = f"route:{o_lat},{o_lng}:{d_lat},{d_lng}"
+
+        # Layer 1: Redis
+        cached = await self.redis.get(redis_key)
+        if cached:
+            return json.loads(cached)
+
+        # Layer 2: PostgreSQL
+        result = await self.db.execute(text("""
+            SELECT polyline, waypoints, distance_m, duration_s, speed_profile
+            FROM route_cache
+            WHERE origin_lat=:o_lat AND origin_lng=:o_lng
+              AND dest_lat=:d_lat   AND dest_lng=:d_lng
+              AND expires_at > NOW()
+        """), {"o_lat": o_lat, "o_lng": o_lng, "d_lat": d_lat, "d_lng": d_lng})
+        row = result.fetchone()
+
+        if row:
+            route_data = {
+                "polyline": row.polyline,
+                "waypoints": row.waypoints,
+                "distance_m": row.distance_m,
+                "duration_s": row.duration_s,
+                "speed_profile": row.speed_profile,
+            }
+            # بارگذاری به Redis
+            await self.redis.setex(redis_key, 86400 * 7, json.dumps(route_data))
+            return route_data
+
+        # Layer 3: API خارجی
+        route_data = await self._fetch_route_from_api(origin, destination)
+
+        # ذخیره در PostgreSQL
+        await self.db.execute(text("""
+            INSERT INTO route_cache
+                (origin_lat, origin_lng, dest_lat, dest_lng,
+                 distance_m, duration_s, polyline, waypoints, speed_profile)
+            VALUES (:o_lat, :o_lng, :d_lat, :d_lng,
+                    :dist, :dur, :poly, :wp, :sp)
+            ON CONFLICT (origin_lat, origin_lng, dest_lat, dest_lng)
+            DO UPDATE SET
+                polyline=EXCLUDED.polyline,
+                waypoints=EXCLUDED.waypoints,
+                fetched_at=NOW(),
+                expires_at=NOW() + INTERVAL '180 days'
+        """), {
+            "o_lat": o_lat, "o_lng": o_lng, "d_lat": d_lat, "d_lng": d_lng,
+            "dist": route_data['distance_m'],
+            "dur": route_data['duration_s'],
+            "poly": route_data['polyline'],
+            "wp": json.dumps(route_data['waypoints']),
+            "sp": json.dumps(route_data.get('speed_profile')),
+        })
+        await self.db.commit()
+
+        # ذخیره در Redis
+        await self.redis.setex(redis_key, 86400 * 30, json.dumps(route_data))
+
+        return route_data
+
+    # ─────────────────────────────────────────────
+    # آب‌وهوا
+    # ─────────────────────────────────────────────
+
+    async def get_weather(self, lat: float, lng: float) -> dict:
+        """
+        آب‌وهوا با TTL کوتاه — فقط ذخیره تا ۲ ساعت.
+        چون آب‌وهوا تغییر می‌کند، در PostgreSQL نگه می‌داریم
+        اما فقط برای ۲ ساعت معتبر است.
+        """
+        lat_r = round(lat, 2)
+        lng_r = round(lng, 2)
+        hour_bucket = datetime.now().replace(minute=0, second=0, microsecond=0)
+        redis_key = f"weather:{lat_r},{lng_r}:{hour_bucket.hour}"
+
+        # Layer 1: Redis (1 ساعت)
+        cached = await self.redis.get(redis_key)
+        if cached:
+            return json.loads(cached)
+
+        # Layer 2: PostgreSQL (2 ساعت)
+        result = await self.db.execute(text("""
+            SELECT temperature_c, wind_speed_ms, wind_dir_deg,
+                   pressure_hpa, humidity_pct
+            FROM weather_cache
+            WHERE lat_rounded=:lat AND lng_rounded=:lng
+              AND hour_bucket=:hour AND expires_at > NOW()
+        """), {"lat": lat_r, "lng": lng_r, "hour": hour_bucket})
+        row = result.fetchone()
+
+        if row:
+            weather = {
+                "temperature_c": float(row.temperature_c or 20),
+                "wind_speed_ms": float(row.wind_speed_ms or 0),
+                "wind_dir_deg": int(row.wind_dir_deg or 0),
+                "pressure_hpa": float(row.pressure_hpa or 1013),
+            }
+            await self.redis.setex(redis_key, 3600, json.dumps(weather))
+            return weather
+
+        # Layer 3: Open-Meteo API
+        weather = await self._fetch_weather_from_api(lat, lng)
+
+        # ذخیره در PostgreSQL
+        await self.db.execute(text("""
+            INSERT INTO weather_cache
+                (lat_rounded, lng_rounded, hour_bucket,
+                 temperature_c, wind_speed_ms, wind_dir_deg, pressure_hpa)
+            VALUES (:lat, :lng, :hour, :temp, :wind, :wdir, :press)
+            ON CONFLICT (lat_rounded, lng_rounded, hour_bucket)
+            DO UPDATE SET
+                temperature_c=EXCLUDED.temperature_c,
+                wind_speed_ms=EXCLUDED.wind_speed_ms,
+                wind_dir_deg=EXCLUDED.wind_dir_deg,
+                expires_at=NOW() + INTERVAL '2 hours'
+        """), {
+            "lat": lat_r, "lng": lng_r, "hour": hour_bucket,
+            "temp": weather['temperature_c'],
+            "wind": weather['wind_speed_ms'],
+            "wdir": weather['wind_dir_deg'],
+            "press": weather['pressure_hpa'],
+        })
+        await self.db.commit()
+
+        # ذخیره در Redis
+        await self.redis.setex(redis_key, 3600, json.dumps(weather))
+
+        return weather
+```
+
+---
+
+## ۶. Orchestrator اصلی (با استفاده از SmartCache)
+
+```python
+# orchestrator.py
+class RouteAnalyzer:
+    def __init__(self, cache: SmartCacheService):
+        self.cache = cache
+
+    async def analyze(self, origin, destination, vehicle, options):
+        # ۱. مسیر — از Cache یا OSRM
+        route = await self.cache.get_route(origin, destination)
+
+        # ۲. نمونه‌گیری هوشمند با الگوریتم RDP
+        #    به جای هر 100 متر یک نقطه، فقط نقاط «مهم» مسیر انتخاب می‌شوند
+        #    (جاهایی که شیب یا جهت تغییر می‌کند)
+        #    برای 450 کیلومتر: از ~4500 نقطه به ~200-400 نقطه کاهش می‌یابد
+        sample_points = self.smart_sample_route(
+            route['waypoints'],
+            max_points=400,          # سقف نقاط برای ارتفاع‌سنجی
+            rdp_epsilon=0.001        # حساسیت تشخیص تغییر مسیر
+        )
+
+        # ۳. ارتفاع — فقط نقاط ناشناخته از API، بقیه از DB
+        elevations = await self.cache.get_elevations(sample_points)
+
+        # ۴. آب‌وهوا — فقط 3 نقطه نماینده (ابتدا، وسط، انتها)
+        weather_points = await self._get_weather_along_route(sample_points)
+
+        # ۵. ایستگاه‌های شارژ — از DB (sync هفتگی)
+        chargers = await self.cache.get_chargers_near_route(sample_points)
+
+        # ۶. محاسبه مصرف
+        segments = self.calculate_consumption(
+            route, sample_points, elevations, weather_points, vehicle
+        )
+
+        # ۷. برنامه‌ریزی شارژ
+        charge_plan = self.plan_charging(segments, vehicle, chargers, options)
+
+        return self.build_response(segments, charge_plan, chargers, route)
+
+    def smart_sample_route(
+        self,
+        waypoints: List[tuple],
+        max_points: int = 400,
+        rdp_epsilon: float = 0.001
+    ) -> List[tuple]:
+        """
+        الگوریتم Ramer-Douglas-Peucker (RDP) برای کاهش نقاط مسیر.
+
+        ایده: نقاطی که روی یک خط مستقیم هستند حذف می‌شوند.
+        فقط نقاطی که مسیر در آن‌ها «زانو» می‌زند نگه داشته می‌شوند.
+
+        مثال برای تهران-اصفهان:
+          قبل از RDP: 4500 نقطه → 45 API call
+          بعد از RDP:  280 نقطه →  3 API call
+          صرفه‌جویی: 93%
+        """
+        if len(waypoints) <= 2:
+            return waypoints
+
+        def rdp(points, epsilon):
+            if len(points) < 3:
+                return points
+            # پیدا کردن دورترین نقطه از خط اول-آخر
+            start, end = points[0], points[-1]
+            max_dist, max_idx = 0.0, 0
+            for i in range(1, len(points) - 1):
+                # فاصله عمودی نقطه از خط
+                dx = end[0] - start[0]
+                dy = end[1] - start[1]
+                if dx == 0 and dy == 0:
+                    dist = ((points[i][0]-start[0])**2 + (points[i][1]-start[1])**2)**0.5
+                else:
+                    t = ((points[i][0]-start[0])*dx + (points[i][1]-start[1])*dy) / (dx*dx+dy*dy)
+                    t = max(0, min(1, t))
+                    proj = (start[0]+t*dx, start[1]+t*dy)
+                    dist = ((points[i][0]-proj[0])**2 + (points[i][1]-proj[1])**2)**0.5
+                if dist > max_dist:
+                    max_dist, max_idx = dist, i
+
+            if max_dist > epsilon:
+                left  = rdp(points[:max_idx+1], epsilon)
+                right = rdp(points[max_idx:],   epsilon)
+                return left[:-1] + right
+            return [start, end]
+
+        reduced = rdp(waypoints, rdp_epsilon)
+
+        # اگر هنوز بیشتر از max_points بود، epsilon را بزرگ‌تر کن
+        if len(reduced) > max_points:
+            reduced = rdp(waypoints, rdp_epsilon * 3)
+
+        return reduced
+
+    async def _get_weather_along_route(self, points):
+        """فقط 3 نقطه: ابتدا، وسط، انتها — interpolate بین آن‌ها"""
+        n = len(points)
+        indices = [0, n // 2, n - 1]
+        tasks = [self.cache.get_weather(points[i][1], points[i][0]) for i in indices]
+        weather_data = await asyncio.gather(*tasks)
+        return self._interpolate_weather(weather_data, n)
+```
+
+---
+
+## ۷. منابع داده و APIها
+
+### ۷.۱ مسیریابی — OSRM (رایگان)
+
+```
+Base URL: https://router.project-osrm.org
+Endpoint: /route/v1/driving/{lon1},{lat1};{lon2},{lat2}
+Params:
+  - overview=full
+  - geometries=geojson
+  - steps=true
+  - annotations=speed,duration,distance
+
+مثال:
+GET https://router.project-osrm.org/route/v1/driving/51.389,35.689;51.676,32.661
+    ?overview=full&geometries=geojson&steps=true&annotations=speed
+
+هزینه: رایگان | کلید لازم: خیر | کش: 6 ماه در DB
+```
+
+### ۷.۲ ارتفاع زمین — OpenTopoData (رایگان)
+
+```
+Base URL: https://api.opentopodata.org/v1/srtm30m
+Method: GET
+Params: locations={lat1},{lng1}|{lat2},{lng2}|...
+
+هزینه: رایگان | محدودیت: 1 req/ثانیه، 100 نقطه/call
+کش: دائمی در DB (ارتفاع زمین هرگز تغییر نمی‌کند)
+
+کاهش API call با الگوریتم RDP:
+  بدون RDP: 4500 نقطه → 45 call برای تهران-اصفهان
+  با RDP:    ~280 نقطه →  3 call  (صرفه‌جویی 93%)
+  
+توجه: پس از چند ماه استفاده، اکثر نقاط ایران در DB هستند
+و نیاز به API call به صفر می‌رسد.
+```
+
+### ۷.۳ آب‌وهوا — Open-Meteo (رایگان)
+
+```
+Base URL: https://api.open-meteo.com/v1/forecast
+Params:
+  - latitude, longitude
+  - hourly=temperature_2m,windspeed_10m,winddirection_10m,surface_pressure
+  - windspeed_unit=ms
+
+هزینه: رایگان | کلید لازم: خیر
+کش: 2 ساعت در DB
+تعداد call: فقط 3 نقطه از مسیر (ابتدا، وسط، انتها) + interpolate
+```
+
+### ۷.۴ ایستگاه‌های شارژ — OpenChargeMap (رایگان)
+
+```
+Base URL: https://api.openchargemap.io/v3/poi
+Params: latitude, longitude, distance=50, key={FREE_KEY}
+
+هزینه: رایگان | کش: 7 روز در DB
+همگام‌سازی: background job هفتگی
+```
+
+### ۷.۵ Google Directions — هندسه مسیر (دائمی)
+
+```
+Base URL: https://maps.googleapis.com/maps/api/directions/json
+Params:
+  - origin={lat,lng}
+  - destination={lat,lng}
+  - mode=driving
+  - key={API_KEY}
+
+  ← departure_time حذف شد: ترافیک هیچ تأثیری بر
+    مصرف انرژی ندارد و به آن نیازی نیست.
+
+هزینه: $5/1000 درخواست
+
+استراتژی کش:
+  polyline، waypoints، سرعت مجاز → دائمی در PostgreSQL
+  یک‌بار از API، برای همیشه ذخیره — جاده عوض نمی‌شود.
+
+نتیجه: از 1000 کاربر روزانه همان مسیر:
+  بدون Cache: 1000 call/روز = $5/روز
+  با Cache:       0 call/روز = $0/روز  (بعد از اولین بار)
+```
+
+---
+
+## ۸. Job های پس‌زمینه (Background Sync)
+
+```python
+# background_jobs.py
+from celery import Celery
+from celery.schedules import crontab
+
+app = Celery('ev_navigator')
+
+@app.task
+async def sync_charging_stations():
+    """
+    هفتگی: همگام‌سازی ایستگاه‌های شارژ از OpenChargeMap
+    بدون اینکه کاربر منتظر بماند
+    """
+    # لیست شهرهای اصلی ایران
+    cities = [
+        {"name": "تهران",   "lat": 35.689, "lng": 51.389},
+        {"name": "اصفهان",  "lat": 32.661, "lng": 51.676},
+        {"name": "مشهد",    "lat": 36.297, "lng": 59.606},
+        {"name": "تبریز",   "lat": 38.080, "lng": 46.291},
+        {"name": "شیراز",   "lat": 29.591, "lng": 52.583},
+        {"name": "قم",      "lat": 34.639, "lng": 50.876},
+        {"name": "کرج",     "lat": 35.835, "lng": 50.999},
+    ]
+    for city in cities:
+        await fetch_and_store_chargers(city['lat'], city['lng'])
+        await asyncio.sleep(2)  # rate limit
+
+@app.task
+async def cleanup_expired_weather():
+    """روزانه: پاک‌سازی کش آب‌وهوای منقضی"""
+    await db.execute(text(
+        "DELETE FROM weather_cache WHERE expires_at < NOW()"
+    ))
+    await db.commit()
+
+@app.task
+async def prefetch_popular_routes():
+    """
+    هفتگی: پیش‌بارگذاری ارتفاع مسیرهای پرتکرار
+    تا کاربران منتظر API call نمانند
+    """
+    popular_routes = [
+        ({"lat": 35.689, "lng": 51.389}, {"lat": 32.661, "lng": 51.676}),  # تهران-اصفهان
+        ({"lat": 35.689, "lng": 51.389}, {"lat": 36.297, "lng": 59.606}),  # تهران-مشهد
+        ({"lat": 35.689, "lng": 51.389}, {"lat": 29.591, "lng": 52.583}),  # تهران-شیراز
+    ]
+    for origin, dest in popular_routes:
+        route = await cache.get_route(origin, dest)
+        points = sample_route(route['waypoints'], 100)
+        await cache.get_elevations(points)  # ذخیره در DB
+        await asyncio.sleep(5)
+
+# زمان‌بندی
+app.conf.beat_schedule = {
+    'sync-chargers-weekly':      {'task': 'sync_charging_stations',   'schedule': crontab(day_of_week=1, hour=3)},
+    'cleanup-weather-daily':     {'task': 'cleanup_expired_weather',  'schedule': crontab(hour=4)},
+    'prefetch-routes-weekly':    {'task': 'prefetch_popular_routes',  'schedule': crontab(day_of_week=0, hour=2)},
+}
+```
+
+---
+
+## ۹. آمار صرفه‌جویی در API Call
+
+فرض: ۱۰۰۰ کاربر روزانه، مسیر تهران-اصفهان
+
+```
+══════════════════════════════════════════════════════
+ بدون هیچ بهینه‌سازی (نسخه ساده)
+══════════════════════════════════════════════════════
+  ارتفاع:      1000 × 45 call × $0.005 = $225/روز
+  مسیر Google: 1000 × 1  call × $0.005 = $5/روز
+  جمع:         $230/روز = ~$6,900/ماه
+
+══════════════════════════════════════════════════════
+ با Smart Cache + RDP (بعد از هفته اول)
+══════════════════════════════════════════════════════
+  ارتفاع:
+    → RDP: 4500 نقطه کاهش به ~280 نقطه (93% کمتر)
+    → هفته اول:  ~3 call/مسیر → $0.015/مسیر
+    → بعد از آن: 0 call (همه در DB)         = $0/روز
+
+  مسیر Google (هندسه):
+    → یک‌بار در DB ذخیره، دائمی
+    → ترافیک حذف شد (بی‌تأثیر بر مصرف انرژی)
+    → بعد از اولین بار:                      = $0/روز
+
+  آب‌وهوا (Open-Meteo):
+    → رایگان                                 = $0/روز
+
+  جمع روزانه (پس از هفته اول):              ~$0/روز
+  جمع ماهانه:                                ~$0/ماه
+
+══════════════════════════════════════════════════════
+  صرفه‌جویی کل: از $6,900 → ~$0 ماهانه (۱۰۰٪)
+══════════════════════════════════════════════════════
+```
+
+---
+
+## ۱۰. موتور محاسبه مصرف انرژی
+
+### ۱۰.۱ فرمول اصلی
+
+```
+E_total = E_base + E_slope + E_aero + E_thermal
+
+E_base    = (consumption_kwh_per_100km / 100) × d_km
+E_slope   = (m × g × Δh) / (3,600,000 × η_drivetrain)
+E_aero    = (0.5 × ρ × Cd × A × v_rel²) × d / (3,600,000 × η_drivetrain)
+E_thermal = HVAC_load_kw × (d_km / avg_speed_kmh)
+```
+
+| متغیر | توضیح | مقدار نمونه |
+|-------|-------|------------|
+| `m` | وزن خودرو + سرنشینان (kg) | 1800 |
+| `g` | شتاب گرانش (m/s²) | 9.81 |
+| `Δh` | اختلاف ارتفاع — از elevation_cache | متغیر |
+| `η_drivetrain` | راندمان درایوترین | 0.90 |
+| `ρ` | چگالی هوا — از ارتفاع + دما | ~1.225 |
+| `Cd` | ضریب پسا آیرودینامیک | 0.23-0.35 |
+| `v_rel` | سرعت نسبی خودرو و باد — از weather_cache | متغیر |
+
+### ۱۰.۲ ریجنریشن سرازیری
+
+```
+اگر Δh < 0:
+  E_regen = |E_slope| × 0.65 × 0.92
+  E_net   = E_slope + E_regen   ← منفی یعنی انرژی برگشتی
+```
+
+### ۱۰.۳ اثر دما
+
+```python
+def battery_temp_factor(temp_c):
+    if temp_c < 0:   return 0.70 + temp_c / 20 * 0.15
+    if temp_c < 15:  return 0.85 + temp_c / 15 * 0.10
+    if temp_c < 35:  return 1.0
+    return 1.0 - (temp_c - 35) * 0.005
+
+def hvac_load_kw(temp_c, target=22):
+    delta = abs(temp_c - target)
+    if delta < 3:   return 0.2
+    if delta < 10:  return 1.5
+    if delta < 20:  return 2.8
+    return 4.5
+```
+
+---
+
+## ۱۱. ساختار Frontend
+
+```
+Stack: React + TypeScript + Leaflet + Recharts
+
+App
+├── MapView
+│   ├── RoutePolyline       ← رنگ‌بندی بر اساس مصرف
+│   ├── ChargingMarkers
+│   └── LocationMarker
+├── SidePanel
+│   ├── VehicleSettings     ← شارژ، ظرفیت، مدل خودرو
+│   ├── ElevationChart      ← نمودار ارتفاع + مصرف روی هم
+│   ├── SegmentList         ← جزئیات هر بخش
+│   └── ChargePlan          ← برنامه ایستگاه‌های شارژ
+└── StatusBar               ← شارژ باقیمانده در هر نقطه
+```
+
+```javascript
+// رنگ‌بندی مسیر روی نقشه
+function getSegmentColor(ratio) {
+  if (ratio > 1.4)  return '#E24B4A';  // قرمز: سربالایی شدید
+  if (ratio > 1.15) return '#EF9F27';  // نارنجی: مصرف بالا
+  if (ratio < 0.7)  return '#1D9E75';  // سبز: ریجنریشن
+  if (ratio < 0.9)  return '#5DCAA5';  // آبی-سبز: مصرف کم
+  return '#378ADD';                     // آبی: عادی
+}
+```
+
+---
+
+## ۱۲. مدل خودروها
+
+```json
+[
+  { "id": "tesla_model3_sr", "name": "Tesla Model 3 SR",
+    "battery_kwh": 57.5, "consumption_base_kwh100": 14.0,
+    "mass_kg": 1611,  "cd": 0.23, "frontal_area_m2": 2.22,
+    "regen_efficiency": 0.70 },
+
+  { "id": "byd_atto3", "name": "BYD Atto 3",
+    "battery_kwh": 60.5, "consumption_base_kwh100": 17.0,
+    "mass_kg": 1750,  "cd": 0.29, "frontal_area_m2": 2.56,
+    "regen_efficiency": 0.65 },
+
+  { "id": "custom", "name": "خودروی سفارشی",
+    "battery_kwh": null, "consumption_base_kwh100": null,
+    "mass_kg": null, "cd": null, "frontal_area_m2": null }
+]
+```
+
+---
+
+## ۱۳. محیط اجرا و راه‌اندازی
+
+```bash
+# Backend
+pip install fastapi uvicorn redis sqlalchemy asyncpg httpx celery
+
+# Redis (Hot Cache)
+docker run -d -p 6379:6379 redis:alpine
+
+# PostgreSQL + PostGIS (Persistent Cache + DB)
+docker run -d -p 5432:5432 \
+  -e POSTGRES_DB=ev_navigator \
+  -e POSTGRES_PASSWORD=secret \
+  postgis/postgis:15-3.3
+
+# Celery Worker (Background Jobs)
+celery -A background_jobs worker --beat -l info
+```
+
+### متغیرهای محیطی
+
+```
+DATABASE_URL=postgresql+asyncpg://user:pass@localhost/ev_navigator
+REDIS_URL=redis://localhost:6379
+
+# اختیاری
+GOOGLE_MAPS_API_KEY=
+OPENCHARGE_API_KEY=
+
+# تنظیمات Cache
+ELEVATION_PRECISION_DIGITS=4      # دقت گرد کردن مختصات ارتفاع
+ROUTE_PRECISION_DIGITS=3           # دقت گرد کردن مختصات مسیر
+WEATHER_CACHE_HOURS=2
+ROUTE_CACHE_DAYS=180
+CHARGER_SYNC_DAYS=7
+```
+
+---
+
+## ۱۴. نقشه راه توسعه
+
+### فاز ۱ — MVP 
+- [ ] SmartCacheService با سه لایه (Redis + PostgreSQL + API)
+- [ ] جداول elevation_cache، route_cache، weather_cache
+- [ ] OSRM + OpenTopoData + Open-Meteo (همه رایگان)
+- [ ] محاسبه مصرف با شیب + باد
+- [ ] Frontend: نقشه Leaflet + نمودار ارتفاع
+- [ ] ۳ پروفایل خودرو
+
+### فاز ۲ — Beta 
+- [ ] Background jobs با Celery
+- [ ] Prefetch مسیرهای پرتکرار ایران
+- [ ] یکپارچه‌سازی OpenChargeMap
+- [ ] الگوریتم برنامه‌ریزی شارژ
+- [ ] API آمار Cache (چند درصد از DB، چند درصد API خارجی)
+
+### فاز ۳ — Production 
+- [ ] PWA / اپ موبایل
+- [ ] دیتابیس ایستگاه‌های شارژ ایران
+- [ ] Dashboard مدیریت Cache (حجم، Hit Rate، صرفه‌جویی)
+- [ ] API عمومی برای توسعه‌دهندگان
+
+---
+
+## ۱۵. خلاصه APIها و استراتژی Cache
+
+| API | کاربرد | هزینه | کش در Redis | کش در DB | مدت DB |
+|-----|--------|-------|-------------|-----------|--------|
+| OSRM | مسیر و مختصات | رایگان | 30 روز | بله | دائمی |
+| OpenTopoData | ارتفاع زمین (RDP) | رایگان | دائمی | بله | دائمی |
+| Open-Meteo | باد و دما (3 نقطه) | رایگان | 1 ساعت | بله | 2 ساعت |
+| OpenChargeMap | ایستگاه شارژ | رایگان | 24 ساعت | بله | 7 روز |
+| Google Elevation | ارتفاع دقیق‌تر (RDP) | $5/1000 | دائمی | بله | دائمی |
+| Google Directions | polyline + سرعت مجاز | $5/1000 | 30 روز | بله | دائمی |
+
+---
+
+*با این معماری، پس از یک ماه استفاده فعال، تمام درخواست‌ها
+بدون هیچ API call پولی پاسخ می‌گیرند. هندسه مسیر، ارتفاع زمین،
+و ایستگاه‌های شارژ همه دائمی در DB هستند. تنها هزینه احتمالی
+هفته اول راه‌اندازی برای پر شدن اولیه DB است.*

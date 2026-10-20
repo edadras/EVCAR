@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SafirCharge — کیف پول کاربران</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/app.css">
+</head>
+<body data-page="wallet" data-title="کیف پول و پرداخت کاربران" data-crumb="مالی و پرداخت">
+<div class="main">
+  <div class="content">
+
+    <div class="flex between items-center mt-8" style="margin-bottom:18px">
+      <div class="flex items-center gap-12">
+        <div class="seg" id="rangeSeg"><button class="active">امروز</button><button>هفته</button><button>ماه</button></div>
+        <span class="muted fs12">مدیریت کیف پول و تراکنش‌های همهٔ کاربران سامانه</span>
+      </div>
+      <div class="flex gap-8">
+        <button class="btn btn-sm"><span class="bic" data-ic="download"></span> خروجی</button>
+        <button class="btn btn-sm btn-primary" id="topupBtn"><span class="bic" data-ic="plus"></span> شارژ دستی کیف پول</button>
+      </div>
+    </div>
+
+    <!-- KPI سراسری -->
+    <div class="kpi-grid">
+      <div class="kpi">
+        <div class="kpi-ic ic-blue" data-ic="wallet"></div>
+        <div class="kpi-label">مجموع موجودی کیف پول کاربران</div>
+        <div class="kpi-val tnum">۴۸٫۲ <small>میلیارد تومان</small></div>
+        <div class="kpi-foot"><span class="muted">بدهی سامانه به ۴۲٬۸۶۰ کاربر</span></div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-ic ic-green" data-ic="plus"></div>
+        <div class="kpi-label">شارژ کیف پول (امروز)</div>
+        <div class="kpi-val tnum">۸۴۲ <small>میلیون</small></div>
+        <div class="kpi-foot"><span class="trend-up">▲ ۹٫۴٪</span><span class="muted">۱٬۲۴۰ تراکنش</span></div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-ic ic-orange" data-ic="bolt"></div>
+        <div class="kpi-label">مصرف از کیف پول (امروز)</div>
+        <div class="kpi-val tnum">۲۸۴ <small>میلیون</small></div>
+        <div class="kpi-foot"><span class="muted">هزینهٔ شارژ خودرو</span></div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-ic ic-violet" data-ic="refresh"></div>
+        <div class="kpi-label">استرداد در انتظار</div>
+        <div class="kpi-val tnum">۱۸ <small>درخواست</small></div>
+        <div class="kpi-foot"><span class="muted">۲۴٫۶ میلیون تومان</span></div>
+      </div>
+    </div>
+
+    <div class="grid col-2-1 mt-16">
+      <!-- نمودار -->
+      <div class="card">
+        <div class="card-head">
+          <div><h3>جریان کیف پول</h3><div class="ch-sub">شارژ در برابر مصرف · ۱۴ روز</div></div>
+          <div class="head-actions">
+            <span class="legend-inline"><i style="background:var(--green)"></i>شارژ کیف پول</span>
+            <span class="legend-inline"><i style="background:var(--orange)"></i>مصرف</span>
+          </div>
+        </div>
+        <div class="card-pad">
+          <svg id="flowChart" width="100%" height="230" viewBox="0 0 720 230" preserveAspectRatio="none"></svg>
+          <div class="chart-axis" id="flowAxis"></div>
+        </div>
+      </div>
+
+      <!-- درگاه‌ها -->
+      <div class="card">
+        <div class="card-head"><h3>درگاه‌های پرداخت</h3></div>
+        <div class="card-pad" style="padding-top:8px">
+          <div class="lrow" style="padding-top:0"><div class="l-ic ic-blue" data-ic="card"></div><div class="l-main"><div class="l-title">درگاه بانک ملت</div><div class="l-sub">۶۴٪ تراکنش‌ها</div></div><span class="pill pill-green"><span class="pdot"></span>سالم</span></div>
+          <div class="lrow"><div class="l-ic ic-green" data-ic="card"></div><div class="l-main"><div class="l-title">درگاه سامان</div><div class="l-sub">۲۸٪ تراکنش‌ها</div></div><span class="pill pill-green"><span class="pdot"></span>سالم</span></div>
+          <div class="lrow"><div class="l-ic ic-orange" data-ic="chip"></div><div class="l-main"><div class="l-title">کیف پول RFID (آفلاین)</div><div class="l-sub">۶٪ تراکنش‌ها</div></div><span class="pill pill-green"><span class="pdot"></span>سالم</span></div>
+          <div class="lrow" style="padding-bottom:0"><div class="l-ic ic-violet" data-ic="users"></div><div class="l-main"><div class="l-title">اعتبار سازمانی</div><div class="l-sub">۲٪ تراکنش‌ها</div></div><span class="pill pill-amber"><span class="pdot"></span>کند</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- جدول کیف پول کاربران -->
+    <div class="card mt-16">
+      <div class="card-head">
+        <div><h3>کیف پول کاربران</h3><div class="ch-sub">موجودی و وضعیت کیف پول هر کاربر</div></div>
+        <div class="head-actions">
+          <div class="search" style="max-width:240px"><input placeholder="جستجوی کاربر یا موبایل…">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+          </div>
+          <div class="seg" id="typeSeg"><button class="active">همه</button><button>عادی</button><button>سازمانی</button></div>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table class="tbl">
+          <thead><tr><th>کاربر</th><th>موبایل</th><th>نوع</th><th>موجودی</th><th>اعتبار پاداش</th><th>آخرین تراکنش</th><th>وضعیت</th><th></th></tr></thead>
+          <tbody id="walletBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- استرداد -->
+    <div class="card mt-16">
+      <div class="card-head"><div><h3>درخواست‌های استرداد وجه</h3></div><div class="head-actions"><span class="pill pill-amber"><span class="pdot"></span>۱۸ در انتظار</span></div></div>
+      <div class="table-wrap">
+        <table class="tbl">
+          <thead><tr><th>شناسه</th><th>کاربر</th><th>مبلغ</th><th>علت</th><th>تاریخ</th><th>وضعیت</th><th></th></tr></thead>
+          <tbody id="refundBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<style>
+.bic{display:inline-grid;width:16px;height:16px}.bic svg{width:16px;height:16px}
+.kpi-ic[data-ic] svg{width:21px;height:21px}
+.legend-inline{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--text-2);font-weight:600}.legend-inline i{width:10px;height:10px;border-radius:3px}
+.chart-axis{display:flex;justify-content:space-between;margin-top:8px;color:var(--muted);font-size:11px}
+.l-ic[data-ic] svg{width:18px;height:18px}
+</style>
+
+<!-- مودال شارژ دستی -->
+<div class="modal-overlay" id="topupModal">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-head">
+      <h3>شارژ دستی کیف پول</h3>
+      <button class="icon-btn" id="closeTopup" style="width:34px;height:34px"><span data-ic="x"></span></button>
+    </div>
+    <div class="modal-body">
+      <div class="ffield" style="margin-bottom:16px"><label>کاربر مقصد <span class="req">*</span></label><input class="finput" placeholder="جستجوی نام یا شماره موبایل…"></div>
+      <div class="ffield" style="margin-bottom:10px"><label>مبلغ (تومان) <span class="req">*</span></label><input class="finput tnum" dir="ltr" style="text-align:right" id="topupAmt" value="۵۰۰٬۰۰۰"></div>
+      <div class="flex gap-8" style="margin-bottom:16px">
+        <button class="chip-amt" data-v="۱۰۰٬۰۰۰">۱۰۰ هزار</button>
+        <button class="chip-amt" data-v="۵۰۰٬۰۰۰">۵۰۰ هزار</button>
+        <button class="chip-amt" data-v="۱٬۰۰۰٬۰۰۰">۱ میلیون</button>
+      </div>
+      <div class="form-grid">
+        <div class="ffield"><label>نوع اعتبار</label><select class="fselect"><option>موجودی عادی</option><option>اعتبار پاداش</option><option>اعتبار جبرانی</option></select></div>
+        <div class="ffield"><label>بابت</label><select class="fselect"><option>شارژ دستی پشتیبانی</option><option>جبران خطای تراکنش</option><option>پاداش وفاداری</option></select></div>
+        <div class="ffield col-span"><label>توضیح (اختیاری)</label><input class="finput" placeholder="یادداشت برای سوابق"></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" id="cancelTopup">انصراف</button>
+      <button class="btn btn-primary"><span class="bic" data-ic="plus"></span> ثبت و شارژ</button>
+    </div>
+  </div>
+</div>
+
+<script src="assets/app.js"></script>
+<script>
+(function(){
+  document.querySelectorAll('[data-ic]').forEach(function(el){el.innerHTML=window.icon(el.getAttribute('data-ic'));});
+
+  // مودال شارژ دستی
+  var tm=document.getElementById('topupModal');
+  document.getElementById('topupBtn').addEventListener('click',function(){tm.classList.add('open');});
+  document.getElementById('closeTopup').addEventListener('click',function(){tm.classList.remove('open');});
+  document.getElementById('cancelTopup').addEventListener('click',function(){tm.classList.remove('open');});
+  tm.addEventListener('click',function(e){if(e.target===tm)tm.classList.remove('open');});
+  document.querySelectorAll('.chip-amt').forEach(function(c){c.addEventListener('click',function(){document.getElementById('topupAmt').value=c.getAttribute('data-v');document.querySelectorAll('.chip-amt').forEach(function(x){x.classList.remove('on');});c.classList.add('on');});});
+
+  (function(){
+    var topup=[280,320,300,360,340,420,400,380,440,420,480,460,520,500];
+    var spend=[180,210,200,240,230,290,270,260,300,290,330,320,360,350];
+    var W=720,H=230,pad=12,max=560;
+    function path(vals,area){var step=(W-pad*2)/(vals.length-1);var d=vals.map(function(v,i){var x=pad+i*step;var y=pad+(H-pad*2)*(1-v/max);return (i?'L':'M')+x.toFixed(1)+' '+y.toFixed(1);}).join(' ');if(area)d+=' L'+(W-pad)+' '+(H-pad)+' L'+pad+' '+(H-pad)+' Z';return d;}
+    var grid='';for(var g=0;g<=4;g++){var y=pad+(H-pad*2)*g/4;grid+='<line x1="'+pad+'" y1="'+y+'" x2="'+(W-pad)+'" y2="'+y+'" stroke="var(--border)" stroke-width="1" stroke-dasharray="3 5"/>';}
+    document.getElementById('flowChart').innerHTML=
+      '<defs><linearGradient id="gF" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--green)" stop-opacity=".24"/><stop offset="1" stop-color="var(--green)" stop-opacity="0"/></linearGradient></defs>'+
+      grid+'<path d="'+path(topup,true)+'" fill="url(#gF)"/>'+
+      '<path d="'+path(topup)+'" fill="none" stroke="var(--green)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>'+
+      '<path d="'+path(spend)+'" fill="none" stroke="var(--orange)" stroke-width="2.2" stroke-dasharray="2 4" stroke-linecap="round" stroke-linejoin="round"/>';
+    var ax=document.getElementById('flowAxis');['۱','۳','۵','۷','۹','۱۱','۱۴'].forEach(function(t){var s=document.createElement('span');s.textContent=t;ax.appendChild(s);});
+  })();
+
+  function init(s){return s.split(' ').map(function(w){return w[0];}).join('.');}
+  var users=[
+    {n:'مهدی احمدی',m:'۰۹۱۲ ۳۴۵ ۶۷۸۹',ty:['عادی','tag','normal'],bal:'۲٬۴۸۰٬۰۰۰',rw:'۱۲۰٬۰۰۰',last:'۱۲ دقیقه پیش',st:['فعال','pill-green'],c:'#0E6BA8'},
+    {n:'علی کریمی',m:'۰۹۳۵ ۸۷۶ ۵۴۳۲',ty:['سازمانی','pill-accent','org'],bal:'۵٬۰۰۰٬۰۰۰',rw:'۰',last:'۱ ساعت پیش',st:['فعال','pill-green'],c:'#F97316'},
+    {n:'سارا رحیمی',m:'۰۹۱۲ ۱۱۱ ۲۲۳۳',ty:['عادی','tag','normal'],bal:'۸۹۰٬۰۰۰',rw:'۴۰٬۰۰۰',last:'۳ ساعت پیش',st:['فعال','pill-green'],c:'#16A34A'},
+    {n:'زهرا موسوی',m:'۰۹۱۹ ۴۴۴ ۵۵۶۶',ty:['عادی','tag','normal'],bal:'۱٬۲۰۰٬۰۰۰',rw:'۸٬۰۰۰',last:'دیروز',st:['فعال','pill-green'],c:'#7C3AED'},
+    {n:'امیر تهرانی',m:'۰۹۱۲ ۲۲۲ ۱۱۰۰',ty:['سازمانی','pill-accent','org'],bal:'۲٬۸۵۰٬۰۰۰',rw:'۰',last:'دیروز',st:['فعال','pill-green'],c:'#D97706'},
+    {n:'حسین نوری',m:'۰۹۳۹ ۳۳۳ ۲۲۱۱',ty:['عادی','tag','normal'],bal:'۳۲٬۰۰۰',rw:'۰',last:'۳ روز پیش',st:['کم‌موجودی','pill-amber'],c:'#0891B2'},
+  ];
+  document.getElementById('walletBody').innerHTML=users.map(function(u){
+    return '<tr data-type="'+u.ty[2]+'">'+
+      '<td><div class="cell-user"><span class="uavatar" style="background:'+u.c+'">'+init(u.n)+'</span><span class="cell-strong">'+u.n+'</span></div></td>'+
+      '<td class="mono cell-muted">'+u.m+'</td>'+
+      '<td><span class="'+(u.ty[1]==='tag'?'tag':'pill '+u.ty[1])+'">'+u.ty[0]+'</span></td>'+
+      '<td class="tnum cell-strong">'+u.bal+'</td>'+
+      '<td class="tnum cell-muted">'+u.rw+'</td>'+
+      '<td class="cell-muted">'+u.last+'</td>'+
+      '<td><span class="pill '+u.st[1]+'">'+(u.st[1]==='pill-green'?'<span class="pdot"></span>':'')+u.st[0]+'</span></td>'+
+      '<td><button class="btn btn-sm">شارژ / تراکنش</button></td></tr>';
+  }).join('');
+
+  var refunds=[
+    ['RF‑۹۲۰','مهدی احمدی','۱۲۸٬۴۰۰','شارژ ناموفق — کسر دوبل','امروز',['در انتظار','pill-amber']],
+    ['RF‑۹۱۹','سارا رحیمی','۲۵٬۲۰۰','توقف زودهنگام شارژ','دیروز',['تأیید شد','pill-green']],
+    ['RF‑۹۱۸','علی کریمی','۴۸٬۰۰۰','خطای کانکتور','۲ روز پیش',['در انتظار','pill-amber']],
+    ['RF‑۹۱۷','زهرا موسوی','۹۶٬۰۰۰','درخواست کاربر','۳ روز پیش',['پرداخت شد','pill-green']],
+  ];
+  document.getElementById('refundBody').innerHTML=refunds.map(function(r){
+    return '<tr><td class="mono">'+r[0]+'</td><td class="cell-strong">'+r[1]+'</td><td class="tnum cell-strong">'+r[2]+'</td>'+
+      '<td class="cell-muted">'+r[3]+'</td><td class="cell-muted">'+r[4]+'</td><td><span class="pill '+r[5][1]+'">'+r[5][0]+'</span></td>'+
+      '<td><div class="flex gap-8"><button class="btn btn-sm btn-primary">تأیید</button><button class="btn btn-sm">رد</button></div></td></tr>';
+  }).join('');
+
+  document.querySelectorAll('#rangeSeg button').forEach(function(b){b.addEventListener('click',function(){document.querySelectorAll('#rangeSeg button').forEach(function(x){x.classList.remove('active');});b.classList.add('active');});});
+  document.querySelectorAll('#typeSeg button').forEach(function(b,idx){
+    b.addEventListener('click',function(){document.querySelectorAll('#typeSeg button').forEach(function(x){x.classList.remove('active');});b.classList.add('active');
+      document.querySelectorAll('#walletBody tr').forEach(function(tr){var t=tr.getAttribute('data-type');var show=idx===0||(idx===1&&t==='normal')||(idx===2&&t==='org');tr.style.display=show?'':'none';});});
+  });
+})();
+</script>
+</body>
+</html>

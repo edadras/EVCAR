@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SafirCharge — مانیتورینگ زنده شبکه</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/app.css">
+</head>
+<body data-page="monitoring" data-title="مانیتورینگ زنده شبکه" data-crumb="مدیریت شبکه · NOC">
+<div class="main">
+  <div class="content">
+
+    <div class="flex between items-center mt-8" style="margin-bottom:16px">
+      <div class="flex items-center gap-12">
+        <span class="pill pill-green"><span class="pdot"></span>پایش لحظه‌ای فعال</span>
+        <span class="muted fs12">آخرین به‌روزرسانی: <b id="clock" class="tnum">—</b></span>
+      </div>
+      <div class="flex gap-8">
+        <select class="fselect" style="width:auto;min-width:160px"><option>همهٔ ایستگاه‌ها</option><option>میدان آزادی</option><option>برج میلاد</option><option>نمایشگاه بین‌المللی</option></select>
+        <button class="btn btn-sm"><span class="bic" data-ic="refresh"></span> همگام‌سازی</button>
+      </div>
+    </div>
+
+    <!-- KPI شبکه -->
+    <div class="kpi-grid">
+      <div class="mini-stat"><div class="ms-ic ic-green" data-ic="plug"></div><div><div class="ms-v tnum">۱٬۲۴۸</div><div class="ms-l">نازل آنلاین</div></div><span class="ms-spark" style="color:var(--green)">▲</span></div>
+      <div class="mini-stat"><div class="ms-ic ic-orange" data-ic="bolt"></div><div><div class="ms-v tnum">۶۲۴</div><div class="ms-l">در حال شارژ</div></div></div>
+      <div class="mini-stat"><div class="ms-ic ic-blue" data-ic="activity"></div><div><div class="ms-v tnum">۲۸٫۴ <small>MW</small></div><div class="ms-l">بار لحظه‌ای شبکه</div></div></div>
+      <div class="mini-stat"><div class="ms-ic ic-violet" data-ic="refresh"></div><div><div class="ms-v tnum">۹۸٫۶٪</div><div class="ms-l">سلامت همگام‌سازی</div></div></div>
+      <div class="mini-stat"><div class="ms-ic ic-red" data-ic="alert"></div><div><div class="ms-v tnum">۱۸</div><div class="ms-l">خطای فعال</div></div></div>
+    </div>
+
+    <div class="grid col-2-1 mt-16">
+      <!-- بار شبکه -->
+      <div class="card">
+        <div class="card-head"><div><h3>بار توان شبکه</h3><div class="ch-sub">۶۰ دقیقهٔ گذشته · مگاوات</div></div>
+          <div class="head-actions"><span class="pill pill-green"><span class="pdot"></span>زنده</span></div>
+        </div>
+        <div class="card-pad">
+          <svg id="loadChart" width="100%" height="170" viewBox="0 0 720 170" preserveAspectRatio="none"></svg>
+        </div>
+      </div>
+      <!-- سلامت زیرساخت -->
+      <div class="card">
+        <div class="card-head"><h3>سلامت زیرساخت</h3></div>
+        <div class="card-pad" style="padding-top:8px">
+          <div class="hrow"><span class="h-ic ic-green" data-ic="refresh"></span><div class="l-main"><div class="l-title">سرور مرکزی (CSMS)</div><div class="l-sub">تأخیر ۸ms · بار ۳۴٪</div></div><span class="pill pill-green">سالم</span></div>
+          <div class="hrow"><span class="h-ic ic-green" data-ic="activity"></span><div class="l-main"><div class="l-title">صف رویداد (Queue)</div><div class="l-sub">۱٬۸۴۲ رویداد · پردازش روان</div></div><span class="pill pill-green">سالم</span></div>
+          <div class="hrow"><span class="h-ic ic-amber" data-ic="station"></span><div class="l-main"><div class="l-title">کنترلرهای لبه</div><div class="l-sub">۱۶ آفلاین از ۳۱۸</div></div><span class="pill pill-amber">هشدار</span></div>
+          <div class="hrow"><span class="h-ic ic-green" data-ic="bolt"></span><div class="l-main"><div class="l-title">درگاه پرداخت</div><div class="l-sub">پاسخ‌دهی نرمال</div></div><span class="pill pill-green">سالم</span></div>
+          <div class="hrow" style="border-bottom:none"><span class="h-ic ic-green" data-ic="bell"></span><div class="l-main"><div class="l-title">سامانهٔ اعلان</div><div class="l-sub">نرخ تحویل ۹۸٪</div></div><span class="pill pill-green">سالم</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- مانیتورینگ ایستگاه‌ها (کارتی) -->
+    <div class="flex between items-center mt-16" style="margin-bottom:14px">
+      <div><h3 style="font-size:17px">مانیتورینگ ایستگاه‌ها</h3><div class="muted fs12">هر باکس یک ایستگاه · وضعیت کانکتورها، بهره‌برداری و Sync</div></div>
+      <div class="head-actions">
+        <div class="seg" id="filterSeg"><button class="active">همه</button><button>سالم</button><button>پرتراکم</button><button>خطا/آفلاین</button></div>
+        <div class="search" style="max-width:200px"><input id="search" placeholder="جستجوی ایستگاه…"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></div>
+      </div>
+    </div>
+    <div class="station-grid" id="stationGrid"></div>
+
+  </div>
+</div>
+
+<style>
+.bic{display:inline-grid;width:16px;height:16px}.bic svg{width:16px;height:16px}
+.mini-stat{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:16px;display:flex;align-items:center;gap:12px;box-shadow:var(--shadow-sm);position:relative}
+.ms-ic{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;flex:none}.ms-ic svg{width:21px;height:21px}
+.ms-v{font-size:21px;font-weight:800}.ms-v small{font-size:11px;font-weight:600;color:var(--text-2)}.ms-l{font-size:11.5px;color:var(--muted)}
+.ms-spark{margin-inline-start:auto;font-size:13px}
+.ic-violet{background:color-mix(in srgb,var(--violet) 12%,white);color:var(--violet)}
+html[data-theme="dark"] .ic-violet{background:color-mix(in srgb,var(--violet) 26%,#0e1a26);color:#b794f4}
+.ic-red{background:var(--red-soft);color:var(--red)}
+.ic-amber{background:var(--amber-soft);color:var(--amber)}
+.hrow{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--border-2)}
+.hrow .h-ic{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;flex:none}.hrow .h-ic svg{width:19px;height:19px}
+.hrow .l-main{flex:1;min-width:0}
+.kpi-grid{grid-template-columns:repeat(5,1fr)}
+@media(max-width:1100px){.kpi-grid{grid-template-columns:repeat(2,1fr)}}
+.soc-mini{display:flex;align-items:center;gap:7px}
+.soc-bar{width:42px;height:6px;border-radius:6px;background:var(--surface-3);overflow:hidden;flex:none}
+.soc-bar i{display:block;height:100%;border-radius:6px}
+.sync-dot{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700}
+.sync-dot::before{content:"";width:8px;height:8px;border-radius:50%}
+.sync-ok{color:var(--green)}.sync-ok::before{background:var(--green)}
+.sync-lag{color:var(--amber)}.sync-lag::before{background:var(--amber)}
+.sync-off{color:var(--red)}.sync-off::before{background:var(--red)}
+.temp-warn{color:var(--red);font-weight:700}
+
+/* کارت ایستگاه */
+.station-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+@media(max-width:1200px){.station-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:760px){.station-grid{grid-template-columns:1fr}}
+.scard{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);box-shadow:var(--shadow-sm);overflow:hidden;border-top:3px solid var(--green)}
+.scard.warn{border-top-color:var(--amber)}
+.scard.bad{border-top-color:var(--red)}
+.scard-head{display:flex;align-items:flex-start;gap:11px;padding:15px 16px 12px}
+.scard-ic{width:40px;height:40px;border-radius:11px;display:grid;place-items:center;flex:none;background:var(--accent-soft);color:var(--accent-strong)}.scard-ic svg{width:20px;height:20px}
+.scard-name{font-weight:800;font-size:15px}
+.scard-loc{font-size:11.5px;color:var(--muted);margin-top:1px}
+.scard-st{margin-inline-start:auto;flex:none}
+.scard-metrics{display:flex;padding:0 16px 12px;gap:8px}
+.smetric{flex:1;background:var(--surface-2);border:1px solid var(--border-2);border-radius:11px;padding:9px 8px;text-align:center}
+.smetric .sm-v{font-size:15px;font-weight:800;line-height:1.1}.smetric .sm-v small{font-size:9.5px;font-weight:600;color:var(--text-2)}
+.smetric .sm-l{font-size:10px;color:var(--muted);margin-top:3px}
+.scard-util{padding:0 16px 12px}
+.util-top{display:flex;justify-content:space-between;font-size:11.5px;margin-bottom:6px}
+.util-bar{height:7px;border-radius:7px;background:var(--surface-3);overflow:hidden}
+.util-bar i{display:block;height:100%;border-radius:7px;background:linear-gradient(90deg,var(--green),#4ade80)}
+.util-bar.hi i{background:linear-gradient(90deg,var(--orange),#fbbf24)}
+.util-bar.full i{background:linear-gradient(90deg,var(--red),#f87171)}
+.scard-conns{padding:11px 16px;border-top:1px solid var(--border-2);background:var(--surface-2)}
+.conn-legend{display:flex;gap:5px}
+.nozzle{flex:1;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:10.5px;font-weight:800;position:relative;cursor:default}
+.nozzle.charging{background:var(--green);color:#fff}
+.nozzle.free{background:var(--green-soft);color:var(--green)}
+.nozzle.fault{background:var(--red);color:#fff}
+.nozzle.offline{background:var(--surface-3);color:var(--muted)}
+.nozzle.reserved{background:var(--accent-soft);color:var(--accent-strong)}
+.nozzle .nz-pct{position:absolute;bottom:-1px;left:0;right:0;height:3px;background:rgba(255,255,255,.4)}
+.nozzle .nz-pct i{display:block;height:100%;background:#fff}
+.scard-foot{display:flex;align-items:center;justify-content:space-between;padding:11px 16px;border-top:1px solid var(--border-2);font-size:12px}
+.scard-users{font-size:11px;color:var(--muted);padding:0 16px 12px;line-height:1.7}
+.scard-users b{color:var(--text-2)}
+</style>
+
+<script src="assets/app.js"></script>
+<script>
+(function(){
+  document.querySelectorAll('[data-ic]').forEach(function(el){el.innerHTML=window.icon(el.getAttribute('data-ic'));});
+  function toFa(n){return String(n).replace(/[0-9]/g,function(d){return '۰۱۲۳۴۵۶۷۸۹'[d];});}
+
+  // ساعت زنده
+  function tick(){var d=new Date();document.getElementById('clock').textContent=toFa(('۰'+d.getHours()).slice(-2)+':'+('۰'+d.getMinutes()).slice(-2)+':'+('۰'+d.getSeconds()).slice(-2));}
+  tick();setInterval(tick,1000);
+
+  // نمودار بار شبکه
+  (function(){
+    var vals=[];for(var i=0;i<60;i++){vals.push(22+Math.round(Math.sin(i/6)*4+Math.sin(i/2)*1.5+i/20));}
+    var W=720,H=170,pad=12,max=34;
+    function p(area){var step=(W-pad*2)/(vals.length-1);var d=vals.map(function(v,i){var x=pad+i*step;var y=pad+(H-pad*2)*(1-v/max);return (i?'L':'M')+x.toFixed(1)+' '+y.toFixed(1);}).join(' ');if(area)d+=' L'+(W-pad)+' '+(H-pad)+' L'+pad+' '+(H-pad)+' Z';return d;}
+    var grid='';for(var g=0;g<=3;g++){var y=pad+(H-pad*2)*g/3;grid+='<line x1="'+pad+'" y1="'+y+'" x2="'+(W-pad)+'" y2="'+y+'" stroke="var(--border)" stroke-width="1" stroke-dasharray="3 5"/>';}
+    document.getElementById('loadChart').innerHTML='<defs><linearGradient id="gl" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--accent)" stop-opacity=".26"/><stop offset="1" stop-color="var(--accent)" stop-opacity="0"/></linearGradient></defs>'+grid+'<path d="'+p(true)+'" fill="url(#gl)"/><path d="'+p()+'" fill="none" stroke="var(--accent)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>';
+  })();
+
+  // داده ایستگاه‌ها
+  var users=['مهدی احمدی','سارا رحیمی','علی کریمی','زهرا موسوی','حسین نوری','نگار صادقی','امیر تهرانی','فاطمه قاسمی','رضا اکبری','مریم حسینی'];
+  var cars=['ایویکو ET5','کیا EV6','تسلا ۳','آیونیک ۵','BYD اتو۳','MG 4'];
+  function rnd(s){return Math.abs(Math.sin(s)*10000)%1;}
+  var nzTypes=['CCS2','CHAdeMO','Type2'];
+
+  // هر ایستگاه: نام، شهر، چند کانکتور
+  var STATIONS=[
+    {name:'میدان آزادی',loc:'تهران · ST‑۱۰۰۱',n:6,health:'ok',sync:'ok',load:84},
+    {name:'برج میلاد',loc:'تهران · ST‑۲۲۰۰',n:4,health:'bad',sync:'lag',load:71},
+    {name:'نمایشگاه بین‌المللی',loc:'تهران · ST‑۵۱۰۰',n:8,health:'warn',sync:'ok',load:94},
+    {name:'ونک',loc:'تهران · ST‑۳۳۰۰',n:4,health:'ok',sync:'ok',load:48},
+    {name:'صادقیه',loc:'تهران · ST‑۴۴۰۰',n:6,health:'ok',sync:'ok',load:62},
+    {name:'پارک ملت',loc:'تهران · ST‑۶۶۰۰',n:4,health:'ok',sync:'ok',load:35},
+    {name:'تهرانپارس',loc:'تهران · ST‑۷۱۰۰',n:4,health:'warn',sync:'ok',load:88},
+    {name:'اکباتان',loc:'تهران · ST‑۸۲۰۰',n:6,health:'ok',sync:'ok',load:56},
+    {name:'جادهٔ چالوس کیلومتر ۴۵',loc:'البرز · ST‑۷۸۰۴',n:3,health:'bad',sync:'off',load:0}
+  ];
+  // ساخت کانکتورهای هر ایستگاه
+  STATIONS.forEach(function(st,si){
+    st.conns=[];
+    for(var j=0;j<st.n;j++){
+      var seed=si*9+j+1,r=rnd(seed);
+      var state;
+      if(st.health==='bad'&&j===0)state='fault';
+      else if(st.sync==='off')state='offline';
+      else if(r<0.5)state='charging';
+      else if(r<0.72)state='free';
+      else if(r<0.86)state='reserved';
+      else state='free';
+      var type=nzTypes[j%3];
+      var maxkw=type==='CCS2'?180:(type==='CHAdeMO'?50:22);
+      var soc=20+Math.floor(rnd(seed*3+2)*75);
+      st.conns.push({id:(j<3?'A':'B')+((j%3)+1),type:type,state:state,user:users[(si+j)%users.length],car:cars[(si+j)%cars.length],soc:soc,pw:state==='charging'?Math.floor(maxkw*(0.4+rnd(seed*5)*0.55)):0,temp:state==='charging'?(36+Math.floor(rnd(seed*7)*18)):24,maxkw:maxkw});
+    }
+    st.charging=st.conns.filter(function(c){return c.state==='charging';}).length;
+    st.totalkw=st.conns.reduce(function(a,c){return a+c.pw;},0);
+  });
+
+  var stPill={charging:'charging',free:'free',fault:'fault',offline:'offline',reserved:'reserved'};
+  var syncMap={ok:['sync-ok','همگام'],lag:['sync-lag','تأخیر'],off:['sync-off','قطع']};
+  var healthPill={ok:['سالم','pill-green'],warn:['پرتراکم','pill-amber'],bad:['خطا','pill-red']};
+
+  function render(filter,q){
+    var html=STATIONS.filter(function(st){
+      var fOk=filter==='all'||(filter==='ok'&&st.health==='ok')||(filter==='warn'&&st.health==='warn')||(filter==='bad'&&(st.health==='bad'));
+      var qOk=!q||st.name.toLowerCase().indexOf(q)>-1;
+      return fOk&&qOk;
+    }).map(function(st){
+      var hp=healthPill[st.health],sy=syncMap[st.sync];
+      var loadCls=st.load>=90?'full':(st.load>=70?'hi':'');
+      var nozzles=st.conns.map(function(c){
+        var pct=c.state==='charging'?'<span class="nz-pct"><i style="width:'+c.soc+'%"></i></span>':'';
+        var lbl=c.state==='charging'?toFa(c.pw)+'kW':(c.state==='free'?c.id:(c.state==='fault'?'!':(c.state==='offline'?'⏻':c.id)));
+        var title=c.id+' · '+c.type+(c.state==='charging'?(' · '+c.user+' · '+toFa(c.soc)+'٪ · '+toFa(c.temp)+'°'):'');
+        return '<span class="nozzle '+c.state+'" title="'+title+'">'+lbl+pct+'</span>';
+      }).join('');
+      var activeUsers=st.conns.filter(function(c){return c.state==='charging';}).slice(0,2).map(function(c){return c.user+' ('+toFa(c.soc)+'٪)';}).join(' · ');
+      return '<div class="scard '+(st.health==='ok'?'':st.health)+'">'+
+        '<div class="scard-head"><div class="scard-ic">'+window.icon('station')+'</div>'+
+        '<div><div class="scard-name">'+st.name+'</div><div class="scard-loc">'+st.loc+'</div></div>'+
+        '<span class="pill '+hp[1]+' scard-st">'+(st.health==='ok'?'<span class="pdot"></span>':'')+hp[0]+'</span></div>'+
+        '<div class="scard-metrics">'+
+          '<div class="smetric"><div class="sm-v">'+toFa(st.charging)+'<small>/'+toFa(st.n)+'</small></div><div class="sm-l">در حال شارژ</div></div>'+
+          '<div class="smetric"><div class="sm-v">'+toFa(st.totalkw)+'<small> kW</small></div><div class="sm-l">توان لحظه‌ای</div></div>'+
+          '<div class="smetric"><div class="sm-v"><span class="sync-dot '+sy[0]+'" style="justify-content:center">'+sy[1]+'</span></div><div class="sm-l">همگام‌سازی</div></div>'+
+        '</div>'+
+        '<div class="scard-util"><div class="util-top"><span class="muted">بهره‌برداری</span><b class="tnum">'+toFa(st.load)+'٪</b></div><div class="util-bar '+loadCls+'"><i style="width:'+st.load+'%"></i></div></div>'+
+        '<div class="scard-conns"><div class="conn-legend">'+nozzles+'</div></div>'+
+        (activeUsers?'<div class="scard-users">در حال شارژ: <b>'+activeUsers+'</b></div>':'')+
+        '<div class="scard-foot"><a href="remote.html" class="btn btn-sm">کنترل از راه دور</a><span class="muted fs12">'+toFa(st.conns.filter(function(c){return c.state==='free';}).length)+' آزاد</span></div>'+
+      '</div>';
+    }).join('');
+    document.getElementById('stationGrid').innerHTML=html||'<div style="grid-column:1/-1;text-align:center;padding:30px;color:var(--muted)">ایستگاهی یافت نشد</div>';
+  }
+  render('all','');
+
+  var curFilter='all',curQ='';
+  var keys=['all','ok','warn','bad'];
+  document.querySelectorAll('#filterSeg button').forEach(function(b,i){b.addEventListener('click',function(){document.querySelectorAll('#filterSeg button').forEach(function(x){x.classList.remove('active');});b.classList.add('active');curFilter=keys[i];render(curFilter,curQ);});});
+  document.getElementById('search').addEventListener('input',function(){curQ=this.value.trim().toLowerCase();render(curFilter,curQ);});
+
+  // به‌روزرسانی زندهٔ توان نازل‌ها
+  setInterval(function(){
+    document.querySelectorAll('.nozzle.charging').forEach(function(nz){
+      var m=nz.firstChild;if(!m)return;
+      var t=nz.textContent;var cur=parseInt(t.replace(/[^۰-۹]/g,'').replace(/[۰-۹]/g,function(d){return '۰۱۲۳۴۵۶۷۸۹'.indexOf(d);}),10);
+      if(cur){var nw=Math.max(8,cur+Math.floor(Math.random()*7-3));var pct=nz.querySelector('.nz-pct');nz.textContent=toFa(nw)+'kW';if(pct)nz.appendChild(pct);}
+    });
+  },2500);
+})();
+</script>
+</body>
+</html>

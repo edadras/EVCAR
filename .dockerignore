@@ -1,0 +1,12 @@
+Template
+Detail.txt
+بررسی-پروژه.md
+.git
+**/.git
+**/node_modules
+**/vendor
+**/.env
+**/storage/logs/*
+**/storage/framework/cache/*
+**/storage/framework/sessions/*
+**/storage/framework/views/*

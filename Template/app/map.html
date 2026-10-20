@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SafirCharge — نقشه شارژرها</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/app-mobile.css">
+</head>
+<body data-tab="map">
+<div class="phone">
+  <div class="mapfull" id="map"></div>
+
+  <!-- جستجوی شناور -->
+  <div class="map-search">
+    <span data-ic="qr" class="ms-qr"></span>
+    <input placeholder="جستجوی ایستگاه یا مقصد…">
+    <span data-ic="filter" class="ms-f"></span>
+  </div>
+
+  <!-- چیپ‌های فیلتر -->
+  <div class="map-chips" id="chips">
+    <button class="mchip active">همه</button>
+    <button class="mchip">شارژ سریع</button>
+    <button class="mchip">آزاد اکنون</button>
+    <button class="mchip">شارژ رایگان</button>
+  </div>
+
+  <!-- دکمهٔ موقعیت -->
+  <button class="loc-btn" data-ic="nav"></button>
+
+  <!-- شیت پایین -->
+  <div class="sheet">
+    <div class="sheet-grip"></div>
+    <div class="row between" style="margin-bottom:12px">
+      <div class="fw8" style="font-size:16px">۱۲ ایستگاه در این محدوده</div>
+      <span class="pill pill-green"><span class="pdot"></span>۸ آزاد</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:11px" id="list"></div>
+  </div>
+</div>
+
+<style>
+.mapfull{position:absolute;inset:0;background:var(--surface-3);overflow:hidden}
+.map-search{position:absolute;top:54px;left:16px;right:16px;height:50px;background:var(--surface);border-radius:16px;box-shadow:var(--shadow-md);display:flex;align-items:center;gap:10px;padding:0 14px;z-index:10}
+.map-search input{flex:1;border:none;background:none;font-family:inherit;font-size:14px;color:var(--text)}
+.map-search input:focus{outline:none}
+.map-search .ms-qr,.map-search .ms-f{display:inline-grid;width:21px;height:21px;color:var(--muted)}
+.map-search .ms-qr{color:var(--accent)}
+.map-search svg{width:21px;height:21px}
+
+.map-chips{position:absolute;top:116px;left:0;right:0;display:flex;gap:8px;padding:0 16px;overflow-x:auto;z-index:10}
+.map-chips::-webkit-scrollbar{height:0}
+.mchip{flex:none;background:var(--surface);border:1px solid var(--border);border-radius:30px;padding:8px 15px;font-size:12.5px;font-weight:700;color:var(--text-2);box-shadow:var(--shadow-sm)}
+.mchip.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+
+.loc-btn{position:absolute;bottom:330px;inset-inline-end:18px;width:46px;height:46px;border-radius:14px;background:var(--surface);border:1px solid var(--border);box-shadow:var(--shadow-md);display:grid;place-items:center;color:var(--accent);z-index:10}
+.loc-btn svg{width:21px;height:21px}
+
+.sheet{position:absolute;bottom:0;left:0;right:0;background:var(--surface);border-radius:26px 26px 0 0;box-shadow:var(--shadow-up);padding:10px 20px calc(96px + env(safe-area-inset-bottom,0));max-height:46%;overflow-y:auto;z-index:15}
+.sheet::-webkit-scrollbar{width:0}
+.sheet-grip{width:42px;height:5px;border-radius:10px;background:var(--border);margin:4px auto 14px}
+
+.ms-station{display:flex;gap:12px;align-items:center;padding:12px;border-radius:16px;background:var(--surface-2);border:1px solid var(--border-2)}
+.ms-station .si{width:50px;height:50px;border-radius:13px;flex:none;display:grid;place-items:center}
+.ms-station .si svg{width:23px;height:23px}
+</style>
+
+<script src="../assets/app-mobile.js"></script>
+<script>
+(function(){
+  // نقشه
+  var map=document.getElementById('map');
+  var dark=document.documentElement.getAttribute('data-theme')==='dark';
+  var bg='<svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice" style="position:absolute;inset:0">'+
+    '<rect width="100" height="100" fill="'+(dark?'#0d1b28':'#e9eff6')+'"/>'+
+    '<g stroke="'+(dark?'#16293c':'#d4deea')+'" stroke-width="2.2" fill="none">'+
+      '<path d="M-5 30 L105 22"/><path d="M-5 64 L105 56"/><path d="M22 -5 L30 105"/><path d="M68 -5 L60 105"/>'+
+    '</g>'+
+    '<g stroke="'+(dark?'#16293c':'#dde6f0')+'" stroke-width="5" fill="none" opacity=".9">'+
+      '<path d="M-5 47 L105 41" stroke="'+(dark?'#16293c':'#cfdae8')+'"/><path d="M45 -5 L40 105" stroke="'+(dark?'#16293c':'#cfdae8')+'"/>'+
+    '</g>'+
+    '<g fill="'+(dark?'#11212f':'#dce6f1')+'">'+
+      '<rect x="6" y="34" width="12" height="10" rx="1.5"/><rect x="26" y="36" width="10" height="8" rx="1.5"/>'+
+      '<rect x="50" y="30" width="8" height="9" rx="1.5"/><rect x="72" y="44" width="11" height="9" rx="1.5"/>'+
+      '<rect x="10" y="68" width="10" height="9" rx="1.5"/><rect x="48" y="66" width="12" height="10" rx="1.5"/>'+
+      '<circle cx="84" cy="30" r="6"/><circle cx="30" cy="58" r="5"/>'+
+    '</g>'+
+  '</svg>';
+  var pins=[
+    {x:42,y:40,c:'var(--green)',me:false},
+    {x:60,y:33,c:'var(--amber)'},
+    {x:30,y:52,c:'var(--green)'},
+    {x:70,y:55,c:'var(--green)'},
+    {x:52,y:62,c:'var(--accent)'},
+    {x:22,y:36,c:'var(--green)'},
+  ];
+  var ph=pins.map(function(p,i){
+    var sz=i===0?38:30;
+    return '<div class="pin" style="left:'+p.x+'%;top:'+p.y+'%">'+
+      '<div class="pb" style="background:'+p.c+';width:'+sz+'px;height:'+sz+'px"><span>⚡</span></div>'+
+      (p.c==='var(--green)'?'<div class="pp" style="background:'+p.c+';opacity:.35"></div>':'')+'</div>';
+  }).join('');
+  // نشانگر موقعیت من
+  var me='<div style="position:absolute;left:48%;top:74%;transform:translate(-50%,-50%);z-index:5">'+
+    '<div style="width:18px;height:18px;border-radius:50%;background:var(--accent);border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.3)"></div></div>';
+  map.innerHTML=bg+ph+me;
+
+  // لیست
+  var st=[
+    {n:'میدان آزادی',d:'۱٫۲ کیلومتر',type:'DC سریع · ۱۸۰kW',free:'۴ از ۶ آزاد',st:['آزاد','pill-green'],c:'ic-green',ci:'plug'},
+    {n:'برج میلاد',d:'۳٫۵ کیلومتر',type:'DC سریع · ۵۰kW',free:'۲ از ۸ آزاد',st:['پرتراکم','pill-amber'],c:'ic-orange',ci:'plug'},
+    {n:'پارک ملت',d:'۴٫۱ کیلومتر',type:'AC · ۲۲kW',free:'۳ از ۴ آزاد',st:['آزاد','pill-green'],c:'ic-green',ci:'plug'},
+    {n:'مرکز خرید کوروش',d:'۵٫۸ کیلومتر',type:'AC + DC',free:'۸ از ۱۰ آزاد',st:['آزاد','pill-green'],c:'ic-green',ci:'plug'},
+  ];
+  document.getElementById('list').innerHTML=st.map(function(s){
+    return '<a href="charger.html" class="ms-station">'+
+      '<div class="si '+s.c+'">'+window.icon(s.ci)+'</div>'+
+      '<div style="flex:1;min-width:0">'+
+        '<div class="row between"><span class="fw7" style="font-size:14px">'+s.n+'</span><span class="pill '+s.st[1]+'"><span class="pdot"></span>'+s.st[0]+'</span></div>'+
+        '<div class="fs12 muted mt4">'+s.type+' · '+s.free+'</div>'+
+        '<div class="row mt8" style="gap:5px;color:var(--text-2);font-size:12px;font-weight:600">'+window.icon('nav')+s.d+'</div>'+
+      '</div>'+
+    '</a>';
+  }).join('');
+  document.querySelectorAll('.ms-station .row svg').forEach(function(s){s.style.width='13px';s.style.height='13px';});
+
+  document.querySelectorAll('#chips .mchip').forEach(function(b){
+    b.addEventListener('click',function(){document.querySelectorAll('#chips .mchip').forEach(function(x){x.classList.remove('active');});b.classList.add('active');});
+  });
+})();
+</script>
+</body>
+</html>

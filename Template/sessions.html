@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SafirCharge — جلسات شارژ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/app.css">
+</head>
+<body data-page="sessions" data-title="جلسات شارژ" data-crumb="مدیریت شبکه">
+<div class="main">
+  <div class="content">
+
+    <div class="flex between items-center mt-8" style="margin-bottom:18px">
+      <div class="tabs" id="tabs">
+        <button class="active" data-tab="live">جلسات زنده <span class="tcount">۲۴۷</span></button>
+        <button data-tab="history">سوابق شارژ</button>
+      </div>
+      <div class="flex gap-8">
+        <button class="btn btn-sm"><span class="bic" data-ic="filter"></span> فیلتر</button>
+        <button class="btn btn-sm"><span class="bic" data-ic="download"></span> خروجی Excel</button>
+      </div>
+    </div>
+
+    <div class="kpi-grid" style="margin-bottom:16px">
+      <div class="mini-stat"><div class="ms-ic ic-green" data-ic="bolt"></div><div><div class="ms-v tnum">۲۴۷</div><div class="ms-l">جلسهٔ فعال</div></div></div>
+      <div class="mini-stat"><div class="ms-ic ic-blue" data-ic="leaf"></div><div><div class="ms-v tnum">۹٬۸۴۲</div><div class="ms-l">جلسهٔ امروز</div></div></div>
+      <div class="mini-stat"><div class="ms-ic ic-orange" data-ic="clock"></div><div><div class="ms-v tnum">۳۸ <small>دقیقه</small></div><div class="ms-l">میانگین مدت شارژ</div></div></div>
+      <div class="mini-stat"><div class="ms-ic ic-violet" data-ic="activity"></div><div><div class="ms-v tnum">۲۹٫۴ <small>kWh</small></div><div class="ms-l">میانگین انرژی هر جلسه</div></div></div>
+    </div>
+
+    <!-- زنده -->
+    <div class="card" id="liveCard">
+      <div class="card-head">
+        <div><h3>جلسات در حال انجام</h3><div class="ch-sub">به‌روزرسانی لحظه‌ای از طریق OCPP</div></div>
+        <div class="head-actions"><span class="pill pill-green"><span class="pdot"></span>زنده</span></div>
+      </div>
+      <div class="table-wrap">
+        <table class="tbl">
+          <thead><tr><th>شناسه جلسه</th><th>کاربر</th><th>ایستگاه</th><th>کانکتور</th><th>روش</th><th>پیشرفت باتری</th><th>انرژی</th><th>توان</th><th>مدت</th><th>هزینهٔ جاری</th><th></th></tr></thead>
+          <tbody id="liveBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- سوابق -->
+    <div class="card" id="histCard" style="display:none">
+      <div class="card-head">
+        <div><h3>سوابق جلسات شارژ</h3><div class="ch-sub">۹٬۸۴۲ جلسه · امروز</div></div>
+        <div class="head-actions">
+          <div class="seg" id="histSeg"><button class="active">همه</button><button>تکمیل‌شده</button><button>ناموفق</button></div>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table class="tbl">
+          <thead><tr><th>شناسه</th><th>کاربر</th><th>ایستگاه</th><th>تاریخ و زمان</th><th>مدت</th><th>انرژی</th><th>روش پرداخت</th><th>مبلغ</th><th>وضعیت</th></tr></thead>
+          <tbody id="histBody"></tbody>
+        </table>
+      </div>
+      <div class="flex between items-center" style="padding:14px 18px;border-top:1px solid var(--border-2)">
+        <span class="muted fs12">نمایش ۱ تا ۸ از ۹٬۸۴۲</span>
+        <div class="flex gap-8">
+          <button class="btn btn-sm">قبلی</button>
+          <button class="btn btn-sm btn-primary">۱</button>
+          <button class="btn btn-sm">۲</button>
+          <button class="btn btn-sm">۳</button>
+          <button class="btn btn-sm">بعدی</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<style>
+.bic{display:inline-grid;width:16px;height:16px}.bic svg{width:16px;height:16px}
+.mini-stat{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:16px;display:flex;align-items:center;gap:13px;box-shadow:var(--shadow-sm)}
+.ms-ic{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;flex:none}.ms-ic svg{width:22px;height:22px}
+.ms-v{font-size:22px;font-weight:800;letter-spacing:-.02em}.ms-v small{font-size:13px;font-weight:600;color:var(--text-2)}.ms-l{font-size:12px;color:var(--muted)}
+.tcount{background:var(--green);color:#fff;font-size:10.5px;font-weight:700;padding:1px 7px;border-radius:20px;margin-inline-start:5px}
+.stop-btn{width:30px;height:30px;border-radius:9px;border:1px solid var(--border);background:var(--surface);color:var(--red);display:grid;place-items:center}
+.stop-btn:hover{background:var(--red-soft)}
+</style>
+
+<script src="assets/app.js"></script>
+<script>
+(function(){
+  document.querySelectorAll('[data-ic]').forEach(function(el){el.innerHTML=window.icon(el.getAttribute('data-ic'));});
+
+  var names=['مهدی احمدی','سارا رحیمی','علی کریمی','زهرا موسوی','حسین نوری','نگار صادقی','امیر تهرانی','فاطمه قاسمی','رضا اکبری','مریم حسینی'];
+  var cols=['#0E6BA8','#16A34A','#F97316','#7C3AED','#0891B2','#DC2626','#D97706','#0E6BA8','#16A34A','#7C3AED'];
+  var stns=['میدان آزادی','برج میلاد','نمایشگاه بین‌المللی','ونک','صادقیه','پارک ملت','اکباتان','تهرانپارس'];
+  var types=['DC CCS2','DC CHAdeMO','AC Type2'];
+  var methods=['کیف پول','کارت RFID','درگاه بانکی','QR موبایل','حساب سازمانی'];
+  function fa(n){return n.toLocaleString('fa-IR');}
+  function init(s){return s.split(' ').map(function(w){return w[0];}).join('.');}
+
+  // زنده
+  var live='';
+  for(var i=0;i<10;i++){
+    var prog=[72,45,18,94,8,61,33,88,52,27][i];
+    var en=(prog*0.62).toFixed(1);
+    var pw=[86,50,22,32,11,80,22,30,50,22][i];
+    var dur=[32,21,12,47,4,28,19,55,24,9][i];
+    var cost=fa(prog*1780);
+    var bar = prog>85?'bar-orange':(prog<20?'bar-accent':'');
+    var stPill = prog>85?'<span class="pill pill-amber">رو به اتمام</span>':(prog<15?'<span class="pill pill-accent">شروع شد</span>':'<span class="pill pill-green"><span class="pdot"></span>در حال شارژ</span>');
+    live+='<tr>'+
+      '<td class="mono">SX‑'+fa(48210+i)+'</td>'+
+      '<td><div class="cell-user"><span class="uavatar" style="background:'+cols[i]+'">'+init(names[i])+'</span><span class="cell-strong">'+names[i]+'</span></div></td>'+
+      '<td>'+stns[i%stns.length]+'</td>'+
+      '<td class="mono">CP‑'+fa(1001+i*37)+'</td>'+
+      '<td><span class="tag">'+types[i%3]+'</span></td>'+
+      '<td style="min-width:140px"><div class="bar '+bar+'"><i style="width:'+prog+'%"></i></div><div class="cell-muted tnum" style="margin-top:4px">'+fa(prog)+'٪</div></td>'+
+      '<td class="tnum cell-strong">'+en+' kWh</td>'+
+      '<td class="tnum">'+fa(pw)+' kW</td>'+
+      '<td class="tnum">'+fa(dur)+' دق</td>'+
+      '<td class="tnum cell-strong">'+cost+'</td>'+
+      '<td><button class="stop-btn" title="توقف شارژ">■</button></td>'+
+    '</tr>';
+  }
+  document.getElementById('liveBody').innerHTML=live;
+
+  // سوابق
+  var hist='';
+  var statuses=[['تکمیل‌شده','pill-green'],['تکمیل‌شده','pill-green'],['ناموفق','pill-red'],['تکمیل‌شده','pill-green'],['تکمیل‌شده','pill-green'],['متوقف‌شده','pill-amber'],['تکمیل‌شده','pill-green'],['تکمیل‌شده','pill-green']];
+  for(var j=0;j<8;j++){
+    var en2=(20+j*4.3).toFixed(1);
+    var dur2=18+j*5;
+    var amt=fa((35+j*8)*1000);
+    var st=statuses[j];
+    hist+='<tr>'+
+      '<td class="mono">SX‑'+fa(48100+j)+'</td>'+
+      '<td><div class="cell-user"><span class="uavatar" style="background:'+cols[j]+'">'+init(names[j])+'</span><span class="cell-strong">'+names[j]+'</span></div></td>'+
+      '<td>'+stns[j%stns.length]+'</td>'+
+      '<td class="cell-muted tnum">۱۴۰۳/۰۹/۲۲ — '+fa(8+j)+':'+fa(15+j)+'</td>'+
+      '<td class="tnum">'+fa(dur2)+' دق</td>'+
+      '<td class="tnum cell-strong">'+en2+' kWh</td>'+
+      '<td><span class="tag">'+methods[j%5]+'</span></td>'+
+      '<td class="tnum cell-strong">'+amt+'</td>'+
+      '<td><span class="pill '+st[1]+'">'+st[0]+'</span></td>'+
+    '</tr>';
+  }
+  document.getElementById('histBody').innerHTML=hist;
+
+  // تب‌ها
+  document.querySelectorAll('#tabs button').forEach(function(b){
+    b.addEventListener('click',function(){
+      document.querySelectorAll('#tabs button').forEach(function(x){x.classList.remove('active');});
+      b.classList.add('active');
+      var live=b.getAttribute('data-tab')==='live';
+      document.getElementById('liveCard').style.display=live?'':'none';
+      document.getElementById('histCard').style.display=live?'none':'';
+    });
+  });
+  document.querySelectorAll('#histSeg button').forEach(function(b){
+    b.addEventListener('click',function(){document.querySelectorAll('#histSeg button').forEach(function(x){x.classList.remove('active');});b.classList.add('active');});
+  });
+  document.addEventListener('click',function(e){if(e.target.classList.contains('stop-btn')){e.target.closest('tr').style.opacity='.45';}});
+})();
+</script>
+</body>
+</html>

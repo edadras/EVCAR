@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SafirCharge — طرح‌ها</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/app-mobile.css">
+</head>
+<body data-no-tab>
+<div class="phone">
+  <div class="appbar" style="padding-top:2px">
+    <button class="ab-btn" onclick="location.href='home.html'"><span data-ic="back"></span></button>
+    <div style="flex:1"><div class="ab-title">طرح‌ها و پیشنهادها</div></div>
+  </div>
+
+  <div class="screen">
+    <!-- طرح ویژه -->
+    <div class="offer-hero rise">
+      <div class="oh-badge">۲۰٪</div>
+      <div class="oh-ic" data-ic="bolt"></div>
+      <div class="oh-title">تخفیف شارژ شبانه</div>
+      <div class="oh-body">۲۰٪ تخفیف روی همهٔ شارژها بین ساعت ۰۰ تا ۶ بامداد. تا پایان دی ۱۴۰۳.</div>
+      <button class="oh-cta" data-act>فعال‌سازی طرح</button>
+    </div>
+
+    <div class="sec-title" style="margin-top:20px">طرح‌های فعال شما</div>
+    <div style="display:flex;flex-direction:column;gap:11px" id="active"></div>
+
+    <div class="sec-title" style="margin-top:20px">سایر پیشنهادها</div>
+    <div style="display:flex;flex-direction:column;gap:11px" id="others"></div>
+  </div>
+</div>
+
+<style>
+.offer-hero{position:relative;overflow:hidden;border-radius:22px;padding:20px;color:#fff;background:linear-gradient(140deg,var(--accent),#7C3AED);box-shadow:0 16px 34px rgba(var(--accent-rgb),.34)}
+.offer-hero::after{content:"";position:absolute;inset:0;background:radial-gradient(circle at 85% 0%,rgba(255,255,255,.24),transparent 48%)}
+.oh-badge{position:absolute;top:18px;inset-inline-end:20px;font-size:30px;font-weight:800;z-index:1}
+.oh-ic{width:48px;height:48px;border-radius:14px;background:rgba(255,255,255,.2);display:grid;place-items:center;position:relative;z-index:1}.oh-ic svg{width:25px;height:25px}
+.oh-title{font-size:19px;font-weight:800;margin-top:14px;position:relative;z-index:1}
+.oh-body{font-size:13px;opacity:.92;margin-top:7px;line-height:1.8;position:relative;z-index:1}
+.oh-cta{margin-top:16px;width:100%;background:#fff;color:var(--accent-strong);font-family:inherit;font-weight:800;font-size:14px;border:none;padding:13px;border-radius:13px;position:relative;z-index:1}
+.oh-cta.done{background:rgba(255,255,255,.25);color:#fff}
+
+.ocard{display:flex;align-items:center;gap:13px;padding:14px;border-radius:16px;background:var(--surface);border:1px solid var(--border);box-shadow:var(--shadow-sm)}
+.ocard .oc-ic{width:46px;height:46px;border-radius:13px;display:grid;place-items:center;flex:none}.oc-ic svg{width:22px;height:22px}
+.ocard .oc-t{font-weight:700;font-size:13.5px}.ocard .oc-d{font-size:11.5px;color:var(--muted);margin-top:3px;line-height:1.6}
+.oc-badge{margin-inline-start:auto;font-weight:800;font-size:15px;color:var(--accent);flex:none}
+.oc-btn{margin-inline-start:auto;flex:none;border:1px solid var(--accent);color:var(--accent);background:var(--accent-soft);font-family:inherit;font-weight:700;font-size:12px;padding:8px 13px;border-radius:10px}
+</style>
+
+<script src="../assets/app-mobile.js"></script>
+<script>
+(function(){
+  document.querySelectorAll('[data-ic]').forEach(function(el){el.innerHTML=window.icon(el.getAttribute('data-ic'));});
+  var active=[
+    {t:'هدیهٔ عضویت',d:'۵۰٬۰۰۰ تومان اعتبار · استفاده‌شده',ic:'gift',c:'ic-green',badge:'۵۰K'},
+    {t:'باشگاه وفاداری',d:'۱۰٪ بازگشت اعتبار فعال است',ic:'coins',c:'ic-orange',badge:'۱۰٪'}
+  ];
+  document.getElementById('active').innerHTML=active.map(function(o){
+    return '<div class="ocard"><div class="oc-ic '+o.c+'">'+window.icon(o.ic)+'</div><div style="flex:1"><div class="oc-t">'+o.t+'</div><div class="oc-d">'+o.d+'</div></div><span class="oc-badge">'+o.badge+'</span></div>';
+  }).join('');
+  var others=[
+    {t:'تخفیف نوروزی',d:'۳۰٪ تخفیف ویژهٔ تعطیلات — به‌زودی',ic:'bolt',c:'ic-blue'},
+    {t:'افتتاح ایستگاه کوروش',d:'شارژ رایگان در سه روز اول افتتاحیه',ic:'leaf',c:'ic-green'},
+    {t:'معرفی به دوستان',d:'۲۰٬۰۰۰ تومان اعتبار به ازای هر دعوت',ic:'gift',c:'ic-violet'}
+  ];
+  document.getElementById('others').innerHTML=others.map(function(o,i){
+    return '<div class="ocard"><div class="oc-ic '+o.c+'">'+window.icon(o.ic)+'</div><div style="flex:1"><div class="oc-t">'+o.t+'</div><div class="oc-d">'+o.d+'</div></div><button class="oc-btn" data-act>فعال‌سازی</button></div>';
+  }).join('');
+  document.querySelectorAll('.oc-ic svg').forEach(function(s){s.style.width='22px';s.style.height='22px';});
+  document.addEventListener('click',function(e){
+    if(e.target.hasAttribute('data-act')){
+      var b=e.target;
+      if(b.classList.contains('oh-cta')){b.textContent='✓ طرح فعال شد';b.classList.add('done');}
+      else{b.textContent='✓ فعال شد';b.style.opacity='.6';}
+    }
+  });
+})();
+</script>
+</body>
+</html>

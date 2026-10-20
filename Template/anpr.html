@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SafirCharge — تشخیص پلاک</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/app.css">
+</head>
+<body data-page="anpr" data-title="شارژ خودکار با تشخیص پلاک" data-crumb="مدیریت شبکه">
+<div class="main">
+  <div class="content">
+
+    <div class="flex between items-center mt-8" style="margin-bottom:18px">
+      <span class="pill pill-green"><span class="pdot"></span>۴۲ دوربین ANPR فعال · شناسایی خودکار خودرو</span>
+      <div class="flex gap-8">
+        <button class="btn btn-sm"><span class="bic" data-ic="sliders"></span> تنظیمات دوربین</button>
+        <button class="btn btn-sm btn-primary"><span class="bic" data-ic="plus"></span> ثبت پلاک جدید</button>
+      </div>
+    </div>
+
+    <div class="kpi-grid">
+      <div class="mini-stat"><div class="ms-ic ic-blue" data-ic="camera"></div><div><div class="ms-v tnum">۴۲</div><div class="ms-l">دوربین فعال</div></div></div>
+      <div class="mini-stat"><div class="ms-ic ic-green" data-ic="car"></div><div><div class="ms-v tnum">۳٬۱۸۰</div><div class="ms-l">پلاک ثبت‌شده</div></div></div>
+      <div class="mini-stat"><div class="ms-ic ic-orange" data-ic="bolt"></div><div><div class="ms-v tnum">۸۴۲</div><div class="ms-l">شارژ خودکار امروز</div></div></div>
+      <div class="mini-stat"><div class="ms-ic ic-violet" data-ic="check"></div><div><div class="ms-v tnum">۹۶٫۸٪</div><div class="ms-l">دقت تشخیص</div></div></div>
+    </div>
+
+    <div class="grid col-2-1 mt-16">
+      <!-- فید دوربین زنده -->
+      <div class="card">
+        <div class="card-head"><div><h3>فید زندهٔ دوربین — میدان آزادی</h3><div class="ch-sub">دوربین ورودی ایستگاه · تشخیص لحظه‌ای</div></div>
+          <div class="head-actions"><span class="pill pill-red"><span class="pdot"></span>زنده</span></div>
+        </div>
+        <div class="card-pad">
+          <div class="cam">
+            <div class="cam-scene">
+              <div class="cam-grid"></div>
+              <div class="cam-car" id="camCar">
+                <svg viewBox="0 0 200 90" width="180"><rect x="14" y="30" width="172" height="40" rx="12" fill="#1f3146"/><path d="M40 30 L60 12 H150 L168 30 Z" fill="#27425c"/><rect x="62" y="16" width="84" height="16" rx="4" fill="#0d1b28"/><circle cx="52" cy="72" r="13" fill="#0d1b28" stroke="#3a536c" stroke-width="3"/><circle cx="156" cy="72" r="13" fill="#0d1b28" stroke="#3a536c" stroke-width="3"/></svg>
+              </div>
+              <div class="cam-box" id="camBox">
+                <span class="cb-corner tl"></span><span class="cb-corner tr"></span><span class="cb-corner bl"></span><span class="cb-corner br"></span>
+              </div>
+              <div class="cam-tag" id="camTag">در حال تشخیص…</div>
+              <div class="cam-meta"><span>CAM‑۰۱ · میدان آزادی</span><span class="tnum">۱۴:۳۲:۰۸</span></div>
+            </div>
+          </div>
+          <div class="detect-result" id="result">
+            <div class="dr-plate" id="drPlate"></div>
+            <div style="flex:1">
+              <div class="fw7" id="drName">در انتظار شناسایی…</div>
+              <div class="fs12 muted" id="drStatus">دوربین در حال پایش ورودی</div>
+            </div>
+            <span class="pill" id="drPill">—</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- نحوهٔ کار -->
+      <div class="card">
+        <div class="card-head"><h3>فرایند شارژ خودکار</h3></div>
+        <div class="card-pad">
+          <div class="step"><div class="step-n">۱</div><div><div class="fw7 fs13">تشخیص پلاک</div><div class="fs12 muted mt-4">دوربین ANPR پلاک خودروی واردشده را می‌خواند.</div></div></div>
+          <div class="step"><div class="step-n">۲</div><div><div class="fw7 fs13">تطبیق با کاربر</div><div class="fs12 muted mt-4">پلاک با حساب کاربری و کیف پول مطابقت داده می‌شود.</div></div></div>
+          <div class="step"><div class="step-n">۳</div><div><div class="fw7 fs13">اتصال و احراز</div><div class="fs12 muted mt-4">با اتصال کانکتور، جلسهٔ شارژ به‌صورت خودکار آغاز می‌شود.</div></div></div>
+          <div class="step"><div class="step-n">۴</div><div><div class="fw7 fs13">کسر هزینه</div><div class="fs12 muted mt-4">در پایان، هزینه از کیف پول کسر و رسید پیامک می‌شود.</div></div></div>
+          <div class="anpr-note mt-12"><span data-ic="shield"></span><span>خودروهای ثبت‌نشده به مسیر پرداخت دستی (QR/RFID) هدایت می‌شوند.</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- رویدادهای تشخیص -->
+    <div class="card mt-16">
+      <div class="card-head">
+        <div><h3>رویدادهای تشخیص پلاک</h3><div class="ch-sub">آخرین خودروهای شناسایی‌شده در ورودی ایستگاه‌ها</div></div>
+        <div class="head-actions"><div class="seg" id="evSeg"><button class="active">همه</button><button>شارژ خودکار</button><button>ناموفق</button></div></div>
+      </div>
+      <div class="table-wrap">
+        <table class="tbl">
+          <thead><tr><th>زمان</th><th>پلاک</th><th>کاربر</th><th>ایستگاه / دوربین</th><th>اقدام</th><th>دقت</th><th>وضعیت</th></tr></thead>
+          <tbody id="evBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- پلاک‌های ثبت‌شده -->
+    <div class="card mt-16">
+      <div class="card-head"><div><h3>پلاک‌های ثبت‌شده برای شارژ خودکار</h3></div>
+        <div class="head-actions"><div class="search" style="max-width:240px"><input placeholder="جستجوی پلاک یا کاربر…"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></div></div>
+      </div>
+      <div class="table-wrap">
+        <table class="tbl">
+          <thead><tr><th>پلاک</th><th>کاربر</th><th>خودرو</th><th>کیف پول</th><th>شارژ خودکار</th><th>آخرین تشخیص</th><th></th></tr></thead>
+          <tbody id="plateBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<style>
+.bic{display:inline-grid;width:16px;height:16px}.bic svg{width:16px;height:16px}
+.mini-stat{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:16px;display:flex;align-items:center;gap:13px;box-shadow:var(--shadow-sm)}
+.ms-ic{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;flex:none}.ms-ic svg{width:22px;height:22px}
+.ms-v{font-size:22px;font-weight:800}.ms-l{font-size:12px;color:var(--muted)}
+
+.cam{border-radius:14px;overflow:hidden;border:1px solid var(--border)}
+.cam-scene{position:relative;height:240px;background:linear-gradient(180deg,#16293c,#0d1b28);overflow:hidden}
+.cam-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px);background-size:28px 28px;transform:perspective(300px) rotateX(40deg);transform-origin:bottom;opacity:.5}
+.cam-car{position:absolute;bottom:42px;left:50%;transform:translateX(-50%);animation:approach 6s ease-in-out infinite}
+@keyframes approach{0%{transform:translateX(-50%) scale(.7);opacity:.4}40%{transform:translateX(-50%) scale(1);opacity:1}60%{transform:translateX(-50%) scale(1);opacity:1}100%{transform:translateX(-50%) scale(1);opacity:1}}
+.cam-box{position:absolute;bottom:54px;left:50%;transform:translateX(-50%);width:96px;height:32px;animation:boxshow 6s ease-in-out infinite}
+@keyframes boxshow{0%,40%{opacity:0}55%,100%{opacity:1}}
+.cb-corner{position:absolute;width:12px;height:12px;border:2px solid #4ade80}
+.cb-corner.tl{top:0;left:0;border-right:none;border-bottom:none}.cb-corner.tr{top:0;right:0;border-left:none;border-bottom:none}
+.cb-corner.bl{bottom:0;left:0;border-right:none;border-top:none}.cb-corner.br{bottom:0;right:0;border-left:none;border-top:none}
+.cam-tag{position:absolute;bottom:92px;left:50%;transform:translateX(-50%);background:#4ade80;color:#06250f;font-size:12px;font-weight:800;padding:3px 12px;border-radius:20px;white-space:nowrap;animation:boxshow 6s ease-in-out infinite}
+.cam-meta{position:absolute;top:10px;left:12px;right:12px;display:flex;justify-content:space-between;color:#9fb4c8;font-size:11px;font-weight:600}
+.cam-meta span:last-child{font-variant-numeric:tabular-nums}
+
+.detect-result{display:flex;align-items:center;gap:14px;margin-top:14px;padding:14px;border-radius:14px;background:var(--surface-2);border:1px solid var(--border-2)}
+
+.step{display:flex;gap:13px;padding:11px 0;border-bottom:1px solid var(--border-2)}.step:last-of-type{border-bottom:none}
+.step-n{width:30px;height:30px;border-radius:50%;background:var(--accent-soft);color:var(--accent-strong);display:grid;place-items:center;font-weight:800;font-size:13px;flex:none}
+.anpr-note{display:flex;align-items:flex-start;gap:9px;background:var(--accent-softer);border-radius:11px;padding:12px;font-size:12px;color:var(--text-2);line-height:1.6}
+.anpr-note svg{width:18px;height:18px;color:var(--accent);flex:none;margin-top:1px}
+</style>
+
+<script src="assets/app.js"></script>
+<script>
+(function(){
+  document.querySelectorAll('[data-ic]').forEach(function(el){el.innerHTML=window.icon(el.getAttribute('data-ic'));});
+
+  // تشخیص شبیه‌سازی‌شده در فید زنده
+  var demo={d2:'۱۲','let':'س',d3:'۳۴۵',prov:'۱۱',name:'مهدی احمدی'};
+  function cycle(){
+    var tag=document.getElementById('camTag');
+    var res=document.getElementById('result');
+    document.getElementById('drPlate').innerHTML=window.plate({d2:demo.d2,'let':demo['let'],d3:demo.d3,prov:demo.prov});
+    tag.textContent=demo.d2+' '+demo['let']+' '+demo.d3+' — '+demo.prov;
+    document.getElementById('drName').textContent=demo.name+' · شناسایی شد';
+    document.getElementById('drStatus').textContent='کیف پول معتبر · شارژ خودکار آغاز شد ⚡';
+    document.getElementById('drPill').className='pill pill-green';
+    document.getElementById('drPill').innerHTML='<span class="pdot"></span>شارژ خودکار';
+  }
+  setTimeout(cycle,3200);
+
+  var ev=[
+    {t:'۱۴:۳۲:۰۸',p:{d2:'۱۲','let':'س',d3:'۳۴۵',prov:'۱۱'},u:'مهدی احمدی',st:'میدان آزادی · CAM‑۰۱',act:'شارژ خودکار آغاز شد',acc:'۹۸٪',s:['موفق','pill-green'],cat:'auto'},
+    {t:'۱۴:۲۸:۴۱',p:{d2:'۴۵','let':'ب',d3:'۱۲۸',prov:'۲۲'},u:'سارا رحیمی',st:'برج میلاد · CAM‑۰۳',act:'شارژ خودکار آغاز شد',acc:'۹۷٪',s:['موفق','pill-green'],cat:'auto'},
+    {t:'۱۴:۲۲:۱۰',p:{d2:'۸۸','let':'ج',d3:'۷۷۲',prov:'۱۰'},u:'—',st:'ونک · CAM‑۰۵',act:'هدایت به پرداخت دستی',acc:'۹۱٪',s:['ثبت‌نشده','pill-amber'],cat:'fail'},
+    {t:'۱۴:۱۵:۳۳',p:{d2:'۲۳','let':'ل',d3:'۴۵۶',prov:'۱۳'},u:'علی کریمی',st:'نمایشگاه · CAM‑۰۲',act:'شارژ خودکار آغاز شد',acc:'۹۹٪',s:['موفق','pill-green'],cat:'auto'},
+    {t:'۱۴:۰۹:۰۲',p:{d2:'۶۷','let':'ن',d3:'۸۹۰',prov:'۱۱'},u:'زهرا موسوی',st:'صادقیه · CAM‑۰۴',act:'موجودی ناکافی — اطلاع‌رسانی شد',acc:'۹۵٪',s:['ناموفق','pill-red'],cat:'fail'},
+    {t:'۱۴:۰۱:۴۷',p:{d2:'۱۰','let':'و',d3:'۲۳۴',prov:'۱۲'},u:'امیر تهرانی',st:'پارک ملت · CAM‑۰۶',act:'شارژ خودکار آغاز شد',acc:'۹۶٪',s:['موفق','pill-green'],cat:'auto'},
+  ];
+  document.getElementById('evBody').innerHTML=ev.map(function(e){
+    return '<tr data-cat="'+e.cat+'"><td class="cell-muted tnum">'+e.t+'</td>'+
+      '<td>'+window.plate(Object.assign({size:'sm'},e.p))+'</td>'+
+      '<td class="cell-strong">'+e.u+'</td><td class="cell-muted">'+e.st+'</td>'+
+      '<td>'+e.act+'</td><td class="tnum cell-muted">'+e.acc+'</td>'+
+      '<td><span class="pill '+e.s[1]+'">'+(e.s[1]==='pill-green'?'<span class="pdot"></span>':'')+e.s[0]+'</span></td></tr>';
+  }).join('');
+
+  var plates=[
+    {p:{d2:'۱۲','let':'س',d3:'۳۴۵',prov:'۱۱'},u:'مهدی احمدی',car:'ایویکو ET5',w:'۲٬۴۸۰٬۰۰۰',auto:true,last:'لحظاتی پیش'},
+    {p:{d2:'۴۵','let':'ب',d3:'۱۲۸',prov:'۲۲'},u:'سارا رحیمی',car:'کیا EV6',w:'۸۹۰٬۰۰۰',auto:true,last:'۴ دقیقه پیش'},
+    {p:{d2:'۲۳','let':'ل',d3:'۴۵۶',prov:'۱۳'},u:'علی کریمی',car:'تسلا مدل ۳',w:'۵٬۰۰۰٬۰۰۰',auto:true,last:'۱۷ دقیقه پیش'},
+    {p:{d2:'۶۷','let':'ن',d3:'۸۹۰',prov:'۱۱'},u:'زهرا موسوی',car:'هیوندای آیونیک ۵',w:'۳۲٬۰۰۰',auto:false,last:'۲۳ دقیقه پیش'},
+    {p:{d2:'۱۰','let':'و',d3:'۲۳۴',prov:'۱۲'},u:'امیر تهرانی',car:'BYD اتو ۳',w:'۲٬۸۵۰٬۰۰۰',auto:true,last:'۳۱ دقیقه پیش'},
+  ];
+  document.getElementById('plateBody').innerHTML=plates.map(function(r){
+    return '<tr><td>'+window.plate(Object.assign({size:'sm'},r.p))+'</td>'+
+      '<td class="cell-strong">'+r.u+'</td><td class="cell-muted">'+r.car+'</td>'+
+      '<td class="tnum '+(r.w.length<8?'':'cell-strong')+'">'+r.w+'</td>'+
+      '<td>'+(r.auto?'<span class="pill pill-green"><span class="pdot"></span>فعال</span>':'<span class="pill pill-amber">غیرفعال</span>')+'</td>'+
+      '<td class="cell-muted">'+r.last+'</td><td><button class="btn btn-sm">مدیریت</button></td></tr>';
+  }).join('');
+
+  document.querySelectorAll('#evSeg button').forEach(function(b,idx){
+    b.addEventListener('click',function(){document.querySelectorAll('#evSeg button').forEach(function(x){x.classList.remove('active');});b.classList.add('active');
+      document.querySelectorAll('#evBody tr').forEach(function(tr){var c=tr.getAttribute('data-cat');var show=idx===0||(idx===1&&c==='auto')||(idx===2&&c==='fail');tr.style.display=show?'':'none';});});
+  });
+})();
+</script>
+</body>
+</html>

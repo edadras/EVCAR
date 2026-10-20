@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SafirCharge — درآمد و پرداختی‌ها</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/app.css">
+</head>
+<body data-page="payments" data-title="درآمد و پرداختی‌ها" data-crumb="پنل شرکا">
+<div class="main">
+  <div class="content">
+
+    <div class="grid col-1-2 mt-8">
+      <!-- کارت تسویه -->
+      <div>
+        <div class="payout-card">
+          <div class="pc-top"><span>سهم قابل پرداخت — دورهٔ جاری</span><span class="pill" style="background:rgba(255,255,255,.2);color:#fff">آذر ۱۴۰۳</span></div>
+          <div class="pc-amount tnum">۳۹۶٬۶۹۳٬۲۸۰ <small>تومان</small></div>
+          <div class="pc-row"><span>تسویهٔ بعدی</span><b>۱ دی ۱۴۰۳</b></div>
+          <div class="pc-row"><span>شمارهٔ شبا</span><b dir="ltr">IR۳۲۰۱۲۰…۴۴۵۶</b></div>
+        </div>
+        <div class="card mt-16">
+          <div class="card-head"><h3>خلاصهٔ مالی (ماه)</h3></div>
+          <div class="card-pad" style="padding-top:8px">
+            <div class="lrow"><div class="l-main"><div class="l-title">درآمد ناخالص</div></div><b class="tnum">۵۸۹٬۴۴۰٬۰۰۰</b></div>
+            <div class="lrow"><div class="l-main"><div class="l-title" style="color:var(--green)">سهم شما (۷۰٪)</div></div><b class="tnum" style="color:var(--green)">۴۱۲٬۶۰۸٬۰۰۰</b></div>
+            <div class="lrow"><div class="l-main"><div class="l-title cell-muted">کارمزد سامانه (۳۰٪)</div></div><b class="tnum cell-muted">۱۷۶٬۸۳۲٬۰۰۰</b></div>
+            <div class="lrow" style="border-bottom:none"><div class="l-main"><div class="l-title cell-muted">مالیات ارزش افزوده</div></div><b class="tnum cell-muted">۱۵٬۹۱۴٬۷۲۰</b></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- نمودار + جدول پرداخت‌ها -->
+      <div>
+        <div class="card">
+          <div class="card-head"><div><h3>روند پرداختی‌های ماهانه</h3><div class="ch-sub">۶ ماه گذشته</div></div></div>
+          <div class="card-pad">
+            <svg id="payChart" width="100%" height="180" viewBox="0 0 640 180" preserveAspectRatio="none"></svg>
+            <div class="chart-axis"><span>تیر</span><span>مرداد</span><span>شهریور</span><span>مهر</span><span>آبان</span><span>آذر</span></div>
+          </div>
+        </div>
+        <div class="card mt-16">
+          <div class="card-head">
+            <div><h3>تاریخچهٔ پرداخت‌ها و فاکتورها</h3></div>
+            <div class="head-actions"><div class="seg" id="seg"><button class="active">همه</button><button>پرداخت‌شده</button><button>در انتظار</button></div></div>
+          </div>
+          <div class="table-wrap">
+            <table class="tbl">
+              <thead><tr><th>شماره فاکتور</th><th>دوره</th><th>سهم شما</th><th>تاریخ تسویه</th><th>وضعیت</th><th></th></tr></thead>
+              <tbody id="payBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<style>
+.chart-axis{display:flex;justify-content:space-between;margin-top:8px;color:var(--muted);font-size:11px}
+.payout-card{position:relative;overflow:hidden;border-radius:20px;padding:22px;color:#fff;background:linear-gradient(135deg,var(--green),#0e7a38);box-shadow:0 14px 30px rgba(22,163,74,.3)}
+.payout-card::after{content:"";position:absolute;inset:0;background:radial-gradient(circle at 88% 0%,rgba(255,255,255,.2),transparent 45%)}
+.pc-top{display:flex;justify-content:space-between;align-items:center;font-size:13px;opacity:.95;position:relative;z-index:1}
+.pc-amount{font-size:30px;font-weight:800;margin:16px 0 18px;position:relative;z-index:1}.pc-amount small{font-size:14px;font-weight:600;opacity:.9}
+.pc-row{display:flex;justify-content:space-between;font-size:13px;padding:7px 0;position:relative;z-index:1;border-top:1px solid rgba(255,255,255,.15)}
+</style>
+
+<script src="app-partner.js"></script>
+<script>
+(function(){
+  document.querySelectorAll('[data-ic]').forEach(function(el){el.innerHTML=window.icon(el.getAttribute('data-ic'));});
+
+  (function(){
+    var vals=[280,310,295,340,370,412];var W=640,H=180,pad=12,max=460,bw=46,gap=(W-pad*2)/vals.length;
+    var bars=vals.map(function(v,i){var x=pad+i*gap+gap/2;var h=(H-pad*2)*v/max;var y=H-pad-h;return '<rect x="'+(x-bw/2)+'" y="'+y+'" width="'+bw+'" height="'+h+'" rx="8" fill="'+(i===vals.length-1?'var(--green)':'var(--accent)')+'" opacity="'+(i===vals.length-1?1:.82)+'"/>';}).join('');
+    document.getElementById('payChart').innerHTML=bars;
+  })();
+
+  var pays=[
+    ['INV‑۹۲۰۴','آذر ۱۴۰۳','۳۹۶٬۶۹۳٬۲۸۰','—',['در انتظار','pill-amber']],
+    ['INV‑۹۱۰۸','آبان ۱۴۰۳','۳۵۶٬۲۴۰٬۰۰۰','۱ آذر ۱۴۰۳',['پرداخت‌شده','pill-green']],
+    ['INV‑۹۰۱۲','مهر ۱۴۰۳','۳۲۶٬۸۰۰٬۰۰۰','۱ آبان ۱۴۰۳',['پرداخت‌شده','pill-green']],
+    ['INV‑۸۹۲۰','شهریور ۱۴۰۳','۲۸۲٬۱۵۰٬۰۰۰','۱ مهر ۱۴۰۳',['پرداخت‌شده','pill-green']],
+    ['INV‑۸۸۳۰','مرداد ۱۴۰۳','۲۹۸٬۴۰۰٬۰۰۰','۱ شهریور ۱۴۰۳',['پرداخت‌شده','pill-green']],
+    ['INV‑۸۷۴۰','تیر ۱۴۰۳','۲۶۸٬۹۰۰٬۰۰۰','۱ مرداد ۱۴۰۳',['پرداخت‌شده','pill-green']],
+  ];
+  function render(filter){
+    document.getElementById('payBody').innerHTML=pays.filter(function(r){
+      if(filter==='paid')return r[4][0]==='پرداخت‌شده';if(filter==='pending')return r[4][0]==='در انتظار';return true;
+    }).map(function(r){
+      return '<tr><td class="mono">'+r[0]+'</td><td class="cell-muted">'+r[1]+'</td><td class="tnum cell-strong" style="color:var(--green)">'+r[2]+'</td>'+
+        '<td class="cell-muted">'+r[3]+'</td><td><span class="pill '+r[4][1]+'">'+(r[4][1]==='pill-green'?'<span class="pdot"></span>':'')+r[4][0]+'</span></td>'+
+        '<td><button class="btn btn-sm"><span class="bic" data-ic="download"></span> فاکتور</button></td></tr>';
+    }).join('');
+    document.querySelectorAll('#payBody [data-ic]').forEach(function(el){el.innerHTML=window.icon('download');el.style.display='inline-grid';el.style.width='14px';el.style.height='14px';el.firstChild.style.width='14px';el.firstChild.style.height='14px';});
+  }
+  render('all');
+  document.querySelectorAll('#seg button').forEach(function(b,idx){
+    b.addEventListener('click',function(){document.querySelectorAll('#seg button').forEach(function(x){x.classList.remove('active');});b.classList.add('active');render(['all','paid','pending'][idx]);});
+  });
+})();
+</script>
+</body>
+</html>

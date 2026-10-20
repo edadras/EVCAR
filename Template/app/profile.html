@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SafirCharge — ویرایش پروفایل</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/app-mobile.css">
+</head>
+<body data-no-tab>
+<div class="phone">
+  <div class="appbar" style="padding-top:2px">
+    <button class="ab-btn" onclick="location.href='account.html'"><span data-ic="back"></span></button>
+    <div style="flex:1"><div class="ab-title">ویرایش پروفایل</div></div>
+  </div>
+
+  <div class="screen">
+    <!-- آواتار -->
+    <div class="center-col rise" style="margin:8px 0 22px">
+      <div class="av-wrap">
+        <div class="pf-av-lg">م.ا</div>
+        <button class="av-edit" data-ic="edit"></button>
+      </div>
+      <div class="fw8 mt12" style="font-size:17px">مهدی احمدی</div>
+      <div class="fs12 muted">عضو از خرداد ۱۴۰۲</div>
+    </div>
+
+    <div class="card card-p">
+      <div class="field"><label>نام</label><input class="input" value="مهدی"></div>
+      <div class="field"><label>نام خانوادگی</label><input class="input" value="احمدی"></div>
+      <div class="field">
+        <label>شماره موبایل</label>
+        <div class="locked"><input class="input tnum" dir="ltr" style="text-align:right" value="۰۹۱۲ ۳۴۵ ۶۷۸۹" readonly><span class="lock-badge"><span data-ic="check"></span>تأییدشده</span></div>
+      </div>
+      <div class="field"><label>کد ملی</label><input class="input tnum" dir="ltr" style="text-align:right" value="۰۰۱۲۳۴۵۶۷۸"></div>
+      <div class="field"><label>ایمیل</label><input class="input" dir="ltr" style="text-align:right" placeholder="name@email.com"></div>
+      <div class="field" style="margin-bottom:0"><label>شهر</label>
+        <select class="input" style="appearance:none"><option>تهران</option><option>کرج</option><option>اصفهان</option><option>مشهد</option><option>شیراز</option><option>تبریز</option></select>
+      </div>
+    </div>
+
+    <div class="note-box mt16">
+      <span data-ic="shield"></span>
+      <span>شماره موبایل پایهٔ احراز هویت شماست و برای تغییر آن باید با پشتیبانی تماس بگیرید.</span>
+    </div>
+  </div>
+
+  <div class="savebar">
+    <a href="account.html" class="btn"><span data-ic="check"></span> ذخیرهٔ تغییرات</a>
+  </div>
+</div>
+
+<style>
+.av-wrap{position:relative}
+.pf-av-lg{width:88px;height:88px;border-radius:28px;background:linear-gradient(135deg,var(--accent),var(--orange));color:#fff;display:grid;place-items:center;font-weight:800;font-size:30px}
+.av-edit{position:absolute;bottom:-4px;inset-inline-end:-4px;width:34px;height:34px;border-radius:12px;background:var(--surface);border:1px solid var(--border);color:var(--accent);display:grid;place-items:center;box-shadow:var(--shadow-md)}
+.av-edit svg{width:17px;height:17px}
+.locked{position:relative}
+.lock-badge{position:absolute;inset-inline-end:12px;top:50%;transform:translateY(-50%);display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;color:var(--green)}
+.lock-badge svg{width:14px;height:14px}
+.note-box{display:flex;align-items:flex-start;gap:10px;background:var(--surface-2);border:1px solid var(--border-2);border-radius:14px;padding:13px;font-size:12px;color:var(--text-2);line-height:1.7}
+.note-box svg{width:19px;height:19px;color:var(--accent);flex:none;margin-top:1px}
+.savebar{position:absolute;bottom:0;left:0;right:0;background:color-mix(in srgb,var(--surface) 94%,transparent);backdrop-filter:blur(14px);border-top:1px solid var(--border);padding:14px 20px calc(20px + env(safe-area-inset-bottom,0));z-index:20}
+.savebar .btn svg{width:18px;height:18px}
+</style>
+
+<script src="../assets/app-mobile.js"></script>
+</body>
+</html>

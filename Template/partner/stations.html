@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SafirCharge — ایستگاه‌های شریک</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/app.css">
+</head>
+<body data-page="stations" data-title="ایستگاه‌ها و دستگاه‌ها" data-crumb="پنل شرکا">
+<div class="main">
+  <div class="content">
+
+    <!-- کارت ایستگاه -->
+    <div class="card mt-8" style="margin-bottom:16px">
+      <div class="card-pad flex between items-center">
+        <div class="flex items-center gap-16">
+          <div class="ms-ic ic-blue" data-ic="station" style="width:54px;height:54px;border-radius:15px"></div>
+          <div>
+            <div class="fw8" style="font-size:18px">پارکینگ مرکزی پاسداران</div>
+            <div class="muted fs13 mt-4">تهران، خیابان پاسداران، نبش گلستان پنجم · کد ST‑۹۱۰۰</div>
+          </div>
+        </div>
+        <div class="flex gap-8">
+          <span class="pill pill-green"><span class="pdot"></span>۸ دستگاه آنلاین</span>
+          <button class="btn btn-sm">درخواست خدمات فنی</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="kpi-grid" style="margin-bottom:16px">
+      <div class="mini-stat"><div class="ms-ic ic-green" data-ic="plug"></div><div><div class="ms-v tnum">۸</div><div class="ms-l">کانکتور نصب‌شده</div></div></div>
+      <div class="mini-stat"><div class="ms-ic ic-blue" data-ic="bolt"></div><div><div class="ms-v tnum">۵</div><div class="ms-l">در حال شارژ</div></div></div>
+      <div class="mini-stat"><div class="ms-ic ic-orange" data-ic="chart"></div><div><div class="ms-v tnum">۶۴٪</div><div class="ms-l">بهره‌برداری</div></div></div>
+      <div class="mini-stat"><div class="ms-ic ic-violet" data-ic="coins"></div><div><div class="ms-v tnum">۵۳٫۵ <small>م</small></div><div class="ms-l">درآمد امروز</div></div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <div><h3>دستگاه‌های شارژ</h3><div class="ch-sub">پایش زنده از طریق OCPP</div></div>
+        <div class="head-actions"><div class="seg" id="seg"><button class="active">همه</button><button>DC سریع</button><button>AC</button></div></div>
+      </div>
+      <div class="card-pad">
+        <div class="grid g-2" id="devGrid"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<style>
+.mini-stat{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:16px;display:flex;align-items:center;gap:13px;box-shadow:var(--shadow-sm)}
+.ms-ic{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;flex:none}.ms-ic svg{width:22px;height:22px}
+.ms-v{font-size:22px;font-weight:800}.ms-v small{font-size:12px;font-weight:600;color:var(--text-2)}.ms-l{font-size:12px;color:var(--muted)}
+.dev{border:1px solid var(--border);border-radius:16px;padding:16px}
+.dev-top{display:flex;align-items:center;gap:12px}
+.dev-ic{width:46px;height:46px;border-radius:13px;display:grid;place-items:center;flex:none}.dev-ic svg{width:23px;height:23px}
+.dev-meter{display:flex;justify-content:space-between;margin-top:14px;padding-top:13px;border-top:1px solid var(--border-2)}
+.dev-meter>div{text-align:center;flex:1}
+.dev-meter .v{font-size:15px;font-weight:800}.dev-meter .l{font-size:11px;color:var(--muted);margin-top:2px}
+</style>
+
+<script src="app-partner.js"></script>
+<script>
+(function(){
+  document.querySelectorAll('[data-ic]').forEach(function(el){el.innerHTML=window.icon(el.getAttribute('data-ic'));});
+  var devs=[
+    {id:'CP‑۹۱۰۱',t:'DC CCS2 · ۱۸۰kW',cat:'dc',st:['در حال شارژ','pill-green','ic-green'],pw:'۸۶ kW',today:'۲۴',en:'۴۸۰ kWh',rev:'۱۵٫۴ م'},
+    {id:'CP‑۹۱۰۲',t:'DC CCS2 · ۱۸۰kW',cat:'dc',st:['در حال شارژ','pill-green','ic-green'],pw:'۷۲ kW',today:'۲۱',en:'۴۱۰ kWh',rev:'۱۳٫۱ م'},
+    {id:'CP‑۹۱۰۳',t:'DC CHAdeMO · ۵۰kW',cat:'dc',st:['آماده','pill-accent','ic-blue'],pw:'—',today:'۱۲',en:'۱۸۶ kWh',rev:'۵٫۹ م'},
+    {id:'CP‑۹۱۰۴',t:'AC Type2 · ۲۲kW',cat:'ac',st:['در حال شارژ','pill-green','ic-green'],pw:'۲۲ kW',today:'۸',en:'۹۸ kWh',rev:'۳٫۱ م'},
+    {id:'CP‑۹۱۰۵',t:'AC Type2 · ۲۲kW',cat:'ac',st:['آماده','pill-accent','ic-blue'],pw:'—',today:'۶',en:'۷۲ kWh',rev:'۲٫۳ م'},
+    {id:'CP‑۹۱۰۶',t:'AC Type2 · ۲۲kW',cat:'ac',st:['در حال شارژ','pill-green','ic-green'],pw:'۱۸ kW',today:'۹',en:'۱۱۰ kWh',rev:'۳٫۵ م'},
+    {id:'CP‑۹۱۰۷',t:'DC CCS2 · ۱۲۰kW',cat:'dc',st:['آماده','pill-accent','ic-blue'],pw:'—',today:'۱۵',en:'۳۲۰ kWh',rev:'۱۰٫۲ م'},
+    {id:'CP‑۹۱۰۸',t:'AC Type2 · ۲۲kW',cat:'ac',st:['نگهداری','pill-amber','ic-orange'],pw:'—',today:'۰',en:'۰ kWh',rev:'۰'},
+  ];
+  function render(){
+    document.getElementById('devGrid').innerHTML=devs.map(function(d){
+      return '<div class="dev" data-cat="'+d.cat+'"><div class="dev-top"><div class="dev-ic '+d.st[2]+'">'+window.icon('plug')+'</div>'+
+        '<div style="flex:1"><div class="fw7">'+d.id+'</div><div class="fs12 muted mt4">'+d.t+'</div></div>'+
+        '<span class="pill '+d.st[1]+'">'+(d.st[1]==='pill-green'?'<span class="pdot"></span>':'')+d.st[0]+'</span></div>'+
+        '<div class="dev-meter"><div><div class="v tnum">'+d.pw+'</div><div class="l">توان</div></div>'+
+        '<div><div class="v tnum">'+d.today+'</div><div class="l">جلسات امروز</div></div>'+
+        '<div><div class="v tnum">'+d.en+'</div><div class="l">انرژی</div></div>'+
+        '<div><div class="v tnum" style="color:var(--green)">'+d.rev+'</div><div class="l">درآمد</div></div></div></div>';
+    }).join('');
+  }
+  render();
+  document.querySelectorAll('#seg button').forEach(function(b,idx){
+    b.addEventListener('click',function(){document.querySelectorAll('#seg button').forEach(function(x){x.classList.remove('active');});b.classList.add('active');
+      document.querySelectorAll('.dev').forEach(function(c){var cat=c.getAttribute('data-cat');c.style.display=(idx===0||(idx===1&&cat==='dc')||(idx===2&&cat==='ac'))?'':'none';});});
+  });
+})();
+</script>
+</body>
+</html>

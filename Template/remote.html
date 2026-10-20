@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SafirCharge — کنترل از راه دور</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/app.css">
+</head>
+<body data-page="stations" data-title="کنترل از راه دور دستگاه‌ها" data-crumb="ایستگاه میدان آزادی">
+<div class="main">
+  <div class="content">
+
+    <div class="flex between items-center mt-8" style="margin-bottom:18px">
+      <a href="stations.html" class="btn btn-sm"><span class="bic" data-ic="dots"></span> بازگشت به ایستگاه</a>
+      <span class="pill pill-green"><span class="pdot"></span>ارتباط OCPP برقرار</span>
+    </div>
+
+    <div class="grid col-1-2">
+      <!-- لیست دستگاه‌ها -->
+      <div class="card" style="align-self:start">
+        <div class="card-head"><div><h3>کانکتورها</h3><div class="ch-sub">میدان آزادی · ST‑۱۰۰۱</div></div></div>
+        <div id="devList"></div>
+      </div>
+
+      <!-- پنل کنترل -->
+      <div style="display:flex;flex-direction:column;gap:16px">
+        <div class="card">
+          <div class="card-head">
+            <div><h3>کنترل کانکتور <span id="curName" style="color:var(--accent)">A1</span></h3><div class="ch-sub" id="curMeta">DC CCS2 · ۱۸۰ kW</div></div>
+            <div class="head-actions"><span class="pill pill-green" id="curStatus"><span class="pdot"></span>در حال شارژ</span></div>
+          </div>
+          <div class="card-pad">
+            <!-- متریک‌های زنده -->
+            <div class="grid g-3" style="margin-bottom:16px">
+              <div class="live-stat"><div class="ls-l">توان لحظه‌ای</div><div class="ls-v tnum" id="mPower">۸۶ <small>kW</small></div></div>
+              <div class="live-stat"><div class="ls-l">ولتاژ</div><div class="ls-v tnum" id="mVolt">۴۰۲ <small>V</small></div></div>
+              <div class="live-stat"><div class="ls-l">جریان</div><div class="ls-v tnum" id="mAmp">۲۱۴ <small>A</small></div></div>
+              <div class="live-stat"><div class="ls-l">دمای کانکتور</div><div class="ls-v tnum">۳۸ <small>°C</small></div></div>
+              <div class="live-stat"><div class="ls-l">انرژی جلسه</div><div class="ls-v tnum">۴۲٫۸ <small>kWh</small></div></div>
+              <div class="live-stat"><div class="ls-l">مدت جلسه</div><div class="ls-v tnum">۳۲ <small>دق</small></div></div>
+            </div>
+            <!-- اقدامات کنترلی -->
+            <div class="section-title" style="margin-bottom:10px">دستورهای کنترلی</div>
+            <div class="grid g-2">
+              <button class="ctl-btn" data-cmd="restart"><span class="cb-ic ic-blue" data-ic="refresh"></span><div><div class="fw7 fs13">راه‌اندازی مجدد</div><div class="fhint">Reset (Soft)</div></div></button>
+              <button class="ctl-btn" data-cmd="unlock"><span class="cb-ic ic-green" data-ic="plug"></span><div><div class="fw7 fs13">باز کردن قفل کانکتور</div><div class="fhint">UnlockConnector</div></div></button>
+              <button class="ctl-btn" data-cmd="stop"><span class="cb-ic ic-orange" data-ic="bolt"></span><div><div class="fw7 fs13">توقف شارژ</div><div class="fhint">RemoteStopTransaction</div></div></button>
+              <button class="ctl-btn" data-cmd="disable"><span class="cb-ic ic-red" data-ic="alert"></span><div><div class="fw7 fs13">غیرفعال‌سازی</div><div class="fhint">ChangeAvailability</div></div></button>
+              <button class="ctl-btn" data-cmd="firmware"><span class="cb-ic ic-violet" data-ic="download"></span><div><div class="fw7 fs13">به‌روزرسانی میان‌افزار</div><div class="fhint">UpdateFirmware</div></div></button>
+              <button class="ctl-btn" data-cmd="diag"><span class="cb-ic ic-blue" data-ic="activity"></span><div><div class="fw7 fs13">دریافت گزارش تشخیصی</div><div class="fhint">GetDiagnostics</div></div></button>
+            </div>
+            <!-- تنظیم توان -->
+            <div class="section-title" style="margin:18px 0 10px">محدودسازی توان (Smart Charging)</div>
+            <div class="flex items-center gap-12">
+              <input type="range" min="20" max="180" value="180" id="pwRange" style="flex:1;accent-color:var(--accent)">
+              <span class="pill pill-accent tnum" id="pwVal" style="min-width:72px;justify-content:center">۱۸۰ kW</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- کنسول لاگ -->
+        <div class="card">
+          <div class="card-head"><div><h3>کنسول دستورها و رویدادها</h3></div><div class="head-actions"><span class="muted fs12">زنده</span></div></div>
+          <div class="card-pad"><div class="console" id="console"></div></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<style>
+.bic{display:inline-grid;width:16px;height:16px}.bic svg{width:16px;height:16px}
+.rc-dev{display:flex;align-items:center;gap:12px;padding:13px 18px;border-bottom:1px solid var(--border-2);cursor:pointer;transition:background .12s}
+.rc-dev:last-child{border-bottom:none}
+.rc-dev:hover{background:var(--surface-2)}
+.rc-dev.active{background:var(--accent-softer);box-shadow:inset 3px 0 0 var(--accent)}
+.rc-dev .rd-ic{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;flex:none}.rd-ic svg{width:19px;height:19px}
+.rc-dev .rd-n{font-weight:700;font-size:13.5px}.rc-dev .rd-s{font-size:11.5px;color:var(--muted)}
+.live-stat{background:var(--surface-2);border:1px solid var(--border-2);border-radius:12px;padding:12px 14px}
+.live-stat .ls-l{font-size:11.5px;color:var(--muted)}
+.live-stat .ls-v{font-size:19px;font-weight:800;margin-top:3px}.live-stat .ls-v small{font-size:11px;font-weight:600;color:var(--text-2)}
+.ctl-btn{display:flex;align-items:center;gap:11px;padding:13px;border:1px solid var(--border);border-radius:13px;background:var(--surface);font-family:inherit;text-align:start;transition:all .12s}
+.ctl-btn:hover{border-color:var(--accent);background:var(--surface-2)}
+.cb-ic{width:40px;height:40px;border-radius:11px;display:grid;place-items:center;flex:none}.cb-ic svg{width:20px;height:20px}
+.ic-red{background:var(--red-soft);color:var(--red)}
+.console{background:#0C2236;border-radius:12px;padding:14px;font-family:ui-monospace,monospace;font-size:12px;color:#cfe0f0;line-height:1.9;max-height:220px;overflow-y:auto}
+.cline .ct{color:#6e8499;margin-inline-end:8px}
+.cline.ok{color:#4ade80}.cline.warn{color:#fbbf24}.cline.cmd{color:#67c5ff}
+input[type=range]{height:6px;border-radius:6px}
+</style>
+
+<script src="assets/app.js"></script>
+<script>
+(function(){
+  document.querySelectorAll('[data-ic]').forEach(function(el){el.innerHTML=window.icon(el.getAttribute('data-ic'));});
+
+  var devs=[
+    {id:'A1',t:'DC CCS2 · ۱۸۰ kW',st:['در حال شارژ','pill-green','ic-green'],pw:'۸۶ kW'},
+    {id:'A2',t:'DC CHAdeMO · ۵۰ kW',st:['در حال شارژ','pill-green','ic-green'],pw:'۵۰ kW'},
+    {id:'A3',t:'DC CCS2 · ۱۸۰ kW',st:['آماده','pill-accent','ic-blue'],pw:'—'},
+    {id:'B1',t:'AC Type2 · ۲۲ kW',st:['در حال شارژ','pill-green','ic-green'],pw:'۲۲ kW'},
+    {id:'B2',t:'AC Type2 · ۲۲ kW',st:['آماده','pill-accent','ic-blue'],pw:'—'},
+    {id:'B3',t:'AC Type2 · ۲۲ kW',st:['خطا','pill-red','ic-red'],pw:'—'}
+  ];
+  function renderList(){
+    document.getElementById('devList').innerHTML=devs.map(function(d,i){
+      return '<div class="rc-dev'+(i===0?' active':'')+'" data-i="'+i+'"><div class="rd-ic '+d.st[2]+'">'+window.icon('plug')+'</div>'+
+        '<div style="flex:1"><div class="rd-n">کانکتور '+d.id+'</div><div class="rd-s">'+d.t+'</div></div>'+
+        '<span class="pill '+d.st[1]+'" style="font-size:10.5px">'+(d.st[1]==='pill-green'?'<span class="pdot"></span>':'')+d.st[0]+'</span></div>';
+    }).join('');
+    document.querySelectorAll('.rc-dev').forEach(function(el){el.addEventListener('click',function(){
+      document.querySelectorAll('.rc-dev').forEach(function(x){x.classList.remove('active');});el.classList.add('active');
+      var d=devs[+el.getAttribute('data-i')];
+      document.getElementById('curName').textContent=d.id;
+      document.getElementById('curMeta').textContent=d.t;
+      var cs=document.getElementById('curStatus');cs.className='pill '+d.st[1];cs.innerHTML=(d.st[1]==='pill-green'?'<span class="pdot"></span>':'')+d.st[0];
+      log('cmd','اتصال به کانکتور '+d.id+' …');log('ok','وضعیت دریافت شد: '+d.st[0]);
+    });});
+  }
+  renderList();
+
+  var logs=[['ct','۱۴:۳۲:۰۸'],['ok','اتصال OCPP به کانکتور A1 برقرار شد']];
+  function log(type,msg){
+    var c=document.getElementById('console');
+    var t=new Date();var ts=('۰'+t.getHours()).slice(-2)+':'+('۰'+t.getMinutes()).slice(-2)+':'+('۰'+t.getSeconds()).slice(-2);
+    var line=document.createElement('div');line.className='cline '+type;
+    line.innerHTML='<span class="ct">'+ts.replace(/[0-9]/g,function(d){return '۰۱۲۳۴۵۶۷۸۹'[d];})+'</span>'+msg;
+    c.insertBefore(line,c.firstChild);
+  }
+  document.getElementById('console').innerHTML='<div class="cline ok"><span class="ct">۱۴:۳۲:۰۸</span>اتصال OCPP به کانکتور A1 برقرار شد</div>';
+
+  var cmds={restart:['cmd','warn','Reset(Soft) ارسال شد','کانکتور در حال راه‌اندازی مجدد…'],
+    unlock:['cmd','ok','UnlockConnector ارسال شد','قفل کانکتور باز شد'],
+    stop:['cmd','warn','RemoteStopTransaction ارسال شد','جلسهٔ شارژ متوقف شد'],
+    disable:['cmd','warn','ChangeAvailability(Inoperative) ارسال شد','کانکتور غیرفعال شد'],
+    firmware:['cmd','ok','UpdateFirmware ارسال شد','دانلود میان‌افزار آغاز شد (۰٪)'],
+    diag:['cmd','ok','GetDiagnostics ارسال شد','گزارش تشخیصی در حال آپلود…']};
+  document.querySelectorAll('.ctl-btn').forEach(function(b){
+    b.addEventListener('click',function(){var c=cmds[b.getAttribute('data-cmd')];log(c[0],'» '+c[2]);setTimeout(function(){log(c[1],'✓ '+c[3]);},500);});
+  });
+
+  var pr=document.getElementById('pwRange');
+  pr.addEventListener('input',function(){document.getElementById('pwVal').textContent=(+pr.value).toLocaleString('fa-IR')+' kW';});
+  pr.addEventListener('change',function(){log('cmd','» SetChargingProfile: حد توان '+(+pr.value).toLocaleString('fa-IR')+' kW');setTimeout(function(){log('ok','✓ پروفایل شارژ هوشمند اعمال شد');},500);});
+
+  // متریک‌های زنده (شبیه‌سازی)
+  setInterval(function(){
+    var p=84+Math.floor(Math.random()*6);
+    document.getElementById('mPower').innerHTML=p.toLocaleString('fa-IR')+' <small>kW</small>';
+    document.getElementById('mVolt').innerHTML=(398+Math.floor(Math.random()*8)).toLocaleString('fa-IR')+' <small>V</small>';
+    document.getElementById('mAmp').innerHTML=(210+Math.floor(Math.random()*10)).toLocaleString('fa-IR')+' <small>A</small>';
+  },2000);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SafirCharge — درخواست جدید</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/app-mobile.css">
+</head>
+<body data-no-tab>
+<div class="phone">
+  <div class="appbar" style="padding-top:2px">
+    <button class="ab-btn" onclick="location.href='support.html'"><span data-ic="back"></span></button>
+    <div style="flex:1"><div class="ab-title">ثبت درخواست جدید</div></div>
+  </div>
+
+  <div class="screen">
+    <label class="fld-label">موضوع درخواست</label>
+    <div class="cat-grid" id="cats">
+      <button class="cat active" data-c="payment"><span class="cat-ic ic-orange" data-ic="wallet"></span>پرداخت و کیف پول</button>
+      <button class="cat" data-c="charge"><span class="cat-ic ic-blue" data-ic="bolt"></span>مشکل در شارژ</button>
+      <button class="cat" data-c="rfid"><span class="cat-ic ic-green" data-ic="chip"></span>کارت RFID</button>
+      <button class="cat" data-c="station"><span class="cat-ic ic-violet" data-ic="pin"></span>ایستگاه و دستگاه</button>
+      <button class="cat" data-c="account"><span class="cat-ic ic-blue" data-ic="user"></span>حساب کاربری</button>
+      <button class="cat" data-c="other"><span class="cat-ic ic-orange" data-ic="receipt"></span>سایر موارد</button>
+    </div>
+
+    <label class="fld-label mt20">جلسهٔ مرتبط (اختیاری)</label>
+    <select class="input"><option>— انتخاب جلسهٔ شارژ —</option><option>میدان آزادی · امروز ۱۴:۳۲</option><option>برج میلاد · ۳ روز پیش</option><option>ونک · ۵ روز پیش</option></select>
+
+    <label class="fld-label mt16">عنوان</label>
+    <input class="input" id="tTitle" placeholder="موضوع را کوتاه بنویسید">
+
+    <label class="fld-label mt16">شرح درخواست</label>
+    <textarea class="input ta" id="tBody" placeholder="جزئیات مشکل یا درخواست خود را بنویسید…"></textarea>
+
+    <label class="fld-label mt16">پیوست (اختیاری)</label>
+    <button class="attach"><span data-ic="plus"></span> افزودن عکس یا اسکرین‌شات</button>
+  </div>
+
+  <div class="savebar">
+    <button class="btn btn-orange" id="submitTk" style="height:52px;width:100%;font-size:15px"><span data-ic="check"></span> ثبت درخواست</button>
+  </div>
+</div>
+
+<!-- نتیجهٔ ثبت -->
+<div class="done-ov" id="doneOv">
+  <div class="ok-circle"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div>
+  <h2 class="mt20" style="font-size:20px">درخواست شما ثبت شد</h2>
+  <p class="muted" style="margin-top:8px;font-size:13px;line-height:1.8">شمارهٔ پیگیری: <b class="mono" style="color:var(--text)">TK‑۴۸۳</b><br>کارشناسان ما به‌زودی پاسخ می‌دهند.</p>
+  <a href="support.html" class="btn btn-orange mt20" style="height:48px;width:100%;max-width:280px">بازگشت به پشتیبانی</a>
+</div>
+
+<style>
+.fld-label{display:block;font-size:12.5px;color:var(--muted);font-weight:600;margin-bottom:8px}
+.cat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.cat{display:flex;flex-direction:column;align-items:flex-start;gap:9px;padding:14px;border:1.5px solid var(--border);border-radius:15px;background:var(--surface);font-family:inherit;font-size:13px;font-weight:700;color:var(--text);text-align:start}
+.cat.active{border-color:var(--accent);background:var(--accent-soft)}
+.cat-ic{width:40px;height:40px;border-radius:12px;display:grid;place-items:center}.cat-ic svg{width:20px;height:20px}
+.input{width:100%;border:1.5px solid var(--border);background:var(--surface-2);border-radius:13px;padding:0 14px;height:50px;font-family:inherit;font-size:14px;color:var(--text);outline:none}
+.input:focus{border-color:var(--accent);background:var(--surface)}
+select.input{appearance:none}
+.ta{height:110px;padding:13px 14px;line-height:1.8;resize:none}
+.attach{width:100%;display:flex;align-items:center;justify-content:center;gap:8px;height:52px;border:1.5px dashed var(--border);border-radius:14px;background:var(--surface-2);color:var(--accent);font-family:inherit;font-weight:700;font-size:13.5px}
+.attach svg{width:18px;height:18px}
+.savebar{position:absolute;bottom:0;left:0;right:0;background:color-mix(in srgb,var(--surface) 94%,transparent);backdrop-filter:blur(14px);border-top:1px solid var(--border);padding:14px 20px calc(20px + env(safe-area-inset-bottom,0));z-index:20}
+.savebar .btn svg{width:18px;height:18px}
+.done-ov{position:absolute;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:34px;opacity:0;visibility:hidden;transition:opacity .25s;z-index:80}
+.done-ov.show{opacity:1;visibility:visible}
+.ok-circle{width:92px;height:92px;border-radius:50%;background:linear-gradient(140deg,var(--green),#4ade80);display:grid;place-items:center;box-shadow:0 16px 34px rgba(22,163,74,.4)}
+.ok-circle svg{width:44px;height:44px}
+</style>
+
+<script src="../assets/app-mobile.js"></script>
+<script>
+document.querySelectorAll('[data-ic]').forEach(function(el){el.innerHTML=window.icon(el.getAttribute('data-ic'));});
+document.querySelectorAll('#cats .cat').forEach(function(b){
+  b.addEventListener('click',function(){document.querySelectorAll('#cats .cat').forEach(function(x){x.classList.remove('active');});b.classList.add('active');});
+});
+document.getElementById('submitTk').addEventListener('click',function(){
+  document.getElementById('doneOv').classList.add('show');
+});
+</script>
+</body>
+</html>

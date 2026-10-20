@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SafirCharge — پشتیبانی شریک</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/app.css">
+</head>
+<body data-page="support" data-title="پشتیبانی" data-crumb="پنل شرکا">
+<div class="main">
+  <div class="content">
+
+    <div class="grid col-2-1 mt-8">
+      <!-- ثبت درخواست -->
+      <div class="card">
+        <div class="card-head"><div><h3>ثبت درخواست خدمات / تیکت</h3><div class="ch-sub">برای دستگاه‌ها یا امور مالی</div></div></div>
+        <div class="card-pad">
+          <div class="form-grid">
+            <div class="ffield"><label>موضوع <span class="req">*</span></label><input class="finput" placeholder="مثلاً خطای کانکتور CP‑۹۱۰۳"></div>
+            <div class="ffield"><label>دسته</label><select class="fselect"><option>خرابی دستگاه</option><option>امور مالی و تسویه</option><option>درخواست نصب جدید</option><option>گزارش و آمار</option><option>سایر</option></select></div>
+            <div class="ffield"><label>دستگاه مرتبط</label><select class="fselect"><option>—</option><option>CP‑۹۱۰۱</option><option>CP‑۹۱۰۲</option><option>CP‑۹۱۰۳</option><option>CP‑۹۱۰۸</option></select></div>
+            <div class="ffield"><label>اولویت</label><select class="fselect"><option>عادی</option><option>مهم</option><option>فوری</option></select></div>
+            <div class="ffield col-span"><label>شرح درخواست</label><textarea class="ftext" placeholder="جزئیات مشکل یا درخواست خود را بنویسید…"></textarea></div>
+          </div>
+          <button class="btn btn-primary mt-12" style="width:100%;height:46px">ثبت درخواست</button>
+        </div>
+      </div>
+
+      <!-- تماس + وضعیت -->
+      <div>
+        <div class="card">
+          <div class="card-head"><h3>تماس مستقیم</h3></div>
+          <div class="card-pad" style="padding-top:8px">
+            <div class="lrow"><div class="l-ic ic-green" data-ic="headset"></div><div class="l-main"><div class="l-title">پشتیبانی شرکا</div><div class="l-sub" dir="ltr" style="text-align:right">۰۲۱-۹۱۰۰۲۰۳۰</div></div></div>
+            <div class="lrow" style="border-bottom:none"><div class="l-ic ic-blue" data-ic="bell"></div><div class="l-main"><div class="l-title">مدیر حساب اختصاصی</div><div class="l-sub">نگار صادقی · پاسخ‌گو در ساعات اداری</div></div></div>
+          </div>
+        </div>
+        <div class="card mt-16">
+          <div class="card-head"><h3>قرارداد و مدارک</h3></div>
+          <div class="card-pad" style="padding-top:8px">
+            <a class="lrow" style="padding-top:0" href="#"><div class="l-ic ic-violet" data-ic="receipt"></div><div class="l-main"><div class="l-title">قرارداد همکاری</div><div class="l-sub">مدل اشتراک ۷۰٪ · معتبر تا ۱۴۰۴</div></div><span class="btn btn-sm">دانلود</span></a>
+            <a class="lrow" style="padding-bottom:0" href="#"><div class="l-ic ic-orange" data-ic="chart"></div><div class="l-main"><div class="l-title">گزارش سالانهٔ عملکرد</div><div class="l-sub">۱۴۰۲</div></div><span class="btn btn-sm">دانلود</span></a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- تیکت‌های قبلی -->
+    <div class="card mt-16">
+      <div class="card-head"><div><h3>درخواست‌های پیشین</h3></div></div>
+      <div class="table-wrap">
+        <table class="tbl">
+          <thead><tr><th>شناسه</th><th>موضوع</th><th>دسته</th><th>تاریخ</th><th>اولویت</th><th>وضعیت</th></tr></thead>
+          <tbody id="tBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script src="app-partner.js"></script>
+<script>
+(function(){
+  document.querySelectorAll('[data-ic]').forEach(function(el){el.innerHTML=window.icon(el.getAttribute('data-ic'));});
+  var tickets=[
+    ['TK‑۳۲۰','خطای کانکتور CP‑۹۱۰۳','خرابی دستگاه','۱۴۰۳/۰۹/۱۸',['مهم','pill-amber'],['در حال بررسی','pill-accent']],
+    ['TK‑۳۱۸','تأخیر در تسویهٔ آبان','امور مالی','۱۴۰۳/۰۹/۰۵',['عادی','pill'],['حل شد','pill-green']],
+    ['TK‑۳۱۲','درخواست نصب ۲ دستگاه جدید','نصب جدید','۱۴۰۳/۰۸/۲۰',['عادی','pill'],['در حال اقدام','pill-accent']],
+    ['TK‑۳۰۵','نگهداری دوره‌ای CP‑۹۱۰۸','خرابی دستگاه','۱۴۰۳/۰۸/۱۲',['فوری','pill-red'],['حل شد','pill-green']],
+  ];
+  document.getElementById('tBody').innerHTML=tickets.map(function(r){
+    return '<tr><td class="mono">'+r[0]+'</td><td class="cell-strong">'+r[1]+'</td><td><span class="tag">'+r[2]+'</span></td>'+
+      '<td class="cell-muted tnum">'+r[3]+'</td><td><span class="pill '+r[4][1]+'">'+r[4][0]+'</span></td>'+
+      '<td><span class="pill '+r[5][1]+'">'+(r[5][1]==='pill-green'?'<span class="pdot"></span>':'')+r[5][0]+'</span></td></tr>';
+  }).join('');
+})();
+</script>
+</body>
+</html>

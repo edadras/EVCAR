@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SafirCharge — گزارش‌ها و تحلیل</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/app.css">
+</head>
+<body data-page="reports" data-title="گزارش‌ها و تحلیل" data-crumb="مالی و پرداخت">
+<div class="main">
+  <div class="content">
+
+    <!-- نوار گزارش -->
+    <div class="flex between items-center mt-8" style="margin-bottom:16px">
+      <div class="rep-tabs" id="repTabs">
+        <button class="active" data-r="energy"><span data-ic="bolt"></span>انرژی و مصرف</button>
+        <button data-r="revenue"><span data-ic="coins"></span>درآمد</button>
+        <button data-r="sessions"><span data-ic="activity"></span>جلسات</button>
+        <button data-r="users"><span data-ic="users"></span>کاربران</button>
+        <button data-r="stations"><span data-ic="station"></span>ایستگاه‌ها</button>
+      </div>
+      <div class="flex gap-8">
+        <button class="btn btn-sm"><span class="bic" data-ic="download"></span> Excel</button>
+        <button class="btn btn-sm"><span class="bic" data-ic="download"></span> PDF</button>
+      </div>
+    </div>
+
+    <!-- نوار فیلتر -->
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-pad" style="padding:14px 16px">
+        <div class="filter-bar">
+          <div class="search" style="max-width:none;flex:1;min-width:200px"><input placeholder="جستجو در گزارش (کاربر، ایستگاه، شناسه…)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></div>
+          <div class="seg" id="rangeSeg"><button>هفته</button><button class="active">ماه</button><button>فصل</button><button>سال</button><button>دلخواه</button></div>
+          <select class="fselect filt"><option>همهٔ شهرها</option><option>تهران</option><option>مشهد</option><option>اصفهان</option></select>
+          <select class="fselect filt"><option>همهٔ کانکتورها</option><option>DC سریع</option><option>AC</option></select>
+          <button class="btn btn-sm"><span class="bic" data-ic="filter"></span> فیلتر بیشتر</button>
+        </div>
+        <div class="chips mt-12" id="chips">
+          <span class="fchip">ماه جاری <button>✕</button></span>
+          <span class="fchip">DC + AC <button>✕</button></span>
+          <span class="muted fs12" style="margin-inline-start:auto">۹٬۸۴۲ رکورد · به‌روزرسانی لحظاتی پیش</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- KPI -->
+    <div class="kpi-grid" id="kpis"></div>
+
+    <!-- نمودارها -->
+    <div class="grid col-2-1 mt-16">
+      <div class="card">
+        <div class="card-head"><div><h3 id="chartTitle">روند انرژی تحویلی</h3><div class="ch-sub">۳۰ روز گذشته</div></div>
+          <div class="head-actions"><div class="seg" id="chartType"><button class="active">میله‌ای</button><button>خطی</button></div></div>
+        </div>
+        <div class="card-pad">
+          <svg id="mainChart" width="100%" height="250" viewBox="0 0 720 250" preserveAspectRatio="none"></svg>
+          <div class="chart-axis" id="axis"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><h3>تفکیک بر اساس نوع</h3></div>
+        <div class="card-pad">
+          <div class="flex items-center gap-16">
+            <svg width="128" height="128" viewBox="0 0 128 128" id="donut"></svg>
+            <div class="legend" id="donutLegend"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- جدول گزارش -->
+    <div class="card mt-16">
+      <div class="card-head">
+        <div><h3>جزئیات گزارش</h3><div class="ch-sub" id="tblSub">به تفکیک روز</div></div>
+        <div class="head-actions"><button class="btn btn-sm"><span class="bic" data-ic="download"></span> خروجی این جدول</button></div>
+      </div>
+      <div class="table-wrap">
+        <table class="tbl">
+          <thead id="tblHead"></thead>
+          <tbody id="tblBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<style>
+.bic{display:inline-grid;width:16px;height:16px}.bic svg{width:16px;height:16px}
+.rep-tabs{display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:5px;box-shadow:var(--shadow-sm);flex-wrap:wrap}
+.rep-tabs button{display:flex;align-items:center;gap:7px;border:none;background:none;font-family:inherit;font-size:13px;font-weight:600;color:var(--text-2);padding:8px 14px;border-radius:9px;transition:all .12s}
+.rep-tabs button span[data-ic]{display:inline-grid;width:16px;height:16px}.rep-tabs button svg{width:16px;height:16px}
+.rep-tabs button.active{background:var(--accent);color:#fff}
+.filter-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.fselect.filt{width:auto;min-width:140px;height:40px}
+.chips{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.fchip{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;background:var(--accent-soft);color:var(--accent-strong);padding:4px 6px 4px 11px;border-radius:20px}
+.fchip button{border:none;background:none;color:inherit;font-size:11px;cursor:pointer;opacity:.7}
+.kpi-ic[data-ic] svg{width:21px;height:21px}
+.chart-axis{display:flex;justify-content:space-between;margin-top:8px;color:var(--muted);font-size:11px}
+.mini-stat{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:18px;box-shadow:var(--shadow-sm)}
+</style>
+
+<script src="assets/app.js"></script>
+<script>
+(function(){
+  document.querySelectorAll('[data-ic]').forEach(function(el){el.innerHTML=window.icon(el.getAttribute('data-ic'));});
+
+  // دیتاست هر گزارش
+  var DATA={
+    energy:{title:'روند انرژی تحویلی',unit:'kWh',color:'var(--accent)',
+      kpis:[['انرژی کل','۵۸۴٬۲۰۰ kWh','ic-blue','bolt','▲ ۱۲٪'],['میانگین روزانه','۱۹٬۴۷۳ kWh','ic-green','leaf','▲ ۸٪'],['اوج مصرف','۲۸٬۴۰۰ kWh','ic-orange','activity','۱۹ آذر'],['انرژی DC','۶۸٪','ic-violet','plug','از کل']],
+      donut:[['DC سریع',68,'var(--accent)'],['AC',28,'var(--green)'],['سریع فوق‌العاده',4,'var(--orange)']],
+      vals:[],
+      head:['روز','جلسات','انرژی (kWh)','میانگین هر جلسه','اوج توان'],
+      rows:function(){var r=[];for(var i=1;i<=8;i++)r.push(['۱۴۰۳/۰۹/'+(20+i).toLocaleString('fa-IR'),(380+i*12).toLocaleString('fa-IR'),(18+i*1.3).toFixed(1)+'K',(28+i).toLocaleString('fa-IR')+' kWh',(84+i).toLocaleString('fa-IR')+' kW']);return r;}},
+    revenue:{title:'روند درآمد',unit:'م تومان',color:'var(--green)',
+      kpis:[['درآمد کل','۸٫۲۴ میلیارد','ic-green','coins','▲ ۱۴٪'],['میانگین روزانه','۲۷۴ م','ic-blue','chart','▲ ۹٪'],['سهم شرکا','۲٫۱۱ میلیارد','ic-orange','users','۲۵٪'],['کارمزد','۱٫۹۸ میلیارد','ic-violet','receipt','خالص']],
+      donut:[['شارژ DC',52,'var(--accent)'],['شارژ AC',29,'var(--green)'],['سازمانی',14,'var(--orange)'],['اشتراک',5,'var(--violet)']],
+      head:['روز','تراکنش','درآمد ناخالص','کارمزد','درآمد خالص'],
+      rows:function(){var r=[];for(var i=1;i<=8;i++)r.push(['۱۴۰۳/۰۹/'+(20+i).toLocaleString('fa-IR'),(820+i*15).toLocaleString('fa-IR'),(248+i*6).toLocaleString('fa-IR')+' م',(62+i).toLocaleString('fa-IR')+' م',(186+i*5).toLocaleString('fa-IR')+' م']);return r;}},
+    sessions:{title:'روند جلسات شارژ',unit:'جلسه',color:'var(--violet)',
+      kpis:[['کل جلسات','۹٬۸۴۲','ic-violet','activity','▲ ۵٪'],['میانگین مدت','۳۸ دقیقه','ic-blue','clock','−۲٪'],['موفق','۹۶٪','ic-green','bolt','نرخ'],['ناموفق','۴۱۲','ic-orange','alert','۴٪']],
+      donut:[['تکمیل‌شده',88,'var(--green)'],['متوقف‌شده',8,'var(--amber)'],['ناموفق',4,'var(--red)']],
+      head:['روز','جلسات','موفق','ناموفق','میانگین مدت'],
+      rows:function(){var r=[];for(var i=1;i<=8;i++)r.push(['۱۴۰۳/۰۹/'+(20+i).toLocaleString('fa-IR'),(310+i*8).toLocaleString('fa-IR'),(298+i*7).toLocaleString('fa-IR'),(12+i).toLocaleString('fa-IR'),(36+i).toLocaleString('fa-IR')+' دق']);return r;}},
+    users:{title:'رشد و فعالیت کاربران',unit:'کاربر',color:'var(--accent)',
+      kpis:[['کل کاربران','۴۲٬۸۶۰','ic-blue','users','▲ ۳٪'],['فعال (ماه)','۲۸٬۴۱۰','ic-green','activity','۶۶٪'],['جدید (ماه)','۱٬۲۴۰','ic-orange','plus','▲ ۱۸٪'],['ریزش','۳۲۰','ic-violet','alert','۰٫۷٪']],
+      donut:[['عادی',82,'var(--accent)'],['سازمانی',13,'var(--violet)'],['مهمان',5,'var(--orange)']],
+      head:['روز','کاربر جدید','فعال','جلسات','میانگین موجودی'],
+      rows:function(){var r=[];for(var i=1;i<=8;i++)r.push(['۱۴۰۳/۰۹/'+(20+i).toLocaleString('fa-IR'),(38+i*2).toLocaleString('fa-IR'),(920+i*12).toLocaleString('fa-IR'),(310+i*8).toLocaleString('fa-IR'),(1.8+i*0.1).toFixed(1)+' م']);return r;}},
+    stations:{title:'عملکرد ایستگاه‌ها',unit:'٪',color:'var(--orange)',
+      kpis:[['ایستگاه فعال','۳۱۸','ic-orange','station','▲ ۲'],['میانگین بهره‌برداری','۶۲٪','ic-blue','chart','▲ ۴٪'],['پرکارترین','میدان آزادی','ic-green','bolt','۸۳٪'],['کمترین','پارک ملت','ic-violet','activity','۳۵٪']],
+      donut:[['بهره‌برداری بالا',42,'var(--green)'],['متوسط',38,'var(--accent)'],['پایین',20,'var(--amber)']],
+      head:['ایستگاه','جلسات','انرژی','بهره‌برداری','درآمد'],
+      rows:function(){var n=['میدان آزادی','برج میلاد','نمایشگاه','ونک','صادقیه','پارک ملت','اکباتان','تهرانپارس'];return n.map(function(s,i){return [s,(840-i*70).toLocaleString('fa-IR'),(4.2-i*0.3).toFixed(1)+'K kWh',(83-i*6).toLocaleString('fa-IR')+'٪',(284-i*22).toLocaleString('fa-IR')+' م'];});}}
+  };
+
+  var cur='energy', chartMode='bar';
+  function seededVals(seed,n,base,amp){var v=[];for(var i=0;i<n;i++){seed=(seed*9301+49297)%233280;v.push(base+Math.round((seed/233280)*amp));}return v;}
+
+  function renderKPIs(d){
+    document.getElementById('kpis').innerHTML=d.kpis.map(function(k){
+      return '<div class="kpi"><div class="kpi-ic '+k[2]+'" data-ic="'+k[3]+'"></div><div class="kpi-label">'+k[0]+'</div><div class="kpi-val tnum" style="font-size:21px">'+k[1]+'</div><div class="kpi-foot"><span class="trend-up">'+k[4]+'</span></div></div>';
+    }).join('');
+    document.querySelectorAll('#kpis [data-ic]').forEach(function(el){el.innerHTML=window.icon(el.getAttribute('data-ic'));});
+  }
+  function renderChart(d){
+    var vals=seededVals(cur.length*7+3,30,40,60);
+    var W=720,H=250,pad=12,max=110;
+    var svg=document.getElementById('mainChart');
+    var grid='';for(var g=0;g<=4;g++){var y=pad+(H-pad*2)*g/4;grid+='<line x1="'+pad+'" y1="'+y+'" x2="'+(W-pad)+'" y2="'+y+'" stroke="var(--border)" stroke-width="1" stroke-dasharray="3 5"/>';}
+    if(chartMode==='bar'){
+      var bw=(W-pad*2)/30-4;
+      var bars=vals.map(function(v,i){var x=pad+i*((W-pad*2)/30);var h=(H-pad*2)*v/max;var y=H-pad-h;return '<rect x="'+x+'" y="'+y+'" width="'+bw+'" height="'+h+'" rx="3" fill="'+d.color+'" opacity="'+(i===29?1:.8)+'"/>';}).join('');
+      svg.innerHTML=grid+bars;
+    } else {
+      var step=(W-pad*2)/(vals.length-1);
+      function p(area){var dd=vals.map(function(v,i){var x=pad+i*step;var y=pad+(H-pad*2)*(1-v/max);return (i?'L':'M')+x.toFixed(1)+' '+y.toFixed(1);}).join(' ');if(area)dd+=' L'+(W-pad)+' '+(H-pad)+' L'+pad+' '+(H-pad)+' Z';return dd;}
+      svg.innerHTML=grid+'<path d="'+p(true)+'" fill="'+d.color+'" opacity=".12"/><path d="'+p()+'" fill="none" stroke="'+d.color+'" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>';
+    }
+    var ax=document.getElementById('axis');ax.innerHTML='';['۱','۵','۱۰','۱۵','۲۰','۲۵','۳۰'].forEach(function(t){var s=document.createElement('span');s.textContent=t;ax.appendChild(s);});
+    document.getElementById('chartTitle').textContent=d.title;
+  }
+  function renderDonut(d){
+    var R=52,C=64,sw=16,circ=2*Math.PI*R,off=0;
+    var rings=d.donut.map(function(x){var len=x[1]/100*circ;var el='<circle cx="64" cy="64" r="52" fill="none" stroke="'+x[2]+'" stroke-width="16" stroke-dasharray="'+len+' '+(circ-len)+'" stroke-dashoffset="'+(-off)+'" transform="rotate(-90 64 64)"/>';off+=len;return el;}).join('');
+    document.getElementById('donut').innerHTML=rings;
+    document.getElementById('donutLegend').innerHTML=d.donut.map(function(x){return '<div class="li"><span class="sw" style="background:'+x[2]+'"></span><span>'+x[0]+'</span><b class="tnum" style="margin-inline-start:auto">'+x[1].toLocaleString('fa-IR')+'٪</b></div>';}).join('');
+  }
+  function renderTable(d){
+    document.getElementById('tblHead').innerHTML='<tr>'+d.head.map(function(h){return '<th>'+h+'</th>';}).join('')+'</tr>';
+    document.getElementById('tblBody').innerHTML=d.rows().map(function(r){
+      return '<tr>'+r.map(function(c,i){return '<td'+(i===0?' class="cell-strong"':' class="tnum"')+'>'+c+'</td>';}).join('')+'</tr>';
+    }).join('');
+  }
+  function renderAll(){var d=DATA[cur];renderKPIs(d);renderChart(d);renderDonut(d);renderTable(d);}
+  renderAll();
+
+  document.querySelectorAll('#repTabs button').forEach(function(b){
+    b.addEventListener('click',function(){document.querySelectorAll('#repTabs button').forEach(function(x){x.classList.remove('active');});b.classList.add('active');cur=b.getAttribute('data-r');renderAll();});
+  });
+  document.querySelectorAll('#chartType button').forEach(function(b,i){
+    b.addEventListener('click',function(){document.querySelectorAll('#chartType button').forEach(function(x){x.classList.remove('active');});b.classList.add('active');chartMode=i===0?'bar':'line';renderChart(DATA[cur]);});
+  });
+  document.querySelectorAll('#rangeSeg button').forEach(function(b){b.addEventListener('click',function(){document.querySelectorAll('#rangeSeg button').forEach(function(x){x.classList.remove('active');});b.classList.add('active');renderChart(DATA[cur]);});});
+  document.querySelectorAll('.fchip button').forEach(function(b){b.addEventListener('click',function(){b.closest('.fchip').remove();});});
+})();
+</script>
+</body>
+</html>

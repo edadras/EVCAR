@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SafirCharge — ورود مدیریت</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/app.css">
+</head>
+<body>
+<div class="login-wrap">
+  <!-- پنل برند -->
+  <div class="login-brand">
+    <div class="lb-top">
+      <div class="brand-mark" style="width:46px;height:46px;border-radius:14px"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h7l-1 8 10-12h-7l1-8z"/></svg></div>
+      <div><div style="font-weight:800;font-size:20px;color:#fff">SafirCharge</div><div style="color:rgba(255,255,255,.7);font-size:13px">سامانهٔ مدیریت شارژ خودرو برقی</div></div>
+    </div>
+    <div class="lb-mid">
+      <h1 style="color:#fff;font-size:30px;line-height:1.5;font-weight:800">مرکز فرماندهی<br>شبکهٔ شارژ شما</h1>
+      <p style="color:rgba(255,255,255,.78);font-size:15px;line-height:2;margin-top:14px">پایش زندهٔ شارژرها، مدیریت مالی و تسویه، تعرفه، کاربران و دسترسی — همه در یک پلتفرم.</p>
+      <div class="lb-stats">
+        <div><div class="lbs-v">۱٬۲۶۶</div><div class="lbs-l">شارژر شبکه</div></div>
+        <div><div class="lbs-v">۸ شهر</div><div class="lbs-l">پوشش</div></div>
+        <div><div class="lbs-v">۹۸٫۶٪</div><div class="lbs-l">آپ‌تایم</div></div>
+      </div>
+    </div>
+    <div class="lb-foot">© ۱۴۰۳ SafirCharge — همهٔ حقوق محفوظ است</div>
+  </div>
+
+  <!-- فرم -->
+  <div class="login-form">
+    <div class="lf-inner">
+      <h2 style="font-size:24px">ورود به پنل مدیریت</h2>
+      <p class="muted" style="margin:6px 0 26px">با حساب کاربری مدیر سامانه وارد شوید.</p>
+
+      <div class="ffield" style="margin-bottom:16px"><label>نام کاربری / ایمیل سازمانی</label><input class="finput" dir="ltr" style="text-align:right" value="reza@safircharge.ir"></div>
+      <div class="ffield" style="margin-bottom:10px"><label>رمز عبور</label><input class="finput" type="password" value="········"></div>
+      <div class="flex between items-center" style="margin-bottom:22px">
+        <label class="rmbr"><input type="checkbox" checked> مرا به خاطر بسپار</label>
+        <a href="#" class="fs13" style="color:var(--accent);font-weight:600">فراموشی رمز</a>
+      </div>
+      <a href="dashboard.html" class="btn btn-primary" style="height:50px;width:100%;font-size:15px">ورود به پنل مدیریت</a>
+
+      <div class="lf-div"><span>یا</span></div>
+      <a href="dashboard.html" class="btn" style="height:48px;width:100%">ورود با رمز یک‌بارمصرف (OTP)</a>
+
+      <div class="lf-help">
+        دسترسی به این پنل ویژهٔ کارکنان مجاز است و با احراز هویت دومرحله‌ای محافظت می‌شود.
+      </div>
+
+      <div class="lf-alt">
+        شریک یا مالک شارژر هستید؟ <a href="partner/login.html" style="color:var(--accent);font-weight:700">ورود به پنل شرکا</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+body{background:var(--bg)}
+.login-wrap{display:grid;grid-template-columns:1.1fr 1fr;min-height:100vh}
+.login-brand{background:linear-gradient(165deg,var(--sidebar),var(--sidebar-2));padding:40px 46px;display:flex;flex-direction:column;position:relative;overflow:hidden}
+.login-brand::after{content:"";position:absolute;width:520px;height:520px;border-radius:50%;background:radial-gradient(circle,color-mix(in srgb,var(--accent) 40%,transparent),transparent 65%);top:-120px;left:-120px}
+.lb-top{display:flex;align-items:center;gap:13px;position:relative;z-index:1}
+.lb-mid{flex:1;display:flex;flex-direction:column;justify-content:center;position:relative;z-index:1;max-width:440px}
+.lb-stats{display:flex;gap:32px;margin-top:36px}
+.lbs-v{font-size:26px;font-weight:800;color:#fff}.lbs-l{font-size:12px;color:rgba(255,255,255,.65);margin-top:2px}
+.lb-foot{font-size:12px;color:rgba(255,255,255,.5);position:relative;z-index:1}
+
+.login-form{display:flex;align-items:center;justify-content:center;padding:40px}
+.lf-inner{width:100%;max-width:380px}
+.rmbr{display:flex;align-items:center;gap:7px;font-size:13px;color:var(--text-2);cursor:pointer}
+.rmbr input{width:16px;height:16px;accent-color:var(--accent)}
+.lf-div{display:flex;align-items:center;gap:12px;margin:18px 0;color:var(--muted);font-size:12px}
+.lf-div::before,.lf-div::after{content:"";flex:1;height:1px;background:var(--border)}
+.lf-help{margin-top:26px;padding:14px;border-radius:12px;background:var(--surface-2);border:1px solid var(--border-2);font-size:12.5px;color:var(--text-2);line-height:1.9}
+.lf-alt{margin-top:18px;text-align:center;font-size:13px;color:var(--text-2)}
+@media (max-width:880px){.login-wrap{grid-template-columns:1fr}.login-brand{display:none}}
+</style>
+</body>
+</html>

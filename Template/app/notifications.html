@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SafirCharge — اعلان‌ها</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/app-mobile.css">
+</head>
+<body data-no-tab>
+<div class="phone">
+  <div class="appbar" style="padding-top:2px">
+    <button class="ab-btn" onclick="history.back()"><span data-ic="back"></span></button>
+    <div style="flex:1"><div class="ab-title">اعلان‌ها</div></div>
+    <button class="ab-btn" id="readAll"><span data-ic="check"></span></button>
+  </div>
+
+  <div class="screen">
+    <div class="muted fs12 fw7" style="margin:4px 0 10px">امروز</div>
+    <div class="card card-p" id="today"></div>
+
+    <div class="muted fs12 fw7" style="margin:20px 0 10px">پیش‌تر</div>
+    <div class="card card-p" id="earlier"></div>
+  </div>
+</div>
+
+<style>
+.nrow{display:flex;align-items:flex-start;gap:12px;padding:13px 0;border-bottom:1px solid var(--border-2);position:relative}
+.nrow:last-child{border-bottom:none}
+.nrow .ni{width:42px;height:42px;border-radius:13px;display:grid;place-items:center;flex:none}
+.nrow .ni svg{width:20px;height:20px}
+.nrow .l-title{font-weight:700;font-size:14px}
+.nrow .n-body{font-size:12.5px;color:var(--text-2);margin-top:3px;line-height:1.6}
+.nrow .n-time{font-size:11px;color:var(--muted);margin-top:5px}
+.nrow.unread::after{content:"";position:absolute;top:16px;inset-inline-end:0;width:8px;height:8px;border-radius:50%;background:var(--accent)}
+.nrow.unread{padding-inline-end:16px}
+</style>
+
+<script src="../assets/app-mobile.js"></script>
+<script>
+(function(){
+  var today=[
+    {ic:'check',c:'ic-green',t:'شارژ کامل شد',b:'شارژ خودروی شما در میدان آزادی به پایان رسید. ۸۸٬۴۰۰ تومان از کیف پول کسر شد.',tm:'۱۴:۳۲',unread:true},
+    {ic:'bolt',c:'ic-blue',t:'شارژ آغاز شد',b:'جلسهٔ شارژ در کانکتور A1 با موفقیت شروع شد ⚡',tm:'۱۴:۰۰',unread:true},
+    {ic:'gift',c:'ic-violet',t:'پاداش جدید',b:'۲۰٬۰۰۰ تومان اعتبار پاداش بابت معرفی دوست دریافت کردید 🎁',tm:'۱۰:۱۵',unread:false},
+  ];
+  var earlier=[
+    {ic:'wallet',c:'ic-orange',t:'کمبود موجودی',b:'موجودی کیف پول شما کمتر از ۱۰۰٬۰۰۰ تومان است. برای شارژ بعدی موجودی را افزایش دهید.',tm:'دیروز · ۲۰:۴۰',unread:false},
+    {ic:'pin',c:'ic-green',t:'شارژر جدید نزدیک شما',b:'ایستگاه «مرکز خرید کوروش» با ۴ کانکتور سریع به شبکه افزوده شد.',tm:'۳ روز پیش',unread:false},
+    {ic:'shield',c:'ic-blue',t:'ورود جدید به حساب',b:'ورود از دستگاه جدید ثبت شد. اگر شما نبودید با پشتیبانی تماس بگیرید.',tm:'۵ روز پیش',unread:false},
+  ];
+  function render(list){return list.map(function(n){
+    return '<div class="nrow'+(n.unread?' unread':'')+'"><div class="ni '+n.c+'">'+window.icon(n.ic)+'</div>'+
+      '<div class="l-main"><div class="l-title">'+n.t+'</div><div class="n-body">'+n.b+'</div><div class="n-time">'+n.tm+'</div></div></div>';
+  }).join('');}
+  document.getElementById('today').innerHTML=render(today);
+  document.getElementById('earlier').innerHTML=render(earlier);
+  document.getElementById('readAll').addEventListener('click',function(){
+    document.querySelectorAll('.nrow').forEach(function(r){r.classList.remove('unread');});
+  });
+})();
+</script>
+</body>
+</html>

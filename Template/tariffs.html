@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SafirCharge — تعرفه‌ها و RFID</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/app.css">
+</head>
+<body data-page="tariffs" data-title="تعرفه‌ها و کارت‌های RFID" data-crumb="مالی و پرداخت">
+<div class="main">
+  <div class="content">
+
+    <div class="tabs mt-8" id="tabs" style="margin-bottom:18px">
+      <button class="active" data-tab="tariff">موتور تعرفه</button>
+      <button data-tab="rfid">کارت‌های RFID</button>
+      <button data-tab="qr">کدهای QR</button>
+    </div>
+
+    <!-- تعرفه -->
+    <section data-pane="tariff">
+      <div class="flex between items-center" style="margin-bottom:14px">
+        <div><h3 style="font-size:16px">موتور تعرفه</h3><div class="muted fs12">مدیریت مدل‌های قیمت‌گذاری شبکه</div></div>
+        <a href="tariff-new.html" class="btn btn-sm btn-primary"><span class="bic" data-ic="plus"></span> ایجاد تعرفهٔ جدید</a>
+      </div>
+      <div class="grid g-3">
+        <div class="tariff-card">
+          <div class="flex between items-center"><span class="pill pill-accent">انرژی‌محور</span><button class="dotbtn" data-ic="dots"></button></div>
+          <h3 class="mt-12">تعرفهٔ استاندارد DC</h3>
+          <div class="muted fs12">شارژ سریع شهری</div>
+          <div class="tprice tnum">۳٬۲۰۰ <small>تومان / kWh</small></div>
+          <div class="tmeta"><span>۲۸۴ ایستگاه</span><span class="pill pill-green">فعال</span></div>
+        </div>
+        <div class="tariff-card">
+          <div class="flex between items-center"><span class="pill" style="background:var(--orange-soft);color:var(--orange)">زمان‌محور</span><button class="dotbtn" data-ic="dots"></button></div>
+          <h3 class="mt-12">تعرفهٔ AC اقتصادی</h3>
+          <div class="muted fs12">شارژ مقصد</div>
+          <div class="tprice tnum">۹۸۰ <small>تومان / دقیقه</small></div>
+          <div class="tmeta"><span>۱۹۶ ایستگاه</span><span class="pill pill-green">فعال</span></div>
+        </div>
+        <div class="tariff-card">
+          <div class="flex between items-center"><span class="pill" style="background:color-mix(in srgb,var(--violet) 12%,white);color:var(--violet)">ترکیبی</span><button class="dotbtn" data-ic="dots"></button></div>
+          <h3 class="mt-12">تعرفهٔ اعضای ویژه</h3>
+          <div class="muted fs12">انرژی + اشغال</div>
+          <div class="tprice tnum">۲٬۸۰۰ <small>+ اشغال</small></div>
+          <div class="tmeta"><span>۱۴۲ ایستگاه</span><span class="pill pill-green">فعال</span></div>
+        </div>
+        <a href="tariff-new.html" class="tariff-add">
+          <span class="ta-plus" data-ic="plus"></span>
+          <span class="fw7">ایجاد تعرفهٔ جدید</span>
+          <span class="fs12 muted">انرژی‌محور، زمان‌محور یا ترکیبی</span>
+        </a>
+      </div>
+
+      <div class="grid col-2-1 mt-16">
+        <div class="card">
+          <div class="card-head"><div><h3>ساختار تعرفهٔ ساعتی</h3><div class="ch-sub">قیمت‌گذاری اوج / غیراوج مصرف</div></div></div>
+          <div class="card-pad">
+            <svg id="peakChart" width="100%" height="190" viewBox="0 0 680 190" preserveAspectRatio="none"></svg>
+            <div class="chart-axis" id="peakAxis"></div>
+            <div class="flex gap-16 mt-16">
+              <span class="legend-inline"><i style="background:var(--red)"></i>اوج مصرف (۱۷–۲۲) · ۴٬۵۰۰ تومان</span>
+              <span class="legend-inline"><i style="background:var(--accent)"></i>عادی · ۳٬۲۰۰ تومان</span>
+              <span class="legend-inline"><i style="background:var(--green)"></i>کم‌باری (۰۰–۰۶) · ۲٬۱۰۰ تومان</span>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-head"><h3>ویرایش سریع تعرفه</h3></div>
+          <div class="card-pad">
+            <label class="fld"><span>نام تعرفه</span><input class="inp" value="تعرفهٔ استاندارد DC"></label>
+            <label class="fld"><span>مدل قیمت‌گذاری</span>
+              <div class="seg" style="width:100%"><button class="active" style="flex:1">انرژی</button><button style="flex:1">زمان</button><button style="flex:1">ترکیبی</button></div>
+            </label>
+            <label class="fld"><span>قیمت پایه (تومان/kWh)</span><input class="inp tnum" value="۳٬۲۰۰"></label>
+            <div class="grid g-2">
+              <label class="fld"><span>ضریب اوج</span><input class="inp tnum" value="۱٫۴۰×"></label>
+              <label class="fld"><span>ضریب کم‌باری</span><input class="inp tnum" value="۰٫۶۵×"></label>
+            </div>
+            <label class="fld switch-row"><span>هزینهٔ اشغال پس از پایان شارژ</span>
+              <span class="switch on"><i></i></span>
+            </label>
+            <button class="btn btn-primary mt-12" style="width:100%">ذخیرهٔ تعرفه</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- RFID -->
+    <section data-pane="rfid" style="display:none">
+      <div class="kpi-grid" style="margin-bottom:16px">
+        <div class="mini-stat"><div class="ms-ic ic-blue" data-ic="chip"></div><div><div class="ms-v tnum">۱۸٬۴۲۰</div><div class="ms-l">کارت صادرشده</div></div></div>
+        <div class="mini-stat"><div class="ms-ic ic-green" data-ic="chip"></div><div><div class="ms-v tnum">۱۶٬۹۸۲</div><div class="ms-l">کارت فعال</div></div></div>
+        <div class="mini-stat"><div class="ms-ic ic-orange" data-ic="users"></div><div><div class="ms-v tnum">۳۴۲</div><div class="ms-l">کارت سازمانی</div></div></div>
+        <div class="mini-stat"><div class="ms-ic ic-violet" data-ic="alert"></div><div><div class="ms-v tnum">۱٬۰۹۶</div><div class="ms-l">کارت غیرفعال/مفقود</div></div></div>
+      </div>
+      <div class="card">
+        <div class="card-head">
+          <div><h3>مدیریت کارت‌های RFID</h3></div>
+          <div class="head-actions"><a href="rfid-new.html" class="btn btn-sm btn-primary"><span class="bic" data-ic="plus"></span> صدور کارت جدید</a></div>
+        </div>
+        <div class="table-wrap">
+          <table class="tbl">
+            <thead><tr><th>شماره کارت</th><th>دارنده</th><th>نوع</th><th>کیف پول متصل</th><th>آخرین استفاده</th><th>حالت آفلاین</th><th>وضعیت</th><th></th></tr></thead>
+            <tbody id="rfidBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- QR -->
+    <section data-pane="qr" style="display:none">
+      <div class="grid col-1-2">
+        <div class="card" style="align-self:start">
+          <div class="card-head"><h3>تولید QR کانکتور</h3></div>
+          <div class="card-pad" style="text-align:center">
+            <div class="qr-box" id="qrBox"></div>
+            <div class="mono mt-16" style="font-size:12px;color:var(--text-2)">charger://CP-1001/connector/2</div>
+            <div class="muted fs12 mt-8">میدان آزادی · کانکتور A2</div>
+            <button class="btn btn-primary mt-16" style="width:100%"><span class="bic" data-ic="download"></span> دانلود برچسب QR</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-head"><div><h3>کدهای QR فعال</h3><div class="ch-sub">هر کانکتور یک کد یکتا · پشتیبانی از حالت آفلاین</div></div></div>
+          <div class="table-wrap">
+            <table class="tbl">
+              <thead><tr><th>کد QR</th><th>ایستگاه</th><th>کانکتور</th><th>توکن آفلاین</th><th>اسکن (۳۰ روز)</th><th>وضعیت</th></tr></thead>
+              <tbody id="qrBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</div>
+
+<style>
+.bic{display:inline-grid;width:16px;height:16px}.bic svg{width:16px;height:16px}
+.mini-stat{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:16px;display:flex;align-items:center;gap:13px;box-shadow:var(--shadow-sm)}
+.ms-ic{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;flex:none}.ms-ic svg{width:22px;height:22px}
+.ms-v{font-size:22px;font-weight:800}.ms-l{font-size:12px;color:var(--muted)}
+.legend-inline{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;color:var(--text-2);font-weight:600}.legend-inline i{width:10px;height:10px;border-radius:3px}
+.chart-axis{display:flex;justify-content:space-between;margin-top:8px;color:var(--muted);font-size:11px}
+
+.tariff-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:18px;box-shadow:var(--shadow-sm)}
+.tariff-add{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;text-align:center;background:var(--surface-2);border:1.5px dashed var(--border);border-radius:var(--r-lg);padding:18px;color:var(--text-2);transition:all .15s}
+.tariff-add:hover{border-color:var(--accent);background:var(--accent-softer)}
+.ta-plus{width:42px;height:42px;border-radius:13px;background:var(--accent-soft);color:var(--accent-strong);display:grid;place-items:center;margin-bottom:4px}.ta-plus svg{width:21px;height:21px}
+.tariff-card h3{font-size:16px}
+.dotbtn{width:30px;height:30px;border-radius:8px;border:none;background:transparent;color:var(--muted);display:grid;place-items:center}.dotbtn:hover{background:var(--surface-3)}.dotbtn svg{width:18px;height:18px}
+.tprice{font-size:26px;font-weight:800;margin:14px 0 4px}.tprice small{font-size:13px;font-weight:600;color:var(--text-2)}
+.tmeta{display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding-top:12px;border-top:1px solid var(--border-2);font-size:12px;color:var(--muted)}
+
+.fld{display:block;margin-bottom:14px}
+.fld>span{display:block;font-size:12px;color:var(--text-2);font-weight:600;margin-bottom:6px}
+.inp{width:100%;height:40px;border:1px solid var(--border);background:var(--surface-2);border-radius:10px;padding:0 13px;font-family:inherit;font-size:13px;color:var(--text)}
+.inp:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft);background:var(--surface)}
+.switch-row{display:flex;align-items:center;justify-content:space-between}
+.switch-row>span:first-child{margin-bottom:0}
+.switch{width:42px;height:24px;border-radius:20px;background:var(--surface-3);position:relative;flex:none;cursor:pointer;transition:background .15s}
+.switch i{position:absolute;top:3px;inset-inline-start:3px;width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:var(--shadow-sm);transition:transform .15s}
+.switch.on{background:var(--green)}.switch.on i{transform:translateX(-18px)}
+html[dir=rtl] .switch.on i{transform:translateX(-18px)}
+
+.qr-box{width:200px;height:200px;margin:0 auto;border-radius:16px;padding:14px;background:#fff;box-shadow:var(--shadow-md);display:grid;place-items:center}
+</style>
+
+<script src="assets/app.js"></script>
+<script>
+(function(){
+  document.querySelectorAll('[data-ic]').forEach(function(el){el.innerHTML=window.icon(el.getAttribute('data-ic'));});
+
+  // نمودار اوج مصرف
+  (function(){
+    var hrs=[2.1,2.1,2.1,2.1,2.1,2.1,3.2,3.2,3.2,3.2,3.2,3.2,3.2,3.2,3.2,3.2,3.2,4.5,4.5,4.5,4.5,4.5,3.2,2.1];
+    var W=680,H=190,pad=10,max=5,bw=(W-pad*2)/24-3;
+    var bars=hrs.map(function(v,i){
+      var x=pad+i*((W-pad*2)/24), h=(H-pad*2)*(v/max), y=H-pad-h;
+      var c=v>4?'var(--red)':(v<2.5?'var(--green)':'var(--accent)');
+      return '<rect x="'+x+'" y="'+y+'" width="'+bw+'" height="'+h+'" rx="3" fill="'+c+'"/>';
+    }).join('');
+    document.getElementById('peakChart').innerHTML=bars;
+    var ax=document.getElementById('peakAxis');['۰۰','۰۶','۱۲','۱۸','۲۴'].forEach(function(t){var s=document.createElement('span');s.textContent=t;ax.appendChild(s);});
+  })();
+
+  // QR کد ساختگی (شبکه)
+  (function(){
+    var n=21,cell=172/n,svg='<svg width="172" height="172" viewBox="0 0 172 172">';
+    function blk(x,y,s){return '<rect x="'+(x*cell)+'" y="'+(y*cell)+'" width="'+(s*cell)+'" height="'+(s*cell)+'" fill="#0F1E2E"/>';}
+    // الگوی شبه‌تصادفی پایدار
+    var seed=7;
+    for(var y=0;y<n;y++)for(var x=0;x<n;x++){
+      var corner=(x<7&&y<7)||(x>=n-7&&y<7)||(x<7&&y>=n-7);
+      if(corner)continue;
+      seed=(seed*1103515245+12345)&0x7fffffff;
+      if((seed>>8)%100<46)svg+=blk(x,y,1);
+    }
+    function finder(ox,oy){return blk(ox,oy,7).replace('#0F1E2E','#0F1E2E')+
+      '<rect x="'+((ox+1)*cell)+'" y="'+((oy+1)*cell)+'" width="'+(5*cell)+'" height="'+(5*cell)+'" fill="#fff"/>'+
+      '<rect x="'+((ox+2)*cell)+'" y="'+((oy+2)*cell)+'" width="'+(3*cell)+'" height="'+(3*cell)+'" fill="var(--accent)"/>';}
+    svg+=finder(0,0)+finder(n-7,0)+finder(0,n-7)+'</svg>';
+    document.getElementById('qrBox').innerHTML=svg;
+  })();
+
+  // RFID
+  var rnames=['مهدی احمدی','سارا رحیمی','شهرداری تهران','علی کریمی','تاکسی برقی سبز','زهرا موسوی','حسین نوری','نگار صادقی'];
+  var rtypes=[['شخصی','tag'],['شخصی','tag'],['سازمانی','pill-accent'],['شخصی','tag'],['سازمانی','pill-accent'],['شخصی','tag'],['شخصی','tag'],['شخصی','tag']];
+  var rfid='';
+  for(var i=0;i<8;i++){
+    var active=i!==6;
+    var offline=i%2===0;
+    rfid+='<tr>'+
+      '<td class="mono">CN‑'+(8821+i*13).toLocaleString('fa-IR')+'</td>'+
+      '<td class="cell-strong">'+rnames[i]+'</td>'+
+      '<td><span class="'+(rtypes[i][1]==='tag'?'tag':'pill '+rtypes[i][1])+'">'+rtypes[i][0]+'</span></td>'+
+      '<td class="tnum">'+((480-i*37)*1000).toLocaleString('fa-IR')+' ت</td>'+
+      '<td class="cell-muted">'+(i+1).toLocaleString('fa-IR')+' روز پیش</td>'+
+      '<td>'+(offline?'<span class="pill pill-green">مجاز</span>':'<span class="pill">آنلاین</span>')+'</td>'+
+      '<td>'+(active?'<span class="pill pill-green"><span class="pdot"></span>فعال</span>':'<span class="pill pill-red">مسدود</span>')+'</td>'+
+      '<td><button class="btn btn-sm">مدیریت</button></td>'+
+    '</tr>';
+  }
+  document.getElementById('rfidBody').innerHTML=rfid;
+
+  // QR table
+  var qstn=['میدان آزادی','میدان آزادی','برج میلاد','ونک','نمایشگاه بین‌المللی','صادقیه'];
+  var qr='';
+  for(var j=0;j<6;j++){
+    qr+='<tr><td class="mono">QR‑'+(1001+j).toLocaleString('fa-IR')+'</td><td class="cell-strong">'+qstn[j]+'</td>'+
+      '<td><span class="tag">'+(['A1','A2','B1','A1','C3','B2'][j])+'</span></td>'+
+      '<td class="mono cell-muted">TK‑'+(48210+j*7).toLocaleString('fa-IR')+'</td>'+
+      '<td class="tnum">'+((420-j*48)).toLocaleString('fa-IR')+'</td>'+
+      '<td><span class="pill pill-green">فعال</span></td></tr>';
+  }
+  document.getElementById('qrBody').innerHTML=qr;
+
+  // تب‌ها
+  document.querySelectorAll('#tabs button').forEach(function(b){
+    b.addEventListener('click',function(){
+      document.querySelectorAll('#tabs button').forEach(function(x){x.classList.remove('active');});b.classList.add('active');
+      var t=b.getAttribute('data-tab');
+      document.querySelectorAll('[data-pane]').forEach(function(p){p.style.display=p.getAttribute('data-pane')===t?'':'none';});
+    });
+  });
+  // switch toggle
+  document.querySelectorAll('.switch').forEach(function(s){s.addEventListener('click',function(){s.classList.toggle('on');});});
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,405 @@
+name: safircharge
+
+services:
+  # ─── Cloud Central ───────────────────────────────────────────
+  cloud-mysql:
+    image: mariadb:10.11
+    container_name: sc_cloud_mysql
+    restart: unless-stopped
+    environment:
+      MARIADB_ROOT_PASSWORD: ${CLOUD_DB_ROOT_PASSWORD:-root_secret}
+      MARIADB_DATABASE: ${CLOUD_DB_DATABASE:-safircharge_cloud}
+      MARIADB_USER: ${CLOUD_DB_USERNAME:-safir_cloud}
+      MARIADB_PASSWORD: ${CLOUD_DB_PASSWORD:-cloud_secret}
+    volumes:
+      - cloud_mysql_data:/var/lib/mysql
+    ports:
+      - "${CLOUD_DB_PORT:-3317}:3306"
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 8
+
+  cloud-redis:
+    image: redis:7-alpine
+    container_name: sc_cloud_redis
+    restart: unless-stopped
+    ports:
+      - "${CLOUD_REDIS_PORT:-6380}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  cloud-app:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    container_name: sc_cloud_app
+    restart: unless-stopped
+    working_dir: /var/www/html
+    volumes:
+      - ./cloud:/var/www/html
+    environment: &cloud-app-env
+      APP_NAME: "SafirCharge Cloud"
+      APP_ENV: local
+      APP_DEBUG: "true"
+      APP_URL: http://localhost:${CLOUD_HTTP_PORT:-8180}
+      DB_CONNECTION: mysql
+      DB_HOST: cloud-mysql
+      DB_PORT: 3306
+      DB_DATABASE: ${CLOUD_DB_DATABASE:-safircharge_cloud}
+      DB_USERNAME: ${CLOUD_DB_USERNAME:-safir_cloud}
+      DB_PASSWORD: ${CLOUD_DB_PASSWORD:-cloud_secret}
+      REDIS_HOST: cloud-redis
+      REDIS_PORT: 6379
+      CACHE_STORE: redis
+      SESSION_DRIVER: redis
+      QUEUE_CONNECTION: redis
+      SC_APP_ROLE: cloud
+      SC_EDGE_PROBE_URLS: ${SC_EDGE_PROBE_URLS:-http://127.0.0.1:8182,http://127.0.0.1:8183}
+      EDGE_INTERNAL_URL: ${EDGE_INTERNAL_URL:-http://sc_edge_nginx}
+      EDGE_CLOUD_SYNC_TOKEN: ${EDGE_CLOUD_SYNC_TOKEN:-dev-sync-token}
+      SC_CONNECTIVITY_ASK_MULTIPLE: ${SC_CONNECTIVITY_ASK_MULTIPLE:-true}
+      SC_TEST_OTP_CODES: ${SC_TEST_OTP_CODES:-111111,222222,333333}
+    depends_on:
+      cloud-mysql:
+        condition: service_healthy
+      cloud-redis:
+        condition: service_healthy
+
+  cloud-queue:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    container_name: sc_cloud_queue
+    restart: unless-stopped
+    working_dir: /var/www/html
+    volumes:
+      - ./cloud:/var/www/html
+    environment: *cloud-app-env
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        cd /var/www/html
+        if [ ! -d vendor ]; then composer install --no-interaction --prefer-dist; fi
+        php artisan queue:work redis --sleep=3 --tries=3 --max-time=3600
+    depends_on:
+      - cloud-app
+
+  cloud-nginx:
+    image: nginx:alpine
+    container_name: sc_cloud_nginx
+    restart: unless-stopped
+    ports:
+      - "${CLOUD_HTTP_PORT:-8180}:80"
+    volumes:
+      - ./cloud:/var/www/html:ro
+      - ./docker/nginx/cloud.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - cloud-app
+
+  # ─── Edge Station ────────────────────────────────────────────
+  edge-mysql:
+    image: mariadb:10.11
+    container_name: sc_edge_mysql
+    restart: unless-stopped
+    environment:
+      MARIADB_ROOT_PASSWORD: ${EDGE_DB_ROOT_PASSWORD:-root_secret}
+      MARIADB_DATABASE: ${EDGE_DB_DATABASE:-safircharge_edge}
+      MARIADB_USER: ${EDGE_DB_USERNAME:-safir_edge}
+      MARIADB_PASSWORD: ${EDGE_DB_PASSWORD:-edge_secret}
+    volumes:
+      - edge_mysql_data:/var/lib/mysql
+    ports:
+      - "${EDGE_DB_PORT:-3318}:3306"
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 8
+
+  edge-redis:
+    image: redis:7-alpine
+    container_name: sc_edge_redis
+    restart: unless-stopped
+    ports:
+      - "${EDGE_REDIS_PORT:-6381}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  edge-app:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    container_name: sc_edge_app
+    restart: unless-stopped
+    working_dir: /var/www/html
+    volumes:
+      - ./edge:/var/www/html
+    environment: &edge-app-env
+      APP_NAME: "SafirCharge Edge"
+      APP_ENV: local
+      APP_DEBUG: "true"
+      APP_URL: http://localhost:${EDGE_HTTP_PORT:-8182}
+      DB_CONNECTION: mysql
+      DB_HOST: edge-mysql
+      DB_PORT: 3306
+      DB_DATABASE: ${EDGE_DB_DATABASE:-safircharge_edge}
+      DB_USERNAME: ${EDGE_DB_USERNAME:-safir_edge}
+      DB_PASSWORD: ${EDGE_DB_PASSWORD:-edge_secret}
+      REDIS_HOST: edge-redis
+      REDIS_PORT: 6379
+      CACHE_STORE: redis
+      SESSION_DRIVER: redis
+      QUEUE_CONNECTION: redis
+      SC_APP_ROLE: edge
+      CLOUD_API_URL: http://cloud-nginx
+      CLOUD_SYNC_TOKEN: ${EDGE_CLOUD_SYNC_TOKEN:-dev-sync-token}
+      CLOUD_APP_KEY: ${CLOUD_APP_KEY:-base64:/1ifk+4vecnIw7MHjaAT5+FGZ1/z3nRapxS1JxnDapk=}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://127.0.0.1:8180,http://localhost:8180}
+      EDGE_CODE: EDGE-AZADI-01
+      EDGE_STATION_NAME: "ایستگاه میدان آزادی (Edge)"
+      EDGE_WIFI_SSID: SafirCharge-Azadi
+      EDGE_LOCAL_HOSTNAME: station.local
+      GSM_DRIVER: log
+      ANPR_PLPR_URL: ${ANPR_PLPR_URL:-http://host.docker.internal:8502}
+      SC_TEST_OTP_CODES: ${SC_TEST_OTP_CODES:-111111,222222,333333}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      edge-mysql:
+        condition: service_healthy
+      edge-redis:
+        condition: service_healthy
+      cloud-nginx:
+        condition: service_started
+
+  edge-queue:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    container_name: sc_edge_queue
+    restart: unless-stopped
+    working_dir: /var/www/html
+    volumes:
+      - ./edge:/var/www/html
+    environment: *edge-app-env
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        cd /var/www/html
+        if [ ! -d vendor ]; then composer install --no-interaction --prefer-dist; fi
+        php artisan queue:work redis --sleep=3 --tries=3 --max-time=3600
+    depends_on:
+      - edge-app
+
+  edge-scheduler:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    container_name: sc_edge_scheduler
+    restart: unless-stopped
+    working_dir: /var/www/html
+    volumes:
+      - ./edge:/var/www/html
+    environment: *edge-app-env
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        cd /var/www/html
+        if [ ! -d vendor ]; then composer install --no-interaction --prefer-dist; fi
+        php artisan schedule:work
+    depends_on:
+      - edge-app
+
+  edge-nginx:
+    image: nginx:alpine
+    container_name: sc_edge_nginx
+    restart: unless-stopped
+    ports:
+      - "${EDGE_HTTP_PORT:-8182}:80"
+    volumes:
+      - ./edge:/var/www/html:ro
+      - ./docker/nginx/edge.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - edge-app
+
+  # ─── Edge Station 2 (برج میلاد — تست چند لبه) ───────────────
+  edge2-mysql:
+    image: mariadb:10.11
+    container_name: sc_edge2_mysql
+    restart: unless-stopped
+    environment:
+      MARIADB_ROOT_PASSWORD: ${EDGE_DB_ROOT_PASSWORD:-root_secret}
+      MARIADB_DATABASE: ${EDGE2_DB_DATABASE:-safircharge_edge2}
+      MARIADB_USER: ${EDGE2_DB_USERNAME:-safir_edge2}
+      MARIADB_PASSWORD: ${EDGE2_DB_PASSWORD:-edge2_secret}
+    volumes:
+      - edge2_mysql_data:/var/lib/mysql
+    ports:
+      - "${EDGE2_DB_PORT:-3319}:3306"
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 8
+
+  edge2-redis:
+    image: redis:7-alpine
+    container_name: sc_edge2_redis
+    restart: unless-stopped
+    ports:
+      - "${EDGE2_REDIS_PORT:-6382}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  edge2-app:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    container_name: sc_edge2_app
+    restart: unless-stopped
+    working_dir: /var/www/html
+    volumes:
+      - ./edge:/var/www/html
+    environment:
+      APP_NAME: "SafirCharge Edge Milad"
+      APP_ENV: local
+      APP_DEBUG: "true"
+      APP_URL: http://localhost:${EDGE2_HTTP_PORT:-8183}
+      DB_CONNECTION: mysql
+      DB_HOST: edge2-mysql
+      DB_PORT: 3306
+      DB_DATABASE: ${EDGE2_DB_DATABASE:-safircharge_edge2}
+      DB_USERNAME: ${EDGE2_DB_USERNAME:-safir_edge2}
+      DB_PASSWORD: ${EDGE2_DB_PASSWORD:-edge2_secret}
+      REDIS_HOST: edge2-redis
+      REDIS_PORT: 6379
+      CACHE_STORE: redis
+      SESSION_DRIVER: redis
+      QUEUE_CONNECTION: redis
+      SC_APP_ROLE: edge
+      CLOUD_API_URL: http://cloud-nginx
+      CLOUD_SYNC_TOKEN: ${EDGE2_CLOUD_SYNC_TOKEN:-dev-sync-token-2}
+      CLOUD_APP_KEY: ${CLOUD_APP_KEY:-base64:/1ifk+4vecnIw7MHjaAT5+FGZ1/z3nRapxS1JxnDapk=}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://127.0.0.1:8180,http://localhost:8180}
+      EDGE_CODE: EDGE-MILAD-01
+      EDGE_STATION_NAME: "ایستگاه برج میلاد (Edge)"
+      EDGE_WIFI_SSID: SafirCharge-Milad
+      EDGE_LOCAL_HOSTNAME: station-2.local
+      GSM_DRIVER: log
+    depends_on:
+      edge2-mysql:
+        condition: service_healthy
+      edge2-redis:
+        condition: service_healthy
+      cloud-nginx:
+        condition: service_started
+
+  edge2-queue:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    container_name: sc_edge2_queue
+    restart: unless-stopped
+    working_dir: /var/www/html
+    volumes:
+      - ./edge:/var/www/html
+    environment:
+      APP_NAME: "SafirCharge Edge Milad"
+      APP_ENV: local
+      APP_DEBUG: "true"
+      DB_CONNECTION: mysql
+      DB_HOST: edge2-mysql
+      DB_PORT: 3306
+      DB_DATABASE: ${EDGE2_DB_DATABASE:-safircharge_edge2}
+      DB_USERNAME: ${EDGE2_DB_USERNAME:-safir_edge2}
+      DB_PASSWORD: ${EDGE2_DB_PASSWORD:-edge2_secret}
+      REDIS_HOST: edge2-redis
+      REDIS_PORT: 6379
+      CACHE_STORE: redis
+      SESSION_DRIVER: redis
+      QUEUE_CONNECTION: redis
+      SC_APP_ROLE: edge
+      CLOUD_API_URL: http://cloud-nginx
+      CLOUD_SYNC_TOKEN: ${EDGE2_CLOUD_SYNC_TOKEN:-dev-sync-token-2}
+      CLOUD_APP_KEY: ${CLOUD_APP_KEY:-base64:/1ifk+4vecnIw7MHjaAT5+FGZ1/z3nRapxS1JxnDapk=}
+      EDGE_CODE: EDGE-MILAD-01
+      EDGE_STATION_NAME: "ایستگاه برج میلاد (Edge)"
+      EDGE_WIFI_SSID: SafirCharge-Milad
+      EDGE_LOCAL_HOSTNAME: station-2.local
+      GSM_DRIVER: log
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        cd /var/www/html
+        if [ ! -d vendor ]; then composer install --no-interaction --prefer-dist; fi
+        php artisan queue:work redis --sleep=3 --tries=3 --max-time=3600
+    depends_on:
+      - edge2-app
+
+  edge2-scheduler:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    container_name: sc_edge2_scheduler
+    restart: unless-stopped
+    working_dir: /var/www/html
+    volumes:
+      - ./edge:/var/www/html
+    environment:
+      APP_NAME: "SafirCharge Edge Milad"
+      APP_ENV: local
+      APP_DEBUG: "true"
+      DB_CONNECTION: mysql
+      DB_HOST: edge2-mysql
+      DB_PORT: 3306
+      DB_DATABASE: ${EDGE2_DB_DATABASE:-safircharge_edge2}
+      DB_USERNAME: ${EDGE2_DB_USERNAME:-safir_edge2}
+      DB_PASSWORD: ${EDGE2_DB_PASSWORD:-edge2_secret}
+      REDIS_HOST: edge2-redis
+      REDIS_PORT: 6379
+      CACHE_STORE: redis
+      SESSION_DRIVER: redis
+      QUEUE_CONNECTION: redis
+      SC_APP_ROLE: edge
+      CLOUD_API_URL: http://cloud-nginx
+      CLOUD_SYNC_TOKEN: ${EDGE2_CLOUD_SYNC_TOKEN:-dev-sync-token-2}
+      CLOUD_APP_KEY: ${CLOUD_APP_KEY:-base64:/1ifk+4vecnIw7MHjaAT5+FGZ1/z3nRapxS1JxnDapk=}
+      EDGE_CODE: EDGE-MILAD-01
+      GSM_DRIVER: log
+      SC_TEST_OTP_CODES: ${SC_TEST_OTP_CODES:-111111,222222,333333}
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        cd /var/www/html
+        if [ ! -d vendor ]; then composer install --no-interaction --prefer-dist; fi
+        php artisan schedule:work
+    depends_on:
+      - edge2-app
+
+  edge2-nginx:
+    image: nginx:alpine
+    container_name: sc_edge2_nginx
+    restart: unless-stopped
+    ports:
+      - "${EDGE2_HTTP_PORT:-8183}:80"
+    volumes:
+      - ./edge:/var/www/html:ro
+      - ./docker/nginx/edge2.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - edge2-app
+
+volumes:
+  cloud_mysql_data:
+  edge_mysql_data:
+  edge2_mysql_data:

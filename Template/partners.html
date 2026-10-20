@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SafirCharge — شرکا و مالکان شارژر</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/app.css">
+</head>
+<body data-page="partners" data-title="شرکا و مالکان شارژر" data-crumb="عملیات">
+<div class="main">
+  <div class="content">
+
+    <div class="flex between items-center mt-8" style="margin-bottom:18px">
+      <div class="tabs" id="tabs">
+        <button class="active" data-tab="partners">مالکان شارژر</button>
+        <button data-tab="invoices">فاکتورها و تسویه</button>
+        <button data-tab="stats">آمار و عملکرد</button>
+      </div>
+      <div class="flex gap-8">
+        <button class="btn btn-sm"><span class="bic" data-ic="download"></span> خروجی</button>
+        <a href="partner/login.html" class="btn btn-sm"><span class="bic" data-ic="building"></span> پنل شرکا</a>
+        <a href="partner-new.html" class="btn btn-sm btn-primary"><span class="bic" data-ic="plus"></span> افزودن مالک / شریک</a>
+      </div>
+    </div>
+
+    <!-- KPI -->
+    <div class="kpi-grid">
+      <div class="mini-stat"><div class="ms-ic ic-blue" data-ic="building"></div><div><div class="ms-v tnum">۸۴</div><div class="ms-l">مالک فعال (CPO میزبان)</div></div></div>
+      <div class="mini-stat"><div class="ms-ic ic-green" data-ic="station"></div><div><div class="ms-v tnum">۲۱۶</div><div class="ms-l">ایستگاه شرکا</div></div></div>
+      <div class="mini-stat"><div class="ms-ic ic-orange" data-ic="coins"></div><div><div class="ms-v tnum">۳٫۸ <small>میلیارد</small></div><div class="ms-l">سهم شرکا (این ماه)</div></div></div>
+      <div class="mini-stat"><div class="ms-ic ic-violet" data-ic="receipt"></div><div><div class="ms-v tnum">۱۲</div><div class="ms-l">فاکتور در انتظار</div></div></div>
+    </div>
+
+    <!-- مالکان -->
+    <section data-pane="partners">
+      <div class="grid col-2-1 mt-16">
+        <div class="card">
+          <div class="card-head"><div><h3>درآمد شرکا و سهم تفکیکی</h3><div class="ch-sub">۶ ماه گذشته · کل شبکهٔ میزبان</div></div>
+            <div class="head-actions"><span class="legend-inline"><i style="background:var(--accent)"></i>درآمد ناخالص</span><span class="legend-inline"><i style="background:var(--orange)"></i>سهم شریک</span></div>
+          </div>
+          <div class="card-pad">
+            <svg id="revChart" width="100%" height="220" viewBox="0 0 700 220" preserveAspectRatio="none"></svg>
+            <div class="chart-axis" id="revAxis"></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-head"><h3>مدل همکاری</h3></div>
+          <div class="card-pad">
+            <div class="model-row"><div class="mr-pct tnum">۷۰<small>٪</small></div><div class="l-main"><div class="l-title">اشتراک درآمد</div><div class="l-sub">میزبان مالک تجهیزات · ۷۰٪ سهم مالک</div></div><b class="tnum">۵۲ مالک</b></div>
+            <div class="model-row"><div class="mr-pct tnum">۸۵<small>٪</small></div><div class="l-main"><div class="l-title">اجارهٔ پلتفرم</div><div class="l-sub">کارمزد ثابت سامانه · ۱۵٪</div></div><b class="tnum">۲۴ مالک</b></div>
+            <div class="model-row"><div class="mr-pct tnum">—</div><div class="l-main"><div class="l-title">سرمایه‌گذاری مشترک</div><div class="l-sub">تقسیم بر اساس قرارداد</div></div><b class="tnum">۸ مالک</b></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card mt-16">
+        <div class="card-head">
+          <div><h3>فهرست مالکان و شرکا</h3><div class="ch-sub">کسانی که پایانهٔ شارژر خود را وارد سامانه کرده‌اند</div></div>
+          <div class="head-actions"><div class="search" style="max-width:240px"><input placeholder="جستجوی مالک…"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></div></div>
+        </div>
+        <div class="table-wrap">
+          <table class="tbl">
+            <thead><tr><th>مالک / شریک</th><th>نوع</th><th>ایستگاه‌ها</th><th>مدل همکاری</th><th>انرژی (ماه)</th><th>درآمد ناخالص</th><th>سهم مالک</th><th>وضعیت تسویه</th><th></th></tr></thead>
+            <tbody id="partnerBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- فاکتورها -->
+    <section data-pane="invoices" style="display:none">
+      <div class="grid col-2-1 mt-16">
+        <div class="card">
+          <div class="card-head"><div><h3>فاکتورهای صادرشده برای شرکا</h3><div class="ch-sub">صورت‌حساب سهم درآمد و کارمزد سامانه</div></div>
+            <div class="head-actions"><button class="btn btn-sm btn-primary"><span class="bic" data-ic="plus"></span> صدور فاکتور</button></div>
+          </div>
+          <div class="table-wrap">
+            <table class="tbl">
+              <thead><tr><th>شماره فاکتور</th><th>مالک</th><th>دوره</th><th>مبلغ سهم</th><th>کارمزد سامانه</th><th>مبلغ خالص</th><th>وضعیت</th><th></th></tr></thead>
+              <tbody id="invBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- پیش‌نمایش فاکتور -->
+        <div class="card" style="align-self:start">
+          <div class="card-head"><h3>نمونهٔ فاکتور</h3></div>
+          <div class="card-pad">
+            <div class="invoice">
+              <div class="inv-top">
+                <div><div class="inv-logo"><span data-ic="bolt"></span>SafirCharge</div><div class="fs12 muted mt-4">فاکتور سهم درآمد</div></div>
+                <div style="text-align:end"><div class="fw8 mono">INV‑۹۲۰۴</div><div class="fs12 muted">آذر ۱۴۰۳</div></div>
+              </div>
+              <hr class="sep">
+              <div class="inv-row"><span class="muted">مالک</span><b>پارکینگ مرکزی پاسداران</b></div>
+              <div class="inv-row"><span class="muted">تعداد جلسات</span><b class="tnum">۱٬۲۴۸</b></div>
+              <div class="inv-row"><span class="muted">انرژی تحویلی</span><b class="tnum">۱۸٬۴۲۰ kWh</b></div>
+              <hr class="sep">
+              <div class="inv-row"><span class="muted">درآمد ناخالص</span><b class="tnum">۵۸۹٬۴۴۰٬۰۰۰</b></div>
+              <div class="inv-row"><span class="muted">سهم مالک (۷۰٪)</span><b class="tnum" style="color:var(--green)">۴۱۲٬۶۰۸٬۰۰۰</b></div>
+              <div class="inv-row"><span class="muted">کارمزد سامانه (۳۰٪)</span><b class="tnum">۱۷۶٬۸۳۲٬۰۰۰</b></div>
+              <div class="inv-row"><span class="muted">مالیات ارزش افزوده (۹٪)</span><b class="tnum">۱۵٬۹۱۴٬۷۲۰</b></div>
+              <hr class="sep">
+              <div class="inv-row total"><span>مبلغ قابل پرداخت به مالک</span><b class="tnum">۳۹۶٬۶۹۳٬۲۸۰</b></div>
+              <div class="flex gap-8 mt-16"><button class="btn btn-sm btn-primary" style="flex:1"><span class="bic" data-ic="download"></span> دانلود PDF</button><button class="btn btn-sm" style="flex:1">ارسال به مالک</button></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- آمار -->
+    <section data-pane="stats" style="display:none">
+      <div class="grid g-3 mt-16">
+        <div class="card card-pad"><div class="muted fs12">میانگین درآمد ماهانهٔ هر مالک</div><div class="fs22 fw8 tnum mt-8">۴۵٫۲ <small style="font-size:13px;color:var(--text-2)">میلیون</small></div><div class="bar bar-accent mt-12"><i style="width:68%"></i></div></div>
+        <div class="card card-pad"><div class="muted fs12">میانگین بهره‌برداری ایستگاه‌های شرکا</div><div class="fs22 fw8 tnum mt-8">۵۸٪</div><div class="bar mt-12"><i style="width:58%"></i></div></div>
+        <div class="card card-pad"><div class="muted fs12">نرخ تسویهٔ به‌موقع</div><div class="fs22 fw8 tnum mt-8">۹۴٪</div><div class="bar bar-orange mt-12"><i style="width:94%"></i></div></div>
+      </div>
+
+      <div class="grid col-2-1 mt-16">
+        <div class="card">
+          <div class="card-head"><div><h3>برترین مالکان بر اساس درآمد</h3><div class="ch-sub">این ماه</div></div></div>
+          <div class="card-pad" style="padding-top:6px" id="topPartners"></div>
+        </div>
+        <div class="card">
+          <div class="card-head"><h3>رشد جذب شرکا</h3></div>
+          <div class="card-pad">
+            <svg id="growthChart" width="100%" height="200" viewBox="0 0 360 200" preserveAspectRatio="none"></svg>
+            <div class="chart-axis"><span>تیر</span><span>مرداد</span><span>شهریور</span><span>مهر</span><span>آبان</span><span>آذر</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</div>
+
+<style>
+.bic{display:inline-grid;width:16px;height:16px}.bic svg{width:16px;height:16px}
+.mini-stat{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:16px;display:flex;align-items:center;gap:13px;box-shadow:var(--shadow-sm)}
+.ms-ic{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;flex:none}.ms-ic svg{width:22px;height:22px}
+.ms-v{font-size:22px;font-weight:800}.ms-v small{font-size:12px;font-weight:600;color:var(--text-2)}.ms-l{font-size:12px;color:var(--muted)}
+.legend-inline{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--text-2);font-weight:600}.legend-inline i{width:10px;height:10px;border-radius:3px}
+.chart-axis{display:flex;justify-content:space-between;margin-top:8px;color:var(--muted);font-size:11px}
+
+.model-row{display:flex;align-items:center;gap:13px;padding:13px 0;border-bottom:1px solid var(--border-2)}.model-row:last-child{border-bottom:none}
+.mr-pct{width:54px;height:54px;border-radius:14px;background:var(--accent-soft);color:var(--accent-strong);display:grid;place-items:center;font-weight:800;font-size:18px;flex:none}.mr-pct small{font-size:11px}
+
+.invoice{border:1px solid var(--border-2);border-radius:16px;padding:18px;background:var(--surface-2)}
+.inv-top{display:flex;justify-content:space-between;align-items:flex-start}
+.inv-logo{display:inline-flex;align-items:center;gap:6px;font-weight:800;font-size:15px}.inv-logo [data-ic]{display:inline-grid;width:18px;height:18px;color:var(--accent)}.inv-logo svg{width:18px;height:18px}
+.inv-row{display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:5px 0}
+.inv-row.total{font-size:15px;font-weight:800;background:var(--accent-soft);margin:0 -8px;padding:11px 12px;border-radius:10px;color:var(--accent-strong)}
+.top-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border-2)}.top-row:last-child{border-bottom:none}
+.top-rank{width:28px;height:28px;border-radius:8px;background:var(--surface-3);display:grid;place-items:center;font-weight:800;font-size:13px;flex:none}
+.top-rank.gold{background:#FEF3C7;color:#D97706}
+</style>
+
+<script src="assets/app.js"></script>
+<script>
+(function(){
+  document.querySelectorAll('[data-ic]').forEach(function(el){el.innerHTML=window.icon(el.getAttribute('data-ic'));});
+
+  // نمودار درآمد
+  (function(){
+    var gross=[420,480,510,560,590,640],share=gross.map(function(v){return v*0.7;});
+    var W=700,H=220,pad=14,max=700,bw=40,gap=(W-pad*2)/gross.length;
+    var bars='';gross.forEach(function(v,i){
+      var x=pad+i*gap+gap/2;
+      var h1=(H-pad*2)*v/max,y1=H-pad-h1;
+      var h2=(H-pad*2)*share[i]/max,y2=H-pad-h2;
+      bars+='<rect x="'+(x-bw/2-3)+'" y="'+y1+'" width="'+bw+'" height="'+h1+'" rx="7" fill="var(--accent)" opacity=".85"/>';
+      bars+='<rect x="'+(x-bw/2-3)+'" y="'+y2+'" width="'+bw+'" height="'+h2+'" rx="7" fill="var(--orange)"/>';
+    });
+    document.getElementById('revChart').innerHTML=bars;
+    var ax=document.getElementById('revAxis');['تیر','مرداد','شهریور','مهر','آبان','آذر'].forEach(function(t){var s=document.createElement('span');s.textContent=t;ax.appendChild(s);});
+  })();
+
+  var partners=[
+    {n:'پارکینگ مرکزی پاسداران',t:['پارکینگ','tag'],st:'۸',model:'اشتراک ۷۰٪',en:'۱۸٬۴۲۰ kWh',gross:'۵۸۹٬۴۴۰٬۰۰۰',share:'۴۱۲٬۶۰۸٬۰۰۰',set:['تسویه‌شده','pill-green'],c:'#0E6BA8'},
+    {n:'هتل اسپیناس پالاس',t:['هتل','tag'],st:'۶',model:'اشتراک ۷۰٪',en:'۹٬۸۴۰ kWh',gross:'۳۱۴٬۸۸۰٬۰۰۰',share:'۲۲۰٬۴۱۶٬۰۰۰',set:['در انتظار','pill-amber'],c:'#16A34A'},
+    {n:'مجتمع تجاری کوروش',t:['مرکز خرید','tag'],st:'۱۰',model:'اجاره ۸۵٪',en:'۲۲٬۱۰۰ kWh',gross:'۷۰۷٬۲۰۰٬۰۰۰',share:'۶۰۱٬۱۲۰٬۰۰۰',set:['تسویه‌شده','pill-green'],c:'#F97316'},
+    {n:'شرکت تاکسی برقی سبز',t:['ناوگان','pill-accent'],st:'۴',model:'سرمایه مشترک',en:'۱۴٬۲۰۰ kWh',gross:'۴۵۴٬۴۰۰٬۰۰۰',share:'۲۲۷٬۲۰۰٬۰۰۰',set:['در حال بررسی','pill-accent'],c:'#7C3AED'},
+    {n:'پمپ‌بنزین وندا (جادهٔ چالوس)',t:['جایگاه سوخت','tag'],st:'۳',model:'اشتراک ۷۰٪',en:'۸٬۶۰۰ kWh',gross:'۲۷۵٬۲۰۰٬۰۰۰',share:'۱۹۲٬۶۴۰٬۰۰۰',set:['در انتظار','pill-amber'],c:'#0891B2'},
+    {n:'برج اداری دیاموند',t:['اداری','tag'],st:'۵',model:'اجاره ۸۵٪',en:'۶٬۳۰۰ kWh',gross:'۲۰۱٬۶۰۰٬۰۰۰',share:'۱۷۱٬۳۶۰٬۰۰۰',set:['تسویه‌شده','pill-green'],c:'#D97706'},
+  ];
+  document.getElementById('partnerBody').innerHTML=partners.map(function(p){
+    return '<tr>'+
+      '<td><div class="cell-user"><span class="uavatar" style="background:'+p.c+';border-radius:9px">'+p.n[0]+'</span><span class="cell-strong">'+p.n+'</span></div></td>'+
+      '<td><span class="'+(p.t[1]==='tag'?'tag':'pill '+p.t[1])+'">'+p.t[0]+'</span></td>'+
+      '<td class="tnum">'+p.st+'</td><td class="cell-muted">'+p.model+'</td>'+
+      '<td class="tnum">'+p.en+'</td><td class="tnum">'+p.gross+'</td>'+
+      '<td class="tnum cell-strong" style="color:var(--green)">'+p.share+'</td>'+
+      '<td><span class="pill '+p.set[1]+'">'+(p.set[1]==='pill-green'?'<span class="pdot"></span>':'')+p.set[0]+'</span></td>'+
+      '<td><button class="btn btn-sm">جزئیات</button></td></tr>';
+  }).join('');
+
+  var invs=[
+    ['INV‑۹۲۰۴','پارکینگ پاسداران','آذر ۱۴۰۳','۴۱۲٬۶۰۸٬۰۰۰','۱۷۶٬۸۳۲٬۰۰۰','۳۹۶٬۶۹۳٬۲۸۰',['پرداخت‌شده','pill-green']],
+    ['INV‑۹۲۰۵','هتل اسپیناس','آذر ۱۴۰۳','۲۲۰٬۴۱۶٬۰۰۰','۹۴٬۴۶۴٬۰۰۰','۲۱۱٬۹۹۹٬۳۷۶',['صادرشده','pill-amber']],
+    ['INV‑۹۲۰۶','مجتمع کوروش','آذر ۱۴۰۳','۶۰۱٬۱۲۰٬۰۰۰','۱۰۶٬۰۸۰٬۰۰۰','۵۷۸٬۰۷۷٬۶۰۰',['پرداخت‌شده','pill-green']],
+    ['INV‑۹۲۰۷','تاکسی برقی سبز','آذر ۱۴۰۳','۲۲۷٬۲۰۰٬۰۰۰','۲۲۷٬۲۰۰٬۰۰۰','۲۴۷٬۶۴۸٬۰۰۰',['پیش‌نویس','pill']],
+    ['INV‑۹۲۰۸','پمپ‌بنزین وندا','آذر ۱۴۰۳','۱۹۲٬۶۴۰٬۰۰۰','۸۲٬۵۶۰٬۰۰۰','۱۸۵٬۲۹۷٬۶۰۰',['صادرشده','pill-amber']],
+  ];
+  document.getElementById('invBody').innerHTML=invs.map(function(r){
+    return '<tr><td class="mono">'+r[0]+'</td><td class="cell-strong">'+r[1]+'</td><td class="cell-muted">'+r[2]+'</td>'+
+      '<td class="tnum" style="color:var(--green)">'+r[3]+'</td><td class="tnum cell-muted">'+r[4]+'</td><td class="tnum cell-strong">'+r[5]+'</td>'+
+      '<td><span class="pill '+r[6][1]+'">'+r[6][0]+'</span></td><td><button class="btn btn-sm">مشاهده</button></td></tr>';
+  }).join('');
+
+  var tops=[
+    {n:'مجتمع تجاری کوروش',v:'۶۰۱ میلیون',p:100},
+    {n:'پارکینگ پاسداران',v:'۴۱۲ میلیون',p:69},
+    {n:'تاکسی برقی سبز',v:'۲۲۷ میلیون',p:38},
+    {n:'هتل اسپیناس',v:'۲۲۰ میلیون',p:37},
+    {n:'پمپ‌بنزین وندا',v:'۱۹۲ میلیون',p:32},
+  ];
+  document.getElementById('topPartners').innerHTML=tops.map(function(t,i){
+    return '<div class="top-row"><span class="top-rank'+(i===0?' gold':'')+'">'+(i+1).toLocaleString('fa-IR')+'</span>'+
+      '<div class="l-main"><div class="l-title">'+t.n+'</div><div class="bar bar-accent" style="margin-top:6px"><i style="width:'+t.p+'%"></i></div></div>'+
+      '<b class="tnum" style="margin-inline-start:auto">'+t.v+'</b></div>';
+  }).join('');
+
+  (function(){
+    var vals=[42,51,58,66,74,84];var W=360,H=200,pad=12,max=90;
+    var step=(W-pad*2)/(vals.length-1);
+    function p(area){var d=vals.map(function(v,i){var x=pad+i*step;var y=pad+(H-pad*2)*(1-v/max);return (i?'L':'M')+x.toFixed(1)+' '+y.toFixed(1);}).join(' ');if(area)d+=' L'+(W-pad)+' '+(H-pad)+' L'+pad+' '+(H-pad)+' Z';return d;}
+    document.getElementById('growthChart').innerHTML=
+      '<defs><linearGradient id="gp" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--green)" stop-opacity=".25"/><stop offset="1" stop-color="var(--green)" stop-opacity="0"/></linearGradient></defs>'+
+      '<path d="'+p(true)+'" fill="url(#gp)"/><path d="'+p()+'" fill="none" stroke="var(--green)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>';
+  })();
+
+  document.querySelectorAll('#tabs button').forEach(function(b){
+    b.addEventListener('click',function(){
+      document.querySelectorAll('#tabs button').forEach(function(x){x.classList.remove('active');});b.classList.add('active');
+      var t=b.getAttribute('data-tab');
+      document.querySelectorAll('[data-pane]').forEach(function(s){s.style.display=s.getAttribute('data-pane')===t?'':'none';});
+    });
+  });
+})();
+</script>
+</body>
+</html>

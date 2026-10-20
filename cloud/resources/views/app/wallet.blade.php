@@ -1,0 +1,217 @@
+@extends('app.layouts.mobile', ['tab' => 'wallet'])
+
+@section('title', 'SafirCharge — کیف پول')
+
+@section('phone')
+@php use App\Support\Persian; @endphp
+<div class="appbar" style="padding-top:2px">
+    <div style="flex:1"><div class="ab-title">کیف پول</div></div>
+    <a href="{{ route('app.history') }}" class="ab-btn"><span data-ic="receipt"></span></a>
+</div>
+
+<div class="screen">
+    <div class="wcard rise">
+        <div class="row between" style="position:relative;z-index:1">
+            <span style="font-size:13px;opacity:.9">موجودی کیف پول</span>
+            <span class="fw8" style="letter-spacing:.02em">SafirCharge</span>
+        </div>
+        <div class="wbal tnum">{{ Persian::money(($wallet?->balance ?? 0) / 10) }} <small>تومان</small></div>
+        <div class="row" style="gap:28px;position:relative;z-index:1">
+            <div><div class="wl">اعتبار پاداش</div><div class="wv tnum">{{ Persian::money(($wallet?->bonus_balance ?? 0) / 10) }}</div></div>
+            <div><div class="wl">کارت RFID</div><div class="wv">{{ $rfidMasked }}</div></div>
+        </div>
+    </div>
+
+    <div class="row mt16" style="gap:11px">
+        <button class="btn btn-orange" style="flex:1" id="topupBtn"><span data-ic="plus"></span> افزایش موجودی</button>
+        <button class="btn btn-ghost" style="flex:none;width:56px"><span data-ic="download"></span></button>
+    </div>
+
+    <div class="reward rise" style="animation-delay:.05s">
+        <div class="rw-ic" data-ic="gift"></div>
+        <div style="flex:1">
+            <div class="fw7">باشگاه SafirCharge</div>
+            <div class="fs12" style="opacity:.85">{{ $loyalty['label'] }}</div>
+            <div class="rw-bar mt8"><i style="width:{{ $loyalty['progress_pct'] }}%"></i></div>
+        </div>
+    </div>
+
+    <div class="sec-title">تراکنش‌ها <a href="{{ route('app.history') }}">همه</a></div>
+    <div class="tx-search">
+        <span data-ic="search"></span>
+        <input id="txSearch" placeholder="جستجو در تراکنش‌ها…">
+    </div>
+    <div class="seg" style="margin-bottom:14px" id="seg">
+        <button class="active">همه</button>
+        <button>واریز</button>
+        <button>پرداخت</button>
+    </div>
+    <div class="card card-p" id="txList"></div>
+    <div class="tx-empty" id="txEmpty" style="display:none">تراکنشی با این جستجو یافت نشد.</div>
+</div>
+@endsection
+
+@push('overlays')
+<div class="sheet-overlay" id="topupSheet">
+    <div class="sheet">
+        <div class="sheet-grab"></div>
+        <div class="sheet-head"><h3>افزایش موجودی</h3><button class="ab-btn" id="closeSheet" type="button"><span data-ic="back"></span></button></div>
+
+        <label class="amt-label">مبلغ مورد نظر (تومان)</label>
+        <div class="amt-input">
+            <input id="amtInput" inputmode="numeric" value="۲۰۰٬۰۰۰">
+            <span class="amt-cur">تومان</span>
+        </div>
+        <div class="amt-hint" id="amtHint">دویست هزار تومان</div>
+
+        <div class="amounts" id="sheetAmounts" style="margin-top:14px">
+            <button class="amt" type="button" data-v="۱۰۰٬۰۰۰">۱۰۰٬۰۰۰</button>
+            <button class="amt active" type="button" data-v="۲۰۰٬۰۰۰">۲۰۰٬۰۰۰</button>
+            <button class="amt" type="button" data-v="۵۰۰٬۰۰۰">۵۰۰٬۰۰۰</button>
+            <button class="amt" type="button" data-v="۱٬۰۰۰٬۰۰۰">۱٬۰۰۰٬۰۰۰</button>
+        </div>
+
+        <div class="pay-with">
+            <div class="pw-label">پرداخت از طریق</div>
+            <label class="pw-row"><span class="pw-ic ic-blue" data-ic="card"></span><div style="flex:1"><div class="fw7 fs13">درگاه بانکی</div><div class="fs12 muted">انتخاب درگاه در مرحلهٔ بعد</div></div><span class="pw-radio on"></span></label>
+        </div>
+
+        <a href="{{ route('app.topup.confirm') }}" class="btn btn-orange sheet-cta" id="goConfirm"><span data-ic="plus"></span> ادامه و پرداخت</a>
+    </div>
+</div>
+@endpush
+
+@push('styles')
+<style>
+.wcard{position:relative;overflow:hidden;border-radius:24px;padding:20px;color:#fff;background:linear-gradient(140deg,var(--accent),color-mix(in srgb,var(--accent) 45%,var(--orange)));box-shadow:0 16px 34px rgba(var(--accent-rgb),.4)}
+.wcard::after{content:"";position:absolute;inset:0;background:radial-gradient(circle at 86% 0%,rgba(255,255,255,.22),transparent 45%)}
+.wbal{font-size:32px;font-weight:800;margin:14px 0 18px;position:relative;z-index:1}
+.wbal small{font-size:14px;font-weight:600;opacity:.9}
+.wl{font-size:11.5px;opacity:.85}.wv{font-size:15px;font-weight:700;margin-top:2px}
+
+.amounts{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:14px}
+.amt{padding:11px 0;border:1px solid var(--border);background:var(--surface);border-radius:12px;font-size:12.5px;font-weight:700;color:var(--text-2);font-variant-numeric:tabular-nums;cursor:pointer;font-family:inherit}
+.amt.active{border-color:var(--accent);background:var(--accent-soft);color:var(--accent-strong)}
+
+.reward{display:flex;align-items:center;gap:13px;margin-top:18px;padding:15px;border-radius:18px;color:#fff;background:linear-gradient(120deg,#7C3AED,#a855f7)}
+.rw-ic{width:46px;height:46px;border-radius:14px;background:rgba(255,255,255,.18);display:grid;place-items:center;flex:none}
+.rw-ic svg{width:23px;height:23px}
+.rw-bar{height:7px;border-radius:20px;background:rgba(255,255,255,.25);overflow:hidden}
+.rw-bar>i{display:block;height:100%;background:#fff;border-radius:20px}
+
+.tx{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border-2)}
+.tx:last-child{border-bottom:none}
+.tx-ic{width:42px;height:42px;border-radius:13px;display:grid;place-items:center;flex:none}
+.tx-ic svg{width:20px;height:20px}
+.tx-amt{margin-inline-start:auto;font-weight:800;font-variant-numeric:tabular-nums}
+.pos{color:var(--green)}
+
+.tx-search{position:relative;margin-bottom:12px}
+.tx-search input{width:100%;height:46px;border:1.5px solid var(--border);background:var(--surface-2);border-radius:14px;padding:0 44px 0 14px;font-family:inherit;font-size:13.5px;color:var(--text);outline:none}
+.tx-search input:focus{border-color:var(--accent);background:var(--surface)}
+.tx-search span[data-ic]{position:absolute;inset-inline-start:14px;top:50%;transform:translateY(-50%);width:18px;height:18px;color:var(--muted);display:inline-grid}.tx-search svg{width:18px;height:18px}
+.tx-empty{text-align:center;color:var(--muted);font-size:13px;padding:24px 0}
+
+.sheet-overlay{position:absolute;inset:0;background:rgba(8,16,24,.5);backdrop-filter:blur(2px);display:flex;align-items:flex-end;opacity:0;visibility:hidden;transition:opacity .22s;z-index:60}
+.sheet-overlay.open{opacity:1;visibility:visible}
+.sheet-overlay .sheet{width:100%;background:var(--surface);border-radius:26px 26px 0 0;padding:10px 20px calc(20px + env(safe-area-inset-bottom,0));transform:translateY(100%);transition:transform .28s cubic-bezier(.2,.7,.3,1)}
+.sheet-overlay.open .sheet{transform:none}
+.sheet-grab{width:42px;height:5px;border-radius:5px;background:var(--border);margin:4px auto 12px}
+.sheet-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+.sheet-head h3{font-size:17px}
+.amt-label{font-size:12.5px;color:var(--muted);font-weight:600}
+.amt-input{display:flex;align-items:center;gap:10px;border:2px solid var(--accent);border-radius:16px;padding:0 16px;height:62px;margin-top:8px;background:var(--surface-2)}
+.amt-input input{flex:1;border:none;background:none;font-family:inherit;font-weight:800;font-size:26px;color:var(--text);outline:none;font-variant-numeric:tabular-nums;width:100%}
+.amt-cur{font-size:14px;font-weight:700;color:var(--muted);flex:none}
+.amt-hint{font-size:12.5px;color:var(--accent-strong);font-weight:600;margin-top:8px;min-height:18px}
+.pay-with{margin-top:18px}
+.pw-label{font-size:12.5px;color:var(--muted);font-weight:600;margin-bottom:8px}
+.pw-row{display:flex;align-items:center;gap:12px;border:1.5px solid var(--accent);background:var(--accent-soft);border-radius:14px;padding:13px 14px}
+.pw-ic{width:40px;height:40px;border-radius:11px;display:grid;place-items:center;flex:none}.pw-ic svg{width:20px;height:20px}
+.pw-radio{width:22px;height:22px;border-radius:50%;border:2px solid var(--border);flex:none;display:grid;place-items:center}
+.pw-radio.on{border-color:var(--accent)}.pw-radio.on::after{content:"";width:11px;height:11px;border-radius:50%;background:var(--accent)}
+.sheet-cta{width:100%;height:52px;margin-top:20px;font-size:15px}
+.sheet-cta svg{width:18px;height:18px}
+</style>
+@endpush
+
+@push('scripts')
+<script>
+(function(){
+  var txs=@json($transactionsJs);
+  document.getElementById('txList').innerHTML=txs.length?txs.map(function(x){
+    return '<div class="tx" data-ty="'+x.ty+'">'+
+      '<div class="tx-ic '+x.c+'">'+window.icon(x.ic)+'</div>'+
+      '<div class="l-main"><div class="l-title">'+x.t+'</div><div class="l-sub">'+x.d+'</div></div>'+
+      '<div class="tx-amt '+(x.pos?'pos':'')+'">'+x.a+'</div>'+
+    '</div>';
+  }).join(''):'<div class="tx-empty">تراکنشی نیست</div>';
+
+  document.querySelectorAll('#seg button').forEach(function(b,idx){
+    b.addEventListener('click',function(){
+      document.querySelectorAll('#seg button').forEach(function(x){x.classList.remove('active');});b.classList.add('active');
+      segIdx=idx;applyTxFilter();
+    });
+  });
+
+  var segIdx=0;
+  var searchEl=document.getElementById('txSearch');
+  function applyTxFilter(){
+    var q=(searchEl&&searchEl.value||'').trim().toLowerCase();
+    var any=false;
+    document.querySelectorAll('.tx').forEach(function(t){
+      var ty=t.getAttribute('data-ty');
+      var segOk=segIdx===0||(segIdx===1&&ty==='in')||(segIdx===2&&ty==='out');
+      var txt=(t.textContent||'').toLowerCase();
+      var qOk=!q||txt.indexOf(q)>-1;
+      var show=segOk&&qOk;
+      t.style.display=show?'':'none';
+      if(show)any=true;
+    });
+    var empty=document.getElementById('txEmpty');
+    if(empty)empty.style.display=any?'none':'block';
+  }
+  if(searchEl)searchEl.addEventListener('input',applyTxFilter);
+
+  var sheet=document.getElementById('topupSheet');
+  var amtInput=document.getElementById('amtInput');
+  document.getElementById('topupBtn').addEventListener('click',function(){sheet.classList.add('open');});
+  document.getElementById('closeSheet').addEventListener('click',function(){sheet.classList.remove('open');});
+  sheet.addEventListener('click',function(e){if(e.target===sheet)sheet.classList.remove('open');});
+
+  var FA='۰۱۲۳۴۵۶۷۸۹';
+  function toFa(s){return s.replace(/[0-9]/g,function(d){return FA[d];});}
+  function toEn(s){return s.replace(/[۰-۹]/g,function(d){return FA.indexOf(d);}).replace(/[^0-9]/g,'');}
+  function group(n){return n.replace(/\B(?=(\d{3})+(?!\d))/g,'٬');}
+  var ONES=['','یک','دو','سه','چهار','پنج','شش','هفت','هشت','نه'];
+  function words(num){
+    if(!num)return '';var n=parseInt(num,10);if(!n)return '';
+    var parts=[];
+    var mil=Math.floor(n/1000000);var th=Math.floor((n%1000000)/1000);var rest=n%1000;
+    if(mil)parts.push((mil>1?toFa(String(mil))+' ':'')+'میلیون');
+    if(th)parts.push((th>1?toFa(String(th))+' ':'')+'هزار');
+    if(rest)parts.push(toFa(String(rest)));
+    return parts.join(' و ')+' تومان';
+  }
+  function syncHint(){var en=toEn(amtInput.value);document.getElementById('amtHint').textContent=en?words(en):'مبلغ را وارد کنید';try{localStorage.setItem('sc-topup',en);}catch(e){}}
+  amtInput.addEventListener('input',function(){
+    var en=toEn(amtInput.value);amtInput.value=en?toFa(group(en)):'';
+    document.querySelectorAll('#sheetAmounts .amt').forEach(function(x){x.classList.remove('active');});
+    syncHint();
+  });
+  document.querySelectorAll('#sheetAmounts .amt').forEach(function(b){
+    b.addEventListener('click',function(){
+      document.querySelectorAll('#sheetAmounts .amt').forEach(function(x){x.classList.remove('active');});b.classList.add('active');
+      amtInput.value=b.getAttribute('data-v');syncHint();
+    });
+  });
+  document.getElementById('goConfirm').addEventListener('click',function(e){
+    e.preventDefault();
+    var en=toEn(amtInput.value)||'200000';
+    try{localStorage.setItem('sc-topup',en);}catch(err){}
+    location.href='{{ route('app.topup.confirm') }}?amount='+en;
+  });
+  syncHint();
+})();
+</script>
+@endpush

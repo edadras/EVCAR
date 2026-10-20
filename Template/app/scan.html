@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SafirCharge — اسکن QR</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/app-mobile.css">
+</head>
+<body data-no-tab data-dark-status>
+<div class="phone scan-phone">
+  <div class="appbar" style="padding-top:2px">
+    <button class="ab-btn scan-btn" onclick="history.back()"><span data-ic="back"></span></button>
+    <div style="flex:1;text-align:center;color:#fff"><div class="fw8" style="font-size:17px">اسکن کد QR</div></div>
+    <button class="ab-btn scan-btn"><span data-ic="bolt"></span></button>
+  </div>
+
+  <div class="scan-area">
+    <div class="viewfinder">
+      <span class="corner tl"></span><span class="corner tr"></span>
+      <span class="corner bl"></span><span class="corner br"></span>
+      <div class="scanline"></div>
+      <div class="vf-qr" id="qr"></div>
+    </div>
+    <p class="scan-hint">کد QR روی شارژر یا کانکتور را داخل کادر قرار دهید</p>
+  </div>
+
+  <div class="scan-sheet">
+    <button class="btn" id="simulate"><span data-ic="bolt"></span> شناسایی شد: CP‑۱۰۰۱ / کانکتور ۲</button>
+    <div class="row mt12" style="gap:11px">
+      <button class="btn btn-ghost" style="flex:1"><span data-ic="qr"></span> ورود دستی کد</button>
+      <button class="btn btn-ghost" style="flex:none;width:56px" aria-label="چراغ قوه">⚡</button>
+    </div>
+    <div class="offline-note mt16">
+      <span data-ic="shield"></span>
+      <span>در حالت <b>آفلاین</b>، با اتصال به WiFi ایستگاه نیز می‌توانید با اسکن QR شارژ را آغاز کنید.</span>
+    </div>
+  </div>
+</div>
+
+<style>
+.scan-phone{background:#0a141e}
+.scan-btn{background:rgba(255,255,255,.14)!important;border-color:rgba(255,255,255,.18)!important;color:#fff!important}
+.scan-btn svg{width:20px;height:20px}
+.scan-area{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;padding:0 30px}
+.viewfinder{position:relative;width:250px;height:250px;border-radius:28px;background:linear-gradient(135deg,#11212f,#0d1a26);box-shadow:0 0 0 2000px rgba(8,16,24,.55)}
+.corner{position:absolute;width:36px;height:36px;border:3px solid #fff}
+.corner.tl{top:14px;left:14px;border-right:none;border-bottom:none;border-radius:14px 0 0 0}
+.corner.tr{top:14px;right:14px;border-left:none;border-bottom:none;border-radius:0 14px 0 0}
+.corner.bl{bottom:14px;left:14px;border-right:none;border-top:none;border-radius:0 0 0 14px}
+.corner.br{bottom:14px;right:14px;border-left:none;border-top:none;border-radius:0 0 14px 0}
+.scanline{position:absolute;left:22px;right:22px;height:3px;border-radius:3px;background:linear-gradient(90deg,transparent,var(--accent),transparent);box-shadow:0 0 14px 2px color-mix(in srgb,var(--accent) 70%,transparent);top:26px;animation:scan 2.4s ease-in-out infinite}
+@keyframes scan{0%,100%{top:26px}50%{top:220px}}
+.vf-qr{position:absolute;inset:50px;opacity:.18;display:grid;place-items:center}
+.vf-qr svg{width:100%;height:100%}
+.scan-hint{color:#9fb4c8;font-size:13.5px;text-align:center;max-width:240px;line-height:1.7}
+
+.scan-sheet{background:var(--surface);border-radius:28px 28px 0 0;padding:22px 22px calc(30px + env(safe-area-inset-bottom,0));flex:none;box-shadow:0 -10px 40px rgba(0,0,0,.3)}
+.scan-sheet .btn svg{width:18px;height:18px}
+.offline-note{display:flex;align-items:flex-start;gap:10px;background:var(--surface-2);border:1px solid var(--border-2);border-radius:14px;padding:13px;font-size:12.5px;color:var(--text-2);line-height:1.6}
+.offline-note svg{width:20px;height:20px;color:var(--green);flex:none;margin-top:1px}
+</style>
+
+<script src="../assets/app-mobile.js"></script>
+<script>
+(function(){
+  // QR تزئینی داخل کادر
+  var n=15,svg='<svg viewBox="0 0 150 150">';var seed=11;
+  for(var y=0;y<n;y++)for(var x=0;x<n;x++){seed=(seed*1103515245+12345)&0x7fffffff;if((seed>>9)%100<48)svg+='<rect x="'+(x*10)+'" y="'+(y*10)+'" width="10" height="10" fill="#fff"/>';}
+  svg+='</svg>';
+  document.getElementById('qr').innerHTML=svg;
+  document.getElementById('simulate').addEventListener('click',function(){location.href='charger.html';});
+})();
+</script>
+</body>
+</html>

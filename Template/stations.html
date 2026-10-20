@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SafirCharge — ایستگاه‌ها و نقشه</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/app.css">
+</head>
+<body data-page="stations" data-title="ایستگاه‌ها و نقشه" data-crumb="مدیریت شبکه">
+<div class="main">
+  <div class="content">
+
+    <div class="flex between items-center mt-8" style="margin-bottom:18px">
+      <div class="flex items-center gap-12">
+        <div class="seg" id="statusSeg">
+          <button class="active">همه (۳۱۸)</button>
+          <button>آنلاین (۳۰۲)</button>
+          <button>خطا (۱۶)</button>
+        </div>
+      </div>
+      <div class="flex gap-8">
+        <button class="btn btn-sm" id="filterBtn"><span data-ic="filter" class="bic"></span> فیلتر</button>
+        <a href="station-new.html" class="btn btn-sm btn-primary"><span data-ic="plus" class="bic"></span> ایستگاه جدید</a>
+      </div>
+    </div>
+
+    <!-- KPI کوچک -->
+    <div class="kpi-grid" style="margin-bottom:16px">
+      <div class="mini-stat"><div class="ms-ic ic-blue" data-ic="station"></div><div><div class="ms-v tnum">۳۱۸</div><div class="ms-l">ایستگاه فعال</div></div></div>
+      <div class="mini-stat"><div class="ms-ic ic-green" data-ic="plug"></div><div><div class="ms-v tnum">۱٬۲۶۶</div><div class="ms-l">کانکتور نصب‌شده</div></div></div>
+      <div class="mini-stat"><div class="ms-ic ic-orange" data-ic="activity"></div><div><div class="ms-v tnum">۶۲٪</div><div class="ms-l">میانگین بهره‌برداری</div></div></div>
+      <div class="mini-stat"><div class="ms-ic ic-violet" data-ic="leaf"></div><div><div class="ms-v tnum">۸ شهر</div><div class="ms-l">پوشش جغرافیایی</div></div></div>
+    </div>
+
+    <div class="grid col-2-1">
+      <!-- نقشه -->
+      <div class="card">
+        <div class="card-head">
+          <div><h3>نقشهٔ ایستگاه‌ها</h3><div class="ch-sub">کلیک روی نشانگر برای جزئیات ایستگاه</div></div>
+          <div class="head-actions">
+            <span class="map-leg"><i style="background:var(--green)"></i>آنلاین</span>
+            <span class="map-leg"><i style="background:var(--amber)"></i>پرتراکم</span>
+            <span class="map-leg"><i style="background:var(--red)"></i>خطا</span>
+          </div>
+        </div>
+        <div class="card-pad">
+          <div class="map-panel" id="map" style="height:520px"></div>
+        </div>
+      </div>
+
+      <!-- لیست ایستگاه -->
+      <div class="card" style="align-self:start">
+        <div class="card-head"><h3>فهرست ایستگاه‌ها</h3><div class="head-actions"><span class="muted fs12">مرتب: بهره‌برداری</span></div></div>
+        <div class="scroll-y" style="max-height:560px">
+          <div class="st-item active" data-station="0">
+            <div class="st-top">
+              <span class="st-name">میدان آزادی</span>
+              <span class="pill pill-green"><span class="pdot"></span>آنلاین</span>
+            </div>
+            <div class="st-meta">تهران · ۱۲ کانکتور · DC + AC</div>
+            <div class="st-bars">
+              <div class="bar"><i style="width:83%"></i></div>
+            </div>
+            <div class="st-foot"><span class="muted">بهره‌برداری ۸۳٪</span><span class="tnum t2">۱۰ فعال / ۲ آزاد</span></div>
+          </div>
+          <div class="st-item" data-station="1">
+            <div class="st-top">
+              <span class="st-name">برج میلاد</span>
+              <span class="pill pill-red"><span class="pdot"></span>۱ خطا</span>
+            </div>
+            <div class="st-meta">تهران · ۸ کانکتور · DC سریع</div>
+            <div class="st-bars"><div class="bar bar-orange"><i style="width:71%"></i></div></div>
+            <div class="st-foot"><span class="muted">بهره‌برداری ۷۱٪</span><span class="tnum t2">۵ فعال / ۲ آزاد</span></div>
+          </div>
+          <div class="st-item" data-station="2">
+            <div class="st-top">
+              <span class="st-name">نمایشگاه بین‌المللی</span>
+              <span class="pill pill-amber"><span class="pdot"></span>پرتراکم</span>
+            </div>
+            <div class="st-meta">تهران · ۱۶ کانکتور · DC + AC</div>
+            <div class="st-bars"><div class="bar bar-orange"><i style="width:94%"></i></div></div>
+            <div class="st-foot"><span class="muted">بهره‌برداری ۹۴٪</span><span class="tnum t2">۱۵ فعال / ۱ آزاد</span></div>
+          </div>
+          <div class="st-item" data-station="3">
+            <div class="st-top">
+              <span class="st-name">ونک</span>
+              <span class="pill pill-green"><span class="pdot"></span>آنلاین</span>
+            </div>
+            <div class="st-meta">تهران · ۶ کانکتور · AC</div>
+            <div class="st-bars"><div class="bar"><i style="width:48%"></i></div></div>
+            <div class="st-foot"><span class="muted">بهره‌برداری ۴۸٪</span><span class="tnum t2">۳ فعال / ۳ آزاد</span></div>
+          </div>
+          <div class="st-item" data-station="4">
+            <div class="st-top">
+              <span class="st-name">صادقیه</span>
+              <span class="pill pill-green"><span class="pdot"></span>آنلاین</span>
+            </div>
+            <div class="st-meta">تهران · ۱۰ کانکتور · DC + AC</div>
+            <div class="st-bars"><div class="bar"><i style="width:62%"></i></div></div>
+            <div class="st-foot"><span class="muted">بهره‌برداری ۶۲٪</span><span class="tnum t2">۶ فعال / ۴ آزاد</span></div>
+          </div>
+          <div class="st-item" data-station="5">
+            <div class="st-top">
+              <span class="st-name">پارک ملت</span>
+              <span class="pill pill-green"><span class="pdot"></span>آنلاین</span>
+            </div>
+            <div class="st-meta">تهران · ۴ کانکتور · AC</div>
+            <div class="st-bars"><div class="bar"><i style="width:35%"></i></div></div>
+            <div class="st-foot"><span class="muted">بهره‌برداری ۳۵٪</span><span class="tnum t2">۱ فعال / ۳ آزاد</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- جزئیات ایستگاه انتخاب‌شده -->
+    <div class="card mt-16">
+      <div class="card-head">
+        <div><h3 id="detName">ایستگاه میدان آزادی</h3><div class="ch-sub" id="detAddr">تهران، میدان آزادی، ابتدای بزرگراه لشکری · کد ایستگاه ST‑۱۰۰۱</div></div>
+        <div class="head-actions">
+          <span class="pill pill-green"><span class="pdot"></span>آنلاین</span>
+          <a href="remote.html" class="btn btn-sm">کنترل از راه دور</a>
+          <button class="btn btn-sm btn-primary">گزارش ایستگاه</button>
+        </div>
+      </div>
+      <div class="card-pad">
+        <div class="grid g-3" style="margin-bottom:18px">
+          <div class="det-stat"><div class="ds-l">انرژی امروز</div><div class="ds-v tnum">۲٬۴۸۰ <small>kWh</small></div></div>
+          <div class="det-stat"><div class="ds-l">درآمد امروز</div><div class="ds-v tnum">۷٫۴ <small>م تومان</small></div></div>
+          <div class="det-stat"><div class="ds-l">جلسات امروز</div><div class="ds-v tnum">۸۶</div></div>
+        </div>
+
+        <div class="section-title">وضعیت کانکتورها</div>
+        <div class="grid g-3" id="connectors"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<style>
+.bic, .ms-ic[data-ic] svg, .ds-v small { }
+.bic { display:inline-grid; width:16px; height:16px; }
+.bic svg { width:16px; height:16px; }
+.mini-stat { background:var(--surface); border:1px solid var(--border); border-radius:var(--r-lg); padding:16px; display:flex; align-items:center; gap:13px; box-shadow:var(--shadow-sm); }
+.ms-ic { width:44px; height:44px; border-radius:12px; display:grid; place-items:center; flex:none; }
+.ms-ic svg { width:22px; height:22px; }
+.ms-v { font-size:22px; font-weight:800; letter-spacing:-.02em; }
+.ms-l { font-size:12px; color:var(--muted); }
+.map-leg { display:inline-flex; align-items:center; gap:5px; font-size:11.5px; color:var(--text-2); font-weight:600; }
+.map-leg i { width:9px; height:9px; border-radius:50%; }
+
+.st-item { padding:14px 18px; border-bottom:1px solid var(--border-2); cursor:pointer; transition:background .12s; }
+.st-item:hover { background:var(--surface-2); }
+.st-item.active { background:var(--accent-softer); box-shadow: inset 3px 0 0 var(--accent); }
+.st-top { display:flex; align-items:center; justify-content:space-between; }
+.st-name { font-weight:700; font-size:14px; }
+.st-meta { font-size:12px; color:var(--muted); margin:4px 0 9px; }
+.st-foot { display:flex; justify-content:space-between; margin-top:7px; font-size:11.5px; }
+
+.det-stat { background:var(--surface-2); border:1px solid var(--border-2); border-radius:var(--r); padding:14px 16px; }
+.ds-l { font-size:12px; color:var(--muted); }
+.ds-v { font-size:22px; font-weight:800; margin-top:3px; }
+.ds-v small { font-size:13px; font-weight:600; color:var(--text-2); }
+
+.conn { border:1px solid var(--border); border-radius:14px; padding:14px; }
+.conn-top { display:flex; align-items:center; gap:11px; }
+.conn-ic { width:40px; height:40px; border-radius:11px; display:grid; place-items:center; flex:none; }
+.conn-ic svg { width:20px; height:20px; }
+.conn-id { font-weight:700; font-size:13.5px; }
+.conn-type { font-size:11.5px; color:var(--muted); }
+.conn-pw { margin-inline-start:auto; text-align:end; }
+.conn-pw b { font-size:15px; }
+</style>
+
+<script src="assets/app.js"></script>
+<script>
+(function () {
+  document.querySelectorAll('[data-ic]').forEach(function (el) { el.innerHTML = window.icon(el.getAttribute('data-ic')); });
+
+  // نقشه با تمرکز تهران
+  (function () {
+    var map=document.getElementById('map');
+    var pins=[
+      {x:50,y:40,c:'var(--green)',l:'میدان آزادی',s:'۱۲ کانکتور',big:true},
+      {x:58,y:32,c:'var(--red)',l:'برج میلاد',s:'۸ کانکتور'},
+      {x:43,y:30,c:'var(--amber)',l:'نمایشگاه',s:'۱۶ کانکتور'},
+      {x:62,y:52,c:'var(--green)',l:'ونک',s:'۶ کانکتور'},
+      {x:38,y:48,c:'var(--green)',l:'صادقیه',s:'۱۰ کانکتور'},
+      {x:55,y:60,c:'var(--green)',l:'پارک ملت',s:'۴ کانکتور'},
+      {x:30,y:62,c:'var(--green)',l:'اکباتان',s:'۸ کانکتور'},
+      {x:70,y:42,c:'var(--green)',l:'تهرانپارس',s:'۶ کانکتور'},
+    ];
+    var bg='<svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none" style="position:absolute;inset:0">'+
+      '<defs><pattern id="g2" width="6" height="6" patternUnits="userSpaceOnUse"><path d="M6 0H0V6" fill="none" stroke="var(--border)" stroke-width=".4"/></pattern></defs>'+
+      '<rect width="100" height="100" fill="url(#g2)"/>'+
+      '<path d="M0 35 L100 28" stroke="color-mix(in srgb,var(--accent) 30%,transparent)" stroke-width=".8"/>'+
+      '<path d="M0 58 L100 52" stroke="color-mix(in srgb,var(--accent) 22%,transparent)" stroke-width=".8"/>'+
+      '<path d="M35 0 L42 100" stroke="color-mix(in srgb,var(--accent) 22%,transparent)" stroke-width=".8"/>'+
+      '<path d="M65 0 L60 100" stroke="color-mix(in srgb,var(--accent) 30%,transparent)" stroke-width=".8"/>'+
+      '<circle cx="50" cy="42" r="30" fill="color-mix(in srgb,var(--accent) 5%,transparent)" stroke="color-mix(in srgb,var(--accent) 18%,transparent)" stroke-width=".5" stroke-dasharray="2 2"/>'+
+      '</svg>';
+    var ph=pins.map(function(p){
+      var sz=p.big?38:30;
+      return '<div class="pin" style="left:'+p.x+'%;top:'+p.y+'%" title="'+p.l+' — '+p.s+'">'+
+        '<div class="pin-body" style="background:'+p.c+';width:'+sz+'px;height:'+sz+'px"><span>⚡</span></div>'+
+        (p.c==='var(--green)'?'':'<div class="pin-pulse" style="background:'+p.c+';opacity:.35"></div>')+
+        '</div>';
+    }).join('');
+    map.innerHTML=bg+ph;
+  })();
+
+  // کانکتورها
+  var conns=[
+    {id:'A1',t:'DC CCS2 · ۱۸۰kW',st:'busy',pw:'۸۶ kW',u:'مهدی احمدی'},
+    {id:'A2',t:'DC CHAdeMO · ۵۰kW',st:'busy',pw:'۵۰ kW',u:'سارا رحیمی'},
+    {id:'A3',t:'DC CCS2 · ۱۸۰kW',st:'free',pw:'آماده',u:''},
+    {id:'B1',t:'AC Type2 · ۲۲kW',st:'busy',pw:'۲۲ kW',u:'علی کریمی'},
+    {id:'B2',t:'AC Type2 · ۲۲kW',st:'free',pw:'آماده',u:''},
+    {id:'B3',t:'AC Type2 · ۲۲kW',st:'fault',pw:'خطا',u:''},
+  ];
+  var stMap={busy:{c:'green',p:'pill-green',l:'در حال شارژ'},free:{c:'blue',p:'pill-accent',l:'آماده'},fault:{c:'red',p:'pill-red',l:'خطا'}};
+  document.getElementById('connectors').innerHTML = conns.map(function(c){
+    var s=stMap[c.st];
+    return '<div class="conn">'+
+      '<div class="conn-top">'+
+        '<div class="conn-ic ic-'+s.c+'">'+window.icon('plug')+'</div>'+
+        '<div><div class="conn-id">کانکتور '+c.id+'</div><div class="conn-type">'+c.t+'</div></div>'+
+        '<div class="conn-pw"><b class="tnum">'+c.pw+'</b></div>'+
+      '</div>'+
+      '<div class="flex between items-center mt-12">'+
+        '<span class="pill '+s.p+'"><span class="pdot"></span>'+s.l+'</span>'+
+        '<span class="muted fs12">'+(c.u||'—')+'</span>'+
+      '</div>'+
+    '</div>';
+  }).join('');
+
+  // انتخاب ایستگاه
+  var stData=[
+    {n:'ایستگاه میدان آزادی',a:'تهران، میدان آزادی، ابتدای بزرگراه لشکری · کد ایستگاه ST‑۱۰۰۱'},
+    {n:'ایستگاه برج میلاد',a:'تهران، بزرگراه شیخ فضل‌الله، برج میلاد · کد ایستگاه ST‑۲۲۰۰'},
+    {n:'ایستگاه نمایشگاه بین‌المللی',a:'تهران، بزرگراه چمران، نمایشگاه بین‌المللی · کد ایستگاه ST‑۵۱۰۰'},
+    {n:'ایستگاه ونک',a:'تهران، میدان ونک، خیابان ولیعصر · کد ایستگاه ST‑۳۳۰۰'},
+    {n:'ایستگاه صادقیه',a:'تهران، میدان صادقیه، فلکه دوم · کد ایستگاه ST‑۴۴۰۰'},
+    {n:'ایستگاه پارک ملت',a:'تهران، بزرگراه چمران، پارک ملت · کد ایستگاه ST‑۶۶۰۰'},
+  ];
+  document.querySelectorAll('.st-item').forEach(function(it){
+    it.addEventListener('click',function(){
+      document.querySelectorAll('.st-item').forEach(function(x){x.classList.remove('active');});
+      it.classList.add('active');
+      var d=stData[+it.getAttribute('data-station')];
+      document.getElementById('detName').textContent=d.n;
+      document.getElementById('detAddr').textContent=d.a;
+    });
+  });
+
+  document.querySelectorAll('#statusSeg button').forEach(function(b){
+    b.addEventListener('click',function(){document.querySelectorAll('#statusSeg button').forEach(function(x){x.classList.remove('active');});b.classList.add('active');});
+  });
+})();
+</script>
+</body>
+</html>

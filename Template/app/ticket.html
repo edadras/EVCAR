@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SafirCharge — جزئیات درخواست</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/app-mobile.css">
+</head>
+<body data-no-tab>
+<div class="phone">
+  <div class="appbar" style="padding-top:2px">
+    <button class="ab-btn" onclick="location.href='support.html'"><span data-ic="back"></span></button>
+    <div style="flex:1"><div class="ab-title">درخواست TK‑۴۸۲</div></div>
+  </div>
+
+  <div class="screen">
+    <!-- هدر تیکت -->
+    <div class="tk-hero rise">
+      <div class="row between items-center">
+        <span class="pill pill-accent">در بررسی</span>
+        <span class="fs12 muted mono">TK‑۴۸۲</span>
+      </div>
+      <div class="fw8 mt12" style="font-size:16px">شارژ متوقف شد اما هزینه کسر شد</div>
+      <div class="fs12 muted mt4">دستهٔ پرداخت · ثبت ۱۲ دقیقه پیش</div>
+    </div>
+
+    <!-- اطلاعات -->
+    <div class="card card-p mt16">
+      <div class="irow"><span class="muted">جلسهٔ مرتبط</span><b>میدان آزادی · امروز</b></div>
+      <div class="irow"><span class="muted">مبلغ کسرشده</span><b class="tnum">۸۸٬۴۰۰ تومان</b></div>
+      <div class="irow" style="border-bottom:none"><span class="muted">کارشناس</span><b>نگار صادقی</b></div>
+    </div>
+
+    <!-- گفتگو -->
+    <div class="sec-title">گفتگوی درخواست</div>
+    <div class="thread">
+      <div class="tmsg me"><div class="tbub">شارژ خودرو در میدان آزادی وسط کار قطع شد ولی کل مبلغ از کیف پولم کم شد. لطفاً بررسی کنید.</div><span class="tt">۱۴:۲۰</span></div>
+      <div class="tmsg bot"><div class="tname">پشتیبانی</div><div class="tbub">سلام، با تشکر از گزارش شما. در حال بررسی جلسهٔ شارژ هستیم. شمارهٔ پیگیری جلسه را تأیید می‌کنید؟</div><span class="tt">۱۴:۲۴</span></div>
+      <div class="tmsg me"><div class="tbub">بله، شناسهٔ جلسه SX‑۴۸۲۱۰ بود.</div><span class="tt">۱۴:۲۶</span></div>
+      <div class="tmsg bot"><div class="tname">پشتیبانی</div><div class="tbub">متشکرم. مبلغ اضافه ظرف حداکثر ۲۴ ساعت به کیف پول شما بازگردانده می‌شود. ✅</div><span class="tt">۱۴:۳۱</span></div>
+    </div>
+  </div>
+
+  <div class="chat-input">
+    <button class="ci-attach"><span data-ic="plus"></span></button>
+    <input id="msgInput" placeholder="پاسخ خود را بنویسید…">
+    <button class="ci-send" id="sendBtn"><span data-ic="nav"></span></button>
+  </div>
+</div>
+
+<style>
+.tk-hero{padding:18px;border-radius:18px;background:var(--surface);border:1px solid var(--border);box-shadow:var(--shadow-sm)}
+.irow{display:flex;justify-content:space-between;font-size:13px;padding:9px 0;border-bottom:1px solid var(--border-2)}
+.thread{display:flex;flex-direction:column;gap:10px}
+.tmsg{display:flex;flex-direction:column;max-width:82%}
+.tmsg .tbub{padding:11px 14px;font-size:13.5px;line-height:1.8;border-radius:16px}
+.tmsg .tt{font-size:10px;color:var(--muted);margin-top:3px}
+.tmsg .tname{font-size:11px;color:var(--accent-strong);font-weight:700;margin-bottom:3px}
+.tmsg.me{align-self:flex-end;align-items:flex-end}
+.tmsg.me .tbub{background:var(--accent);color:#fff;border-bottom-left-radius:5px}
+.tmsg.bot{align-self:flex-start}
+.tmsg.bot .tbub{background:var(--surface);border:1px solid var(--border);border-bottom-right-radius:5px}
+.chat-input{flex:none;display:flex;align-items:center;gap:9px;padding:12px 14px calc(14px + env(safe-area-inset-bottom,0));background:var(--surface);border-top:1px solid var(--border)}
+.chat-input input{flex:1;height:46px;border:1.5px solid var(--border);background:var(--surface-2);border-radius:23px;padding:0 16px;font-family:inherit;font-size:14px;color:var(--text);outline:none}
+.chat-input input:focus{border-color:var(--accent)}
+.ci-attach{width:44px;height:44px;border-radius:50%;border:1px solid var(--border);background:var(--surface);color:var(--text-2);display:grid;place-items:center;flex:none}.ci-attach svg{width:20px;height:20px}
+.ci-send{width:46px;height:46px;border-radius:50%;border:none;background:var(--accent);color:#fff;display:grid;place-items:center;flex:none}.ci-send svg{width:20px;height:20px;transform:scaleX(-1)}
+</style>
+
+<script src="../assets/app-mobile.js"></script>
+<script>
+(function(){
+  document.querySelectorAll('[data-ic]').forEach(function(el){el.innerHTML=window.icon(el.getAttribute('data-ic'));});
+  var thread=document.querySelector('.thread'),input=document.getElementById('msgInput');
+  function fa(d){return '۰۱۲۳۴۵۶۷۸۹'[d];}
+  function now(){var d=new Date();return (('۰'+d.getHours()).slice(-2)+':'+('۰'+d.getMinutes()).slice(-2)).replace(/[0-9]/g,fa);}
+  function send(){var t=input.value.trim();if(!t)return;var m=document.createElement('div');m.className='tmsg me';m.innerHTML='<div class="tbub">'+t+'</div><span class="tt">'+now()+'</span>';thread.appendChild(m);input.value='';var sc=document.querySelector('.screen');if(sc)sc.scrollTop=sc.scrollHeight;}
+  document.getElementById('sendBtn').addEventListener('click',send);
+  input.addEventListener('keydown',function(e){if(e.key==='Enter')send();});
+})();
+</script>
+</body>
+</html>

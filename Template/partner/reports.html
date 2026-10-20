@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SafirCharge — آمار و گزارش شریک</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/app.css">
+</head>
+<body data-page="reports" data-title="آمار و گزارش" data-crumb="پنل شرکا">
+<div class="main">
+  <div class="content">
+
+    <div class="flex between items-center mt-8" style="margin-bottom:18px">
+      <div class="seg" id="rangeSeg"><button>هفته</button><button class="active">ماه</button><button>فصل</button><button>سال</button></div>
+      <button class="btn btn-sm btn-primary"><span class="bic" data-ic="download"></span> دانلود گزارش (Excel)</button>
+    </div>
+
+    <div class="grid col-2-1">
+      <!-- نمودار انرژی روزانه -->
+      <div class="card">
+        <div class="card-head"><div><h3>انرژی تحویلی روزانه</h3><div class="ch-sub">۳۰ روز گذشته (kWh)</div></div></div>
+        <div class="card-pad">
+          <svg id="energyChart" width="100%" height="220" viewBox="0 0 700 220" preserveAspectRatio="none"></svg>
+          <div class="chart-axis" id="enAxis"></div>
+        </div>
+      </div>
+      <!-- ساعات اوج -->
+      <div class="card">
+        <div class="card-head"><h3>الگوی استفاده در شبانه‌روز</h3></div>
+        <div class="card-pad">
+          <svg id="hourChart" width="100%" height="180" viewBox="0 0 360 180" preserveAspectRatio="none"></svg>
+          <div class="chart-axis"><span>۰۰</span><span>۰۶</span><span>۱۲</span><span>۱۸</span><span>۲۴</span></div>
+          <div class="fs12 muted mt-12">بیشترین تقاضا بین ساعت ۱۷ تا ۲۲ — مناسب برای تعرفهٔ اوج مصرف</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid g-3 mt-16">
+      <div class="card card-pad"><div class="muted fs12">مجموع انرژی (ماه)</div><div class="fs22 fw8 tnum mt-8">۱۸٬۴۲۰ <small style="font-size:13px;color:var(--text-2)">kWh</small></div><div class="trend-up fs12 mt-8">▲ ۸٫۲٪ نسبت به ماه قبل</div></div>
+      <div class="card card-pad"><div class="muted fs12">کل جلسات</div><div class="fs22 fw8 tnum mt-8">۱٬۲۴۸</div><div class="trend-up fs12 mt-8">▲ ۵٫۱٪</div></div>
+      <div class="card card-pad"><div class="muted fs12">میانگین مدت هر جلسه</div><div class="fs22 fw8 tnum mt-8">۴۲ <small style="font-size:13px;color:var(--text-2)">دقیقه</small></div><div class="muted fs12 mt-8">۲۹٫۴ kWh هر جلسه</div></div>
+    </div>
+
+    <!-- جدول عملکرد دستگاه -->
+    <div class="card mt-16">
+      <div class="card-head"><div><h3>عملکرد تفکیکی دستگاه‌ها</h3><div class="ch-sub">آذر ۱۴۰۳</div></div></div>
+      <div class="table-wrap">
+        <table class="tbl">
+          <thead><tr><th>دستگاه</th><th>جلسات</th><th>انرژی</th><th>ساعات فعال</th><th>بهره‌برداری</th><th>درآمد سهم شما</th></tr></thead>
+          <tbody id="perfBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<style>
+.bic{display:inline-grid;width:16px;height:16px}.bic svg{width:16px;height:16px}
+.chart-axis{display:flex;justify-content:space-between;margin-top:8px;color:var(--muted);font-size:11px}
+</style>
+
+<script src="app-partner.js"></script>
+<script>
+(function(){
+  document.querySelectorAll('[data-ic]').forEach(function(el){el.innerHTML=window.icon(el.getAttribute('data-ic'));});
+
+  (function(){
+    var vals=[];for(var i=0;i<30;i++){vals.push(420+Math.round(Math.sin(i/3)*120)+i*4);}
+    var W=700,H=220,pad=12,max=720,bw=(W-pad*2)/30-4;
+    var bars=vals.map(function(v,i){var x=pad+i*((W-pad*2)/30);var h=(H-pad*2)*v/max;var y=H-pad-h;return '<rect x="'+x+'" y="'+y+'" width="'+bw+'" height="'+h+'" rx="3" fill="var(--accent)" opacity="'+(i===29?1:.8)+'"/>';}).join('');
+    document.getElementById('energyChart').innerHTML=bars;
+    var ax=document.getElementById('enAxis');['۱','۱۰','۲۰','۳۰'].forEach(function(t){var s=document.createElement('span');s.textContent=t;ax.appendChild(s);});
+  })();
+
+  (function(){
+    var hrs=[8,6,5,5,6,9,16,28,34,30,28,32,36,34,30,33,40,58,64,60,52,40,24,14];
+    var W=360,H=180,pad=10,max=70;
+    function p(area){var step=(W-pad*2)/(hrs.length-1);var d=hrs.map(function(v,i){var x=pad+i*step;var y=pad+(H-pad*2)*(1-v/max);return (i?'L':'M')+x.toFixed(1)+' '+y.toFixed(1);}).join(' ');if(area)d+=' L'+(W-pad)+' '+(H-pad)+' L'+pad+' '+(H-pad)+' Z';return d;}
+    document.getElementById('hourChart').innerHTML='<defs><linearGradient id="gh" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--orange)" stop-opacity=".28"/><stop offset="1" stop-color="var(--orange)" stop-opacity="0"/></linearGradient></defs><path d="'+p(true)+'" fill="url(#gh)"/><path d="'+p()+'" fill="none" stroke="var(--orange)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>';
+  })();
+
+  var perf=[
+    ['CP‑۹۱۰۱','۲۸۴','۴٬۸۲۰ kWh','۲۱۰ ساعت','۷۸٪','۱۰۸٬۴۵۰٬۰۰۰'],
+    ['CP‑۹۱۰۲','۲۶۲','۴٬۴۱۰ kWh','۱۹۸ ساعت','۷۴٪','۹۹٬۲۲۵٬۰۰۰'],
+    ['CP‑۹۱۰۷','۱۹۸','۳٬۲۲۰ kWh','۱۵۴ ساعت','۵۸٪','۷۲٬۴۵۰٬۰۰۰'],
+    ['CP‑۹۱۰۳','۱۵۶','۱٬۸۶۰ kWh','۱۲۰ ساعت','۴۵٪','۴۱٬۸۵۰٬۰۰۰'],
+    ['CP‑۹۱۰۶','۱۳۲','۱٬۱۰۰ kWh','۹۸ ساعت','۳۷٪','۲۴٬۷۵۰٬۰۰۰'],
+    ['CP‑۹۱۰۴','۱۱۸','۹۸۰ kWh','۸۶ ساعت','۳۲٪','۲۲٬۰۵۰٬۰۰۰'],
+  ];
+  document.getElementById('perfBody').innerHTML=perf.map(function(r){
+    return '<tr><td class="mono cell-strong">'+r[0]+'</td><td class="tnum">'+r[1]+'</td><td class="tnum">'+r[2]+'</td><td class="tnum cell-muted">'+r[3]+'</td>'+
+      '<td style="min-width:120px"><div class="bar bar-accent"><i style="width:'+r[4].replace('٪','')+'%"></i></div><div class="cell-muted tnum" style="margin-top:4px">'+r[4]+'</div></td>'+
+      '<td class="tnum cell-strong" style="color:var(--green)">'+r[5]+'</td></tr>';
+  }).join('');
+
+  document.querySelectorAll('#rangeSeg button').forEach(function(b){b.addEventListener('click',function(){document.querySelectorAll('#rangeSeg button').forEach(function(x){x.classList.remove('active');});b.classList.add('active');});});
+})();
+</script>
+</body>
+</html>

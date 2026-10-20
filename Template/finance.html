@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SafirCharge — مدیریت مالی</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/app.css">
+</head>
+<body data-page="finance" data-title="مدیریت مالی" data-crumb="مالی و پرداخت">
+<div class="main">
+  <div class="content">
+
+    <div class="flex between items-center mt-8" style="margin-bottom:18px">
+      <div class="seg" id="rangeSeg"><button>هفته</button><button class="active">ماه</button><button>فصل</button><button>سال</button></div>
+      <div class="flex gap-8">
+        <button class="btn btn-sm"><span class="bic" data-ic="download"></span> گزارش مالیاتی</button>
+        <a href="settlement-new.html" class="btn btn-sm btn-primary">تسویهٔ جدید</a>
+      </div>
+    </div>
+
+    <div class="kpi-grid">
+      <div class="kpi">
+        <div class="kpi-ic ic-green" data-ic="coins"></div>
+        <div class="kpi-label">درآمد ناخالص (ماه)</div>
+        <div class="kpi-val tnum">۸٫۲۴ <small>میلیارد تومان</small></div>
+        <div class="kpi-foot"><span class="trend-up">▲ ۱۴٫۲٪</span><span class="muted">نسبت به ماه قبل</span></div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-ic ic-blue" data-ic="chart"></div>
+        <div class="kpi-label">سهم اپراتورها</div>
+        <div class="kpi-val tnum">۲٫۱۱ <small>میلیارد</small></div>
+        <div class="kpi-foot"><span class="muted">۲۵٪ از درآمد ناخالص</span></div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-ic ic-orange" data-ic="receipt"></div>
+        <div class="kpi-label">تسویه‌های در انتظار</div>
+        <div class="kpi-val tnum">۴۸۶ <small>میلیون</small></div>
+        <div class="kpi-foot"><span class="trend-up">۱۲ درخواست</span><span class="muted">در صف تسویه</span></div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-ic ic-violet" data-ic="leaf"></div>
+        <div class="kpi-label">مالیات بر ارزش افزوده</div>
+        <div class="kpi-val tnum">۷۴۲ <small>میلیون</small></div>
+        <div class="kpi-foot"><span class="muted">۹٪ · آمادهٔ اظهار</span></div>
+      </div>
+    </div>
+
+    <div class="grid col-2-1 mt-16">
+      <!-- نمودار درآمد -->
+      <div class="card">
+        <div class="card-head">
+          <div><h3>درآمد و سهم تفکیکی</h3><div class="ch-sub">۳۰ روز گذشته</div></div>
+          <div class="head-actions">
+            <span class="legend-inline"><i style="background:var(--accent)"></i>درآمد خالص</span>
+            <span class="legend-inline"><i style="background:var(--orange)"></i>سهم اپراتور</span>
+          </div>
+        </div>
+        <div class="card-pad">
+          <svg id="revChart" width="100%" height="250" viewBox="0 0 720 250" preserveAspectRatio="none"></svg>
+          <div class="chart-axis" id="revAxis"></div>
+        </div>
+      </div>
+
+      <!-- منابع درآمد -->
+      <div class="card">
+        <div class="card-head"><h3>منابع درآمد</h3></div>
+        <div class="card-pad">
+          <div class="src"><div class="flex between"><span class="fw7">شارژ DC سریع</span><span class="tnum fw7">۵۲٪</span></div><div class="bar bar-accent mt-8"><i style="width:52%"></i></div><div class="muted fs12 mt-8">۴٫۲۸ میلیارد تومان</div></div>
+          <div class="src"><div class="flex between"><span class="fw7">شارژ AC</span><span class="tnum fw7">۲۹٪</span></div><div class="bar mt-8"><i style="width:29%"></i></div><div class="muted fs12 mt-8">۲٫۳۹ میلیارد تومان</div></div>
+          <div class="src"><div class="flex between"><span class="fw7">حساب‌های سازمانی</span><span class="tnum fw7">۱۴٪</span></div><div class="bar bar-orange mt-8"><i style="width:14%"></i></div><div class="muted fs12 mt-8">۱٫۱۵ میلیارد تومان</div></div>
+          <div class="src"><div class="flex between"><span class="fw7">اشتراک و عضویت</span><span class="tnum fw7">۵٪</span></div><div class="bar mt-8" style="--c:var(--violet)"><i style="width:5%;background:var(--violet)"></i></div><div class="muted fs12 mt-8">۴۲۰ میلیون تومان</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- تسویه‌ها -->
+    <div class="card mt-16">
+      <div class="card-head">
+        <div><h3>تسویه با اپراتورها</h3><div class="ch-sub">پرداخت سهم درآمد ایستگاه‌ها</div></div>
+        <div class="head-actions">
+          <div class="seg" id="setSeg"><button class="active">همه</button><button>در انتظار</button><button>پرداخت‌شده</button></div>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table class="tbl">
+          <thead><tr><th>شناسهٔ تسویه</th><th>اپراتور / مالک</th><th>دوره</th><th>درآمد ایستگاه</th><th>سهم اپراتور</th><th>کارمزد سامانه</th><th>مبلغ خالص</th><th>وضعیت</th><th></th></tr></thead>
+          <tbody id="setBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- دفتر کل -->
+    <div class="card mt-16">
+      <div class="card-head">
+        <div><h3>دفتر کل مالی</h3><div class="ch-sub">آخرین رویدادهای حسابداری</div></div>
+        <div class="head-actions"><button class="btn btn-sm"><span class="bic" data-ic="download"></span> خروجی دفتر کل</button></div>
+      </div>
+      <div class="table-wrap">
+        <table class="tbl">
+          <thead><tr><th>سند</th><th>شرح</th><th>طرف حساب</th><th>بدهکار</th><th>بستانکار</th><th>مانده</th><th>تاریخ</th></tr></thead>
+          <tbody id="ledgerBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<style>
+.bic{display:inline-grid;width:16px;height:16px}.bic svg{width:16px;height:16px}
+.kpi-ic[data-ic] svg{width:21px;height:21px}
+.legend-inline{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--text-2);font-weight:600}
+.legend-inline i{width:10px;height:10px;border-radius:3px;display:inline-block}
+.chart-axis{display:flex;justify-content:space-between;margin-top:8px;color:var(--muted);font-size:11px}
+.src{padding:13px 0;border-bottom:1px solid var(--border-2)}.src:last-child{border-bottom:none}
+</style>
+
+<script src="assets/app.js"></script>
+<script>
+(function(){
+  document.querySelectorAll('[data-ic]').forEach(function(el){el.innerHTML=window.icon(el.getAttribute('data-ic'));});
+
+  (function(){
+    var net=[180,210,160,240,290,260,310,280,330,300,350,320,380,360,410,390,360,400,450,420,470,440,410,460,500,480,520,490,540,560];
+    var op=net.map(function(v){return v*0.25;});
+    var W=720,H=250,pad=12,max=600;
+    function path(vals,area){
+      var step=(W-pad*2)/(vals.length-1);
+      var d=vals.map(function(v,i){var x=pad+i*step;var y=pad+(H-pad*2)*(1-v/max);return (i?'L':'M')+x.toFixed(1)+' '+y.toFixed(1);}).join(' ');
+      if(area)d+=' L'+(W-pad)+' '+(H-pad)+' L'+pad+' '+(H-pad)+' Z';
+      return d;
+    }
+    var grid='';for(var g=0;g<=4;g++){var y=pad+(H-pad*2)*g/4;grid+='<line x1="'+pad+'" y1="'+y+'" x2="'+(W-pad)+'" y2="'+y+'" stroke="var(--border)" stroke-width="1" stroke-dasharray="3 5"/>';}
+    document.getElementById('revChart').innerHTML=
+      '<defs><linearGradient id="gR" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--accent)" stop-opacity=".26"/><stop offset="1" stop-color="var(--accent)" stop-opacity="0"/></linearGradient></defs>'+
+      grid+
+      '<path d="'+path(net,true)+'" fill="url(#gR)"/>'+
+      '<path d="'+path(net)+'" fill="none" stroke="var(--accent)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>'+
+      '<path d="'+path(op)+'" fill="none" stroke="var(--orange)" stroke-width="2.2" stroke-dasharray="2 4" stroke-linecap="round" stroke-linejoin="round"/>';
+    var ax=document.getElementById('revAxis');['۱','۵','۱۰','۱۵','۲۰','۲۵','۳۰'].forEach(function(t){var s=document.createElement('span');s.textContent=t;ax.appendChild(s);});
+  })();
+
+  // تسویه‌ها
+  var ops=[
+    ['SET‑۹۲۰۱','شهرداری تهران','آذر ۱۴۰۳','۱٬۲۸۰٬۰۰۰٬۰۰۰','۳۲۰٬۰۰۰٬۰۰۰','۹۶٬۰۰۰٬۰۰۰','۲۲۴٬۰۰۰٬۰۰۰',['در انتظار','pill-amber']],
+    ['SET‑۹۲۰۲','پارکینگ مرکزی پاسداران','آذر ۱۴۰۳','۴۸۰٬۰۰۰٬۰۰۰','۱۲۰٬۰۰۰٬۰۰۰','۳۶٬۰۰۰٬۰۰۰','۸۴٬۰۰۰٬۰۰۰',['پرداخت‌شده','pill-green']],
+    ['SET‑۹۲۰۳','هتل اسپیناس','آذر ۱۴۰۳','۳۲۰٬۰۰۰٬۰۰۰','۸۰٬۰۰۰٬۰۰۰','۲۴٬۰۰۰٬۰۰۰','۵۶٬۰۰۰٬۰۰۰',['در انتظار','pill-amber']],
+    ['SET‑۹۲۰۴','مجتمع تجاری کوروش','آذر ۱۴۰۳','۶۴۰٬۰۰۰٬۰۰۰','۱۶۰٬۰۰۰٬۰۰۰','۴۸٬۰۰۰٬۰۰۰','۱۱۲٬۰۰۰٬۰۰۰',['پرداخت‌شده','pill-green']],
+    ['SET‑۹۲۰۵','شرکت تاکسی برقی سبز','آذر ۱۴۰۳','۲۲۰٬۰۰۰٬۰۰۰','۵۵٬۰۰۰٬۰۰۰','۱۶٬۵۰۰٬۰۰۰','۳۸٬۵۰۰٬۰۰۰',['در حال بررسی','pill-accent']],
+  ];
+  document.getElementById('setBody').innerHTML=ops.map(function(r){
+    return '<tr><td class="mono">'+r[0]+'</td><td class="cell-strong">'+r[1]+'</td><td class="cell-muted">'+r[2]+'</td>'+
+      '<td class="tnum">'+r[3]+'</td><td class="tnum">'+r[4]+'</td><td class="tnum cell-muted">'+r[5]+'</td>'+
+      '<td class="tnum cell-strong">'+r[6]+'</td><td><span class="pill '+r[7][1]+'">'+r[7][0]+'</span></td>'+
+      '<td><a href="settlement.html" class="btn btn-sm">جزئیات</a></td></tr>';
+  }).join('');
+
+  // دفتر کل
+  var led=[
+    ['JV‑۴۸۲۱','دریافت وجه شارژ — درگاه بانکی','بانک ملت','۲۸۴٬۷۰۰٬۰۰۰','—','۸٬۲۴۰٬۰۰۰٬۰۰۰','۱۴۰۳/۰۹/۲۲'],
+    ['JV‑۴۸۲۲','تسویه اپراتور — پارکینگ پاسداران','حساب پرداختنی','—','۸۴٬۰۰۰٬۰۰۰','۷٬۹۵۶٬۰۰۰٬۰۰۰','۱۴۰۳/۰۹/۲۲'],
+    ['JV‑۴۸۲۳','کارمزد سامانه','درآمد کارمزد','—','۴۲٬۶۰۰٬۰۰۰','۷٬۹۹۸٬۶۰۰٬۰۰۰','۱۴۰۳/۰۹/۲۱'],
+    ['JV‑۴۸۲۴','شارژ کیف پول کاربران','حساب کاربران','۱۵۶٬۰۰۰٬۰۰۰','—','۸٬۱۵۴٬۶۰۰٬۰۰۰','۱۴۰۳/۰۹/۲۱'],
+    ['JV‑۴۸۲۵','مالیات ارزش افزوده','حساب مالیات','—','۲۵٬۶۰۰٬۰۰۰','۸٬۱۲۹٬۰۰۰٬۰۰۰','۱۴۰۳/۰۹/۲۰'],
+    ['JV‑۴۸۲۶','هزینهٔ نگهداری شبکه','هزینه عملیاتی','—','۱۸٬۲۰۰٬۰۰۰','۸٬۱۱۰٬۸۰۰٬۰۰۰','۱۴۰۳/۰۹/۲۰'],
+  ];
+  document.getElementById('ledgerBody').innerHTML=led.map(function(r){
+    return '<tr><td class="mono">'+r[0]+'</td><td class="cell-strong">'+r[1]+'</td><td class="cell-muted">'+r[2]+'</td>'+
+      '<td class="tnum" style="color:var(--green)">'+r[3]+'</td><td class="tnum" style="color:var(--red)">'+r[4]+'</td>'+
+      '<td class="tnum cell-strong">'+r[5]+'</td><td class="cell-muted">'+r[6]+'</td></tr>';
+  }).join('');
+
+  ['rangeSeg','setSeg'].forEach(function(id){
+    document.querySelectorAll('#'+id+' button').forEach(function(b){
+      b.addEventListener('click',function(){document.querySelectorAll('#'+id+' button').forEach(function(x){x.classList.remove('active');});b.classList.add('active');});
+    });
+  });
+})();
+</script>
+</body>
+</html>

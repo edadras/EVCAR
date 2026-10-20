@@ -1,0 +1,228 @@
+@extends('admin.layouts.app', ['page' => 'settings', 'title' => 'تنظیمات سامانه', 'crumb' => 'مدیریت سامانه'])
+
+@section('content')
+<form method="POST" action="{{ route('admin.settings.update') }}">@csrf
+@php use App\Support\Persian; @endphp
+
+<div class="settings-layout mt-8">
+      <!-- منوی کناری تنظیمات -->
+      <aside class="settings-nav">
+        <button class="sn-item active" data-sec="general"><span data-ic="settings"></span>عمومی</button>
+        <button class="sn-item" data-sec="brand"><span data-ic="bolt"></span>برند و ظاهر</button>
+        <button class="sn-item" data-sec="charging"><span data-ic="plug"></span>پارامترهای شارژ</button>
+        <button class="sn-item" data-sec="payment"><span data-ic="wallet"></span>پرداخت و مالی</button>
+        <button class="sn-item" data-sec="notif"><span data-ic="bell"></span>اعلان‌ها</button>
+        <button class="sn-item" data-sec="security"><span data-ic="shield"></span>امنیت</button>
+        <button class="sn-item" data-sec="integration"><span data-ic="refresh"></span>یکپارچه‌سازی و API</button>
+      </aside>
+
+      <!-- محتوا -->
+      <div class="settings-body">
+        <!-- عمومی -->
+        <section data-pane="general">
+          <div class="card">
+            <div class="card-head"><div><h3>اطلاعات سامانه</h3><div class="ch-sub">مشخصات کلی شرکت بهره‌بردار</div></div></div>
+            <div class="card-pad">
+              @php
+                $platformSetting = ($settings['general'] ?? collect())->firstWhere('key', 'platform_name');
+                $platformName = $platformSetting?->value['fa'] ?? $platformSetting?->value['raw'] ?? 'SafirCharge';
+              @endphp
+              <div class="form-grid">
+                <div class="ffield"><label>نام سامانه</label>
+                  @if($platformSetting)
+                    <input class="finput" name="settings[{{ $platformSetting->id }}]" value="{{ $platformName }}">
+                  @else
+                    <input class="finput" value="{{ $platformName }}" disabled>
+                  @endif
+                </div>
+                <div class="ffield"><label>نام شرکت بهره‌بردار</label><input class="finput" value="سفیر انرژی پاک"></div>
+                <div class="ffield"><label>شناسهٔ ملی شرکت</label><input class="finput tnum" dir="ltr" style="text-align:right" value="۱۴۰۰۹۸۷۶۵۴۳"></div>
+                <div class="ffield"><label>تلفن پشتیبانی</label><input class="finput tnum" dir="ltr" style="text-align:right" value="۰۲۱-۹۱۰۰۲۰۳۰"></div>
+                <div class="ffield"><label>منطقهٔ زمانی</label><select class="fselect"><option>تهران (GMT+3:30)</option></select></div>
+                <div class="ffield"><label>واحد پول</label><select class="fselect"><option>تومان</option><option>ریال</option></select></div>
+                <div class="ffield"><label>زبان پیش‌فرض</label><select class="fselect"><option>فارسی</option><option>English</option></select></div>
+                <div class="ffield"><label>تقویم</label><select class="fselect"><option>شمسی (هجری)</option><option>میلادی</option></select></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- برند -->
+        <section data-pane="brand" style="display:none">
+          <div class="card">
+            <div class="card-head"><div><h3>برند و ظاهر</h3><div class="ch-sub">لوگو، رنگ و حالت نمایش پنل</div></div></div>
+            <div class="card-pad">
+              <div class="ffield" style="margin-bottom:18px"><label>لوگوی سامانه</label>
+                <div class="logo-up"><div class="brand-mark" style="width:48px;height:48px;border-radius:14px"><span data-ic="bolt"></span></div><button class="btn btn-sm">بارگذاری لوگو</button><span class="muted fs12">PNG یا SVG · حداکثر ۱ مگابایت</span></div>
+              </div>
+              <div class="ffield" style="margin-bottom:18px"><label>رنگ تاکیدی پنل</label>
+                <div class="flex gap-12" id="accRow"></div>
+              </div>
+              <div class="ffield"><label>حالت نمایش پیش‌فرض</label>
+                <div class="seg" id="themeSeg"><button class="active">روشن</button><button>تیره</button><button>خودکار (سیستم)</button></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- شارژ -->
+        <section data-pane="charging" style="display:none">
+          <div class="card">
+            <div class="card-head"><div><h3>پارامترهای پیش‌فرض شارژ</h3><div class="ch-sub">اعمال بر شارژرهای جدید</div></div></div>
+            <div class="card-pad">
+              <div class="form-grid">
+                <div class="ffield"><label>پروتکل ارتباطی</label><select class="fselect"><option>OCPP 1.6J</option><option>OCPP 2.0.1</option></select></div>
+                <div class="ffield"><label>بازهٔ Heartbeat (ثانیه)</label><input class="finput tnum" dir="ltr" style="text-align:right" value="۶۰"></div>
+                <div class="ffield"><label>حد توقف خودکار شارژ</label><select class="fselect"><option>۸۰٪</option><option selected>۹۰٪</option><option>۱۰۰٪</option></select></div>
+                <div class="ffield"><label>زمان رزرو کانکتور (دقیقه)</label><input class="finput tnum" dir="ltr" style="text-align:right" value="۱۵"></div>
+              </div>
+              <label class="toggle-row mt-12"><div><div class="fw7 fs13">هزینهٔ اشغال پس از پایان شارژ</div><div class="fhint">به ازای هر دقیقه پس از شارژ کامل</div></div><span class="switch on" data-sw><i></i></span></label>
+              <label class="toggle-row mt-12"><div><div class="fw7 fs13">توقف خودکار در صورت خطا</div><div class="fhint">قطع شارژ هنگام تشخیص ناهنجاری</div></div><span class="switch on" data-sw><i></i></span></label>
+            </div>
+          </div>
+        </section>
+
+        <!-- پرداخت -->
+        <section data-pane="payment" style="display:none">
+          <div class="card">
+            <div class="card-head"><div><h3>تنظیمات پرداخت و مالی</h3></div></div>
+            <div class="card-pad">
+              <div class="form-grid">
+                <div class="ffield"><label>درگاه پرداخت پیش‌فرض</label><select class="fselect"><option>به‌پرداخت ملت</option><option>سامان (سپ)</option><option>زرین‌پال</option></select></div>
+                <div class="ffield"><label>مالیات ارزش افزوده</label><input class="finput tnum" dir="ltr" style="text-align:right" value="۹٪"></div>
+                <div class="ffield"><label>حداقل شارژ کیف پول (تومان)</label><input class="finput tnum" dir="ltr" style="text-align:right" value="۵۰٬۰۰۰"></div>
+                <div class="ffield"><label>دورهٔ تسویهٔ شرکا</label><select class="fselect"><option>ماهانه</option><option>دوهفته‌ای</option></select></div>
+              </div>
+              <label class="toggle-row mt-12"><div><div class="fw7 fs13">شارژ خودکار کیف پول</div><div class="fhint">برداشت خودکار هنگام افت موجودی</div></div><span class="switch on" data-sw><i></i></span></label>
+              <label class="toggle-row mt-12"><div><div class="fw7 fs13">صدور خودکار فاکتور رسمی</div><div class="fhint">برای کاربران سازمانی</div></div><span class="switch" data-sw><i></i></span></label>
+            </div>
+          </div>
+        </section>
+
+        <!-- اعلان -->
+        <section data-pane="notif" style="display:none">
+          <div class="card">
+            <div class="card-head"><div><h3>کانال‌های اعلان</h3><div class="ch-sub">فعال/غیرفعال کردن درگاه‌ها</div></div></div>
+            <div class="card-pad">
+              <label class="toggle-row"><div><div class="fw7 fs13">اعلان پوش</div></div><span class="switch on" data-sw><i></i></span></label>
+              <label class="toggle-row mt-12"><div><div class="fw7 fs13">پیامک (SMS)</div></div><span class="switch on" data-sw><i></i></span></label>
+              <label class="toggle-row mt-12"><div><div class="fw7 fs13">واتس‌اپ</div></div><span class="switch on" data-sw><i></i></span></label>
+              <label class="toggle-row mt-12"><div><div class="fw7 fs13">ایمیل</div></div><span class="switch" data-sw><i></i></span></label>
+              <a href="/admin/notifications" class="btn btn-sm mt-16">مدیریت قالب‌های اعلان</a>
+            </div>
+          </div>
+        </section>
+
+        <!-- امنیت -->
+        <section data-pane="security" style="display:none">
+          <div class="card">
+            <div class="card-head"><div><h3>امنیت و دسترسی</h3></div></div>
+            <div class="card-pad">
+              <label class="toggle-row"><div><div class="fw7 fs13">الزام احراز دومرحله‌ای برای مدیران</div><div class="fhint">کد یک‌بارمصرف هنگام ورود</div></div><span class="switch on" data-sw><i></i></span></label>
+              <label class="toggle-row mt-12"><div><div class="fw7 fs13">خروج خودکار پس از بی‌کاری</div><div class="fhint">پس از ۳۰ دقیقه</div></div><span class="switch on" data-sw><i></i></span></label>
+              <div class="form-grid mt-16">
+                <div class="ffield"><label>حداقل طول رمز عبور</label><input class="finput tnum" dir="ltr" style="text-align:right" value="۸"></div>
+                <div class="ffield"><label>اعتبار نشست (ساعت)</label><input class="finput tnum" dir="ltr" style="text-align:right" value="۸"></div>
+              </div>
+              <a href="/admin/team" class="btn btn-sm mt-16"><span class="bic" data-ic="shield"></span> مدیریت کاربران مدیر و دسترسی</a>
+            </div>
+          </div>
+
+          <div class="card mt-16">
+            <div class="card-head"><div><h3>تغییر رمز عبور من</h3><div class="ch-sub">رمز حساب مدیریتی شما</div></div></div>
+            <div class="card-pad">
+              <div class="form-grid">
+                <div class="ffield col-span"><label>رمز عبور فعلی <span class="req">*</span></label><input class="finput" type="password" placeholder="رمز فعلی"></div>
+                <div class="ffield"><label>رمز عبور جدید <span class="req">*</span></label><input class="finput" type="password" id="adNew" placeholder="رمز جدید"></div>
+                <div class="ffield"><label>تکرار رمز جدید <span class="req">*</span></label><input class="finput" type="password" id="adRep" placeholder="تکرار رمز"></div>
+              </div>
+              <div class="pwbar mt-12"><i id="adBar"></i></div>
+              <div class="flex between items-center mt-8">
+                <span class="fs12 muted" id="adStrength">قدرت رمز: —</span>
+                <span class="fs12" id="adMatch"></span>
+              </div>
+              <button class="btn btn-primary btn-sm mt-16"><span class="bic" data-ic="key"></span> به‌روزرسانی رمز عبور</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- یکپارچه‌سازی -->
+        <section data-pane="integration" style="display:none">
+          <div class="card">
+            <div class="card-head"><div><h3>یکپارچه‌سازی و API</h3><div class="ch-sub">اتصال به سرویس‌های بیرونی</div></div></div>
+            <div class="card-pad">
+              <div class="lrow"><div class="l-ic ic-blue" data-ic="refresh"></div><div class="l-main"><div class="l-title">کلید API سامانه</div><div class="l-sub mono">sk_live_••••••••4821</div></div><button class="btn btn-sm">تولید مجدد</button></div>
+              <div class="lrow"><div class="l-ic ic-green" data-ic="map"></div><div class="l-main"><div class="l-title">سرویس نقشه</div><div class="l-sub">Neshan Maps API · متصل</div></div><span class="pill pill-green"><span class="pdot"></span>فعال</span></div>
+              <div class="lrow"><div class="l-ic ic-orange" data-ic="activity"></div><div class="l-main"><div class="l-title">درگاه پیامک</div><div class="l-sub">کاوه‌نگار · متصل</div></div><span class="pill pill-green"><span class="pdot"></span>فعال</span></div>
+              <div class="lrow" style="border-bottom:none"><div class="l-ic ic-violet" data-ic="chart"></div><div class="l-main"><div class="l-title">سامانهٔ حسابداری</div><div class="l-sub">اتصال به نرم‌افزار مالی</div></div><button class="btn btn-sm">اتصال</button></div>
+            </div>
+          </div>
+        </section>
+
+        <div class="flex gap-8 mt-16" style="justify-content:flex-end">
+          <button type="button" class="btn">انصراف</button>
+          <button type="submit" class="btn btn-primary"><span class="bic" data-ic="check"></span> ذخیرهٔ تغییرات</button>
+        </div>
+      </div>
+    </div>
+</form>
+@endsection
+
+@push('styles')
+<style>
+.bic{display:inline-grid;width:16px;height:16px}.bic svg{width:16px;height:16px}
+.settings-layout{display:grid;grid-template-columns:236px 1fr;gap:20px;align-items:start}
+.settings-nav{display:flex;flex-direction:column;gap:3px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:8px;box-shadow:var(--shadow-sm);position:sticky;top:84px}
+.sn-item{display:flex;align-items:center;gap:11px;padding:11px 13px;border-radius:10px;border:none;background:none;font-family:inherit;font-size:13.5px;font-weight:600;color:var(--text-2);text-align:start;transition:all .12s}
+.sn-item:hover{background:var(--surface-2);color:var(--text)}
+.sn-item.active{background:var(--accent-soft);color:var(--accent-strong)}
+.sn-item span[data-ic]{display:inline-grid;width:18px;height:18px;flex:none}.sn-item svg{width:18px;height:18px}
+.toggle-row{display:flex;align-items:center;justify-content:space-between;gap:16px;background:var(--surface-2);border:1px solid var(--border-2);border-radius:12px;padding:13px 15px;cursor:pointer}
+.switch{width:44px;height:25px;border-radius:20px;background:var(--surface-3);position:relative;flex:none;transition:background .15s}
+.switch i{position:absolute;top:3px;inset-inline-start:3px;width:19px;height:19px;border-radius:50%;background:#fff;box-shadow:var(--shadow-sm);transition:transform .16s}
+.switch.on{background:var(--green)}
+html[dir=rtl] .switch.on i{transform:translateX(-19px)}
+.logo-up{display:flex;align-items:center;gap:13px}
+.acc-pick{width:34px;height:34px;border-radius:10px;border:2px solid var(--surface);box-shadow:0 0 0 1px var(--border);cursor:pointer}
+.acc-pick.on{box-shadow:0 0 0 2px var(--accent)}
+@media (max-width:900px){.settings-layout{grid-template-columns:1fr}.settings-nav{flex-direction:row;overflow-x:auto;position:static}}
+.pwbar{height:5px;border-radius:5px;background:var(--surface-3);overflow:hidden}
+.pwbar i{display:block;height:100%;width:0;border-radius:5px;background:var(--red);transition:all .2s}
+</style>
+@endpush
+
+@push('scripts')
+<script>
+(function(){
+  document.querySelectorAll('[data-ic]').forEach(function(el){el.innerHTML=window.icon(el.getAttribute('data-ic'));});
+
+  // ناوبری تنظیمات
+  document.querySelectorAll('.sn-item').forEach(function(b){
+    b.addEventListener('click',function(){
+      document.querySelectorAll('.sn-item').forEach(function(x){x.classList.remove('active');});b.classList.add('active');
+      var s=b.getAttribute('data-sec');
+      document.querySelectorAll('[data-pane]').forEach(function(p){p.style.display=p.getAttribute('data-pane')===s?'':'none';});
+    });
+  });
+
+  // رنگ‌ها
+  var ACC=['#0E6BA8','#16A34A','#F97316','#7C3AED','#0891B2'];
+  var cur=localStorage.getItem('cn-accent')||'#0E6BA8';
+  document.getElementById('accRow').innerHTML=ACC.map(function(v){return '<button class="acc-pick'+(v===cur?' on':'')+'" data-v="'+v+'" style="background:'+v+'"></button>';}).join('');
+  var rgb={'#0E6BA8':'14, 107, 168','#16A34A':'22, 163, 74','#F97316':'249, 115, 22','#7C3AED':'124, 58, 237','#0891B2':'8, 145, 178'};
+  document.querySelectorAll('.acc-pick').forEach(function(d){d.addEventListener('click',function(){
+    var v=d.getAttribute('data-v');document.documentElement.style.setProperty('--accent',v);document.documentElement.style.setProperty('--accent-rgb',rgb[v]);localStorage.setItem('cn-accent',v);
+    document.querySelectorAll('.acc-pick').forEach(function(x){x.classList.remove('on');});d.classList.add('on');
+  });});
+
+  document.querySelectorAll('[data-sw]').forEach(function(s){s.closest('.toggle-row').addEventListener('click',function(){s.classList.toggle('on');});});
+  document.querySelectorAll('.seg').forEach(function(g){g.querySelectorAll('button').forEach(function(b){b.addEventListener('click',function(){g.querySelectorAll('button').forEach(function(x){x.classList.remove('active');});b.classList.add('active');});});});
+
+  // سنجش قدرت رمز
+  var adNew=document.getElementById('adNew'),adRep=document.getElementById('adRep');
+  function adMatchFn(){var m=document.getElementById('adMatch');if(!adRep.value){m.textContent='';return;}if(adRep.value===adNew.value){m.textContent='✓ مطابقت دارد';m.style.color='var(--green)';}else{m.textContent='✕ مطابقت ندارد';m.style.color='var(--red)';}}
+  adNew.addEventListener('input',function(){var v=this.value,s=0;if(v.length>=8)s++;if(/[0-9]/.test(v))s++;if(/[a-zA-Z]/.test(v))s++;if(/[^a-zA-Z0-9]/.test(v))s++;var pct=[0,30,55,80,100][s],col=['var(--red)','var(--red)','var(--amber)','var(--green)','var(--green)'][s],lbl=['—','ضعیف','متوسط','خوب','قوی'][s];var bar=document.getElementById('adBar');bar.style.width=pct+'%';bar.style.background=col;document.getElementById('adStrength').textContent='قدرت رمز: '+lbl;adMatchFn();});
+  adRep.addEventListener('input',adMatchFn);
+})();
+</script>
+@endpush

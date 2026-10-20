@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SafirCharge — داشبورد شرکا</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/app.css">
+</head>
+<body data-page="dashboard" data-title="داشبورد" data-crumb="پنل شرکا · پارکینگ پاسداران">
+<div class="main">
+  <div class="content">
+
+    <div class="flex between items-center mt-8" style="margin-bottom:18px">
+      <div class="seg" id="rangeSeg"><button>امروز</button><button class="active">این ماه</button><button>فصل</button></div>
+      <a href="payments.html" class="btn btn-sm btn-primary">مشاهدهٔ پرداختی‌ها</a>
+    </div>
+
+    <!-- KPI -->
+    <div class="kpi-grid">
+      <div class="kpi">
+        <div class="kpi-ic ic-green" data-ic="coins"></div>
+        <div class="kpi-label">سهم درآمد شما (این ماه)</div>
+        <div class="kpi-val tnum">۴۱۲٫۶ <small>میلیون تومان</small></div>
+        <div class="kpi-foot"><span class="trend-up">▲ ۱۱٫۴٪</span><span class="muted">نسبت به ماه قبل</span></div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-ic ic-blue" data-ic="bolt"></div>
+        <div class="kpi-label">انرژی تحویلی</div>
+        <div class="kpi-val tnum">۱۸٬۴۲۰ <small>kWh</small></div>
+        <div class="kpi-foot"><span class="trend-up">▲ ۸٫۲٪</span><span class="muted">۱٬۲۴۸ جلسه</span></div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-ic ic-orange" data-ic="station"></div>
+        <div class="kpi-label">دستگاه‌های فعال</div>
+        <div class="kpi-val tnum">۸ <small>/ ۸</small></div>
+        <div class="kpi-foot"><span class="trend-up">۱۰۰٪</span><span class="muted">در دسترس</span></div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-ic ic-violet" data-ic="chart"></div>
+        <div class="kpi-label">میانگین بهره‌برداری</div>
+        <div class="kpi-val tnum">۶۴٪</div>
+        <div class="kpi-foot"><span class="trend-down">▼ ۲٪</span><span class="muted">نرخ اشغال</span></div>
+      </div>
+    </div>
+
+    <!-- درآمد + وضعیت تسویه -->
+    <div class="grid col-2-1 mt-16">
+      <div class="card">
+        <div class="card-head">
+          <div><h3>روند درآمد شما</h3><div class="ch-sub">۳۰ روز گذشته · سهم خالص پس از کارمزد</div></div>
+          <div class="head-actions"><a href="reports.html" class="btn btn-sm">گزارش کامل</a></div>
+        </div>
+        <div class="card-pad">
+          <svg id="revChart" width="100%" height="230" viewBox="0 0 700 230" preserveAspectRatio="none"></svg>
+          <div class="chart-axis" id="revAxis"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h3>تسویهٔ جاری</h3></div>
+        <div class="card-pad">
+          <div class="settle-box">
+            <div class="muted fs12">سهم قابل پرداخت (آذر ۱۴۰۳)</div>
+            <div class="fs22 fw8 tnum mt-8" style="color:var(--green)">۳۹۶٬۶۹۳٬۲۸۰ <small style="font-size:13px;color:var(--text-2)">تومان</small></div>
+            <div class="bar mt-12"><i style="width:72%"></i></div>
+            <div class="flex between mt-8 fs12 muted"><span>تسویهٔ بعدی: ۱ دی ۱۴۰۳</span><span>۷۲٪ دورهٔ جاری</span></div>
+          </div>
+          <hr class="sep">
+          <div class="lrow"><div class="l-ic ic-green" data-ic="coins"></div><div class="l-main"><div class="l-title">درآمد ناخالص</div><div class="l-sub">پیش از کارمزد</div></div><b class="tnum">۵۸۹٬۴۴۰٬۰۰۰</b></div>
+          <div class="lrow"><div class="l-ic ic-blue" data-ic="receipt"></div><div class="l-main"><div class="l-title">سهم شما (۷۰٪)</div></div><b class="tnum" style="color:var(--green)">۴۱۲٬۶۰۸٬۰۰۰</b></div>
+          <div class="lrow" style="border-bottom:none"><div class="l-ic ic-orange" data-ic="chart"></div><div class="l-main"><div class="l-title">کارمزد سامانه (۳۰٪)</div></div><b class="tnum cell-muted">۱۷۶٬۸۳۲٬۰۰۰</b></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- وضعیت دستگاه‌ها -->
+    <div class="card mt-16">
+      <div class="card-head">
+        <div><h3>وضعیت دستگاه‌های شما</h3><div class="ch-sub">پایش لحظه‌ای — پارکینگ مرکزی پاسداران</div></div>
+        <div class="head-actions"><span class="pill pill-green"><span class="pdot"></span>همه آنلاین</span><a href="stations.html" class="btn btn-sm">جزئیات</a></div>
+      </div>
+      <div class="table-wrap">
+        <table class="tbl">
+          <thead><tr><th>دستگاه</th><th>نوع کانکتور</th><th>وضعیت</th><th>توان لحظه‌ای</th><th>جلسات امروز</th><th>انرژی امروز</th><th>درآمد امروز</th></tr></thead>
+          <tbody id="devBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<style>
+.kpi-ic[data-ic] svg{width:21px;height:21px}
+.chart-axis{display:flex;justify-content:space-between;margin-top:8px;color:var(--muted);font-size:11px}
+.settle-box{background:var(--accent-softer);border:1px solid color-mix(in srgb,var(--accent) 18%,transparent);border-radius:14px;padding:16px}
+</style>
+
+<script src="app-partner.js"></script>
+<script>
+(function(){
+  document.querySelectorAll('[data-ic]').forEach(function(el){el.innerHTML=window.icon(el.getAttribute('data-ic'));});
+
+  (function(){
+    var vals=[8,9,7,11,13,12,14,13,16,15,18,17,19,16,14,17,20,22,19,17,21,23,20,18,22,24,21,19,23,25];
+    var W=700,H=230,pad=12,max=28;
+    function p(area){var step=(W-pad*2)/(vals.length-1);var d=vals.map(function(v,i){var x=pad+i*step;var y=pad+(H-pad*2)*(1-v/max);return (i?'L':'M')+x.toFixed(1)+' '+y.toFixed(1);}).join(' ');if(area)d+=' L'+(W-pad)+' '+(H-pad)+' L'+pad+' '+(H-pad)+' Z';return d;}
+    var grid='';for(var g=0;g<=4;g++){var y=pad+(H-pad*2)*g/4;grid+='<line x1="'+pad+'" y1="'+y+'" x2="'+(W-pad)+'" y2="'+y+'" stroke="var(--border)" stroke-width="1" stroke-dasharray="3 5"/>';}
+    document.getElementById('revChart').innerHTML=
+      '<defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--green)" stop-opacity=".26"/><stop offset="1" stop-color="var(--green)" stop-opacity="0"/></linearGradient></defs>'+
+      grid+'<path d="'+p(true)+'" fill="url(#g)"/><path d="'+p()+'" fill="none" stroke="var(--green)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>';
+    var ax=document.getElementById('revAxis');['۱','۵','۱۰','۱۵','۲۰','۲۵','۳۰'].forEach(function(t){var s=document.createElement('span');s.textContent=t;ax.appendChild(s);});
+  })();
+
+  var devs=[
+    ['CP‑۹۱۰۱','DC CCS2 · ۱۸۰kW',['در حال شارژ','pill-green'],'۸۶ kW','۲۴','۴۸۰ kWh','۱۵٫۴ م'],
+    ['CP‑۹۱۰۲','DC CCS2 · ۱۸۰kW',['در حال شارژ','pill-green'],'۷۲ kW','۲۱','۴۱۰ kWh','۱۳٫۱ م'],
+    ['CP‑۹۱۰۳','DC CHAdeMO · ۵۰kW',['آماده','pill-accent'],'—','۱۲','۱۸۶ kWh','۵٫۹ م'],
+    ['CP‑۹۱۰۴','AC Type2 · ۲۲kW',['در حال شارژ','pill-green'],'۲۲ kW','۸','۹۸ kWh','۳٫۱ م'],
+    ['CP‑۹۱۰۵','AC Type2 · ۲۲kW',['آماده','pill-accent'],'—','۶','۷۲ kWh','۲٫۳ م'],
+    ['CP‑۹۱۰۶','AC Type2 · ۲۲kW',['در حال شارژ','pill-green'],'۱۸ kW','۹','۱۱۰ kWh','۳٫۵ م'],
+    ['CP‑۹۱۰۷','DC CCS2 · ۱۲۰kW',['آماده','pill-accent'],'—','۱۵','۳۲۰ kWh','۱۰٫۲ م'],
+    ['CP‑۹۱۰۸','AC Type2 · ۲۲kW',['نگهداری','pill-amber'],'—','۰','۰ kWh','۰'],
+  ];
+  document.getElementById('devBody').innerHTML=devs.map(function(d){
+    return '<tr><td class="mono cell-strong">'+d[0]+'</td><td><span class="tag">'+d[1]+'</span></td>'+
+      '<td><span class="pill '+d[2][1]+'">'+(d[2][1]==='pill-green'?'<span class="pdot"></span>':'')+d[2][0]+'</span></td>'+
+      '<td class="tnum">'+d[3]+'</td><td class="tnum">'+d[4]+'</td><td class="tnum">'+d[5]+'</td><td class="tnum cell-strong">'+d[6]+'</td></tr>';
+  }).join('');
+
+  document.querySelectorAll('#rangeSeg button').forEach(function(b){b.addEventListener('click',function(){document.querySelectorAll('#rangeSeg button').forEach(function(x){x.classList.remove('active');});b.classList.add('active');});});
+})();
+</script>
+</body>
+</html>

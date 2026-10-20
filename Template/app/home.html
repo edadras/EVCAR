@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SafirCharge — پیشخان</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/app-mobile.css">
+</head>
+<body data-tab="home">
+<div class="phone">
+  <div class="appbar" style="padding-top:2px">
+    <div style="flex:1">
+      <div class="ab-sub">پنجشنبه ۱۵ آذر · تهران</div>
+      <div class="ab-title">سلام، مهدی 👋</div>
+    </div>
+    <button class="ab-btn" onclick="location.href='notifications.html'"><span data-ic="bell"></span><span class="dot"></span></button>
+  </div>
+
+  <div class="screen">
+
+    <!-- کارت جلسهٔ فعال -->
+    <a href="charging.html" class="active-card rise">
+      <div class="row between">
+        <span class="pill" style="background:rgba(255,255,255,.18);color:#fff"><span class="pdot" style="background:#7ee2a6"></span>در حال شارژ</span>
+        <span class="ac-station">میدان آزادی · CP‑۱۰۰۱</span>
+      </div>
+      <div class="row mt16" style="gap:18px">
+        <div class="ac-gauge">
+          <svg width="92" height="92" viewBox="0 0 92 92" id="homeGauge"></svg>
+          <div class="ac-gp tnum">۵۱٪</div>
+        </div>
+        <div style="flex:1">
+          <div class="ac-stat"><span>انرژی تحویلی</span><b class="tnum">۲۴٫۸ kWh</b></div>
+          <div class="ac-stat"><span>توان لحظه‌ای</span><b class="tnum">۸۶ kW</b></div>
+          <div class="ac-stat"><span>زمان باقی‌مانده</span><b class="tnum">~۱۸ دقیقه</b></div>
+        </div>
+      </div>
+      <div class="ac-foot">
+        <span class="muted2">هزینهٔ تاکنون</span>
+        <b class="tnum" style="font-size:17px">۸۸٬۴۰۰ تومان</b>
+        <span class="ac-go">مشاهدهٔ جلسه <span data-ic="chevron" class="cv"></span></span>
+      </div>
+    </a>
+
+    <!-- نوار کیف پول -->
+    <a href="wallet.html" class="wstrip rise" style="animation-delay:.05s">
+      <div class="ws-ic" data-ic="wallet"></div>
+      <div style="flex:1">
+        <div class="muted fs12">موجودی کیف پول</div>
+        <div class="fw8 tnum" style="font-size:18px">۲٬۴۸۰٬۰۰۰ <span class="fs12 t2">تومان</span></div>
+      </div>
+      <span class="ws-add"><span data-ic="plus"></span> افزایش</span>
+    </a>
+
+    <!-- بنر طرح‌ها -->
+    <a href="offers.html" class="offer-banner rise" style="animation-delay:.08s">
+      <div class="ob-ic" data-ic="gift"></div>
+      <div style="flex:1">
+        <div class="fw8" style="font-size:14px">تخفیف شارژ شبانه — ۲۰٪</div>
+        <div class="fs12" style="opacity:.9">۳ طرح جدید برای شما فعال است</div>
+      </div>
+      <span class="chev" data-ic="chevron"></span>
+    </a>
+
+    <!-- اقدامات سریع -->
+    <div class="qgrid mt20">
+      <a class="qitem" href="map.html"><span class="qic ic-blue" data-ic="qr"></span>اسکن QR</a>
+      <a class="qitem" href="reserve.html"><span class="qic ic-green" data-ic="calendar"></span>رزرو شارژر</a>
+      <a class="qitem" href="offers.html"><span class="qic ic-violet" data-ic="gift"></span>طرح‌ها</a>
+      <a class="qitem" href="history.html"><span class="qic ic-orange" data-ic="receipt"></span>سوابق</a>
+    </div>
+
+    <!-- ایستگاه‌های نزدیک -->
+    <div class="sec-title">نزدیک‌ترین ایستگاه‌ها <a href="map.html">نقشه</a></div>
+    <div class="seg" style="margin-bottom:14px" id="seg">
+      <button class="active">همه</button>
+      <button>شارژ سریع</button>
+      <button>عمومی</button>
+    </div>
+
+    <div id="stations" style="display:flex;flex-direction:column;gap:12px"></div>
+
+  </div>
+</div>
+
+<style>
+.active-card{
+  display:block; border-radius:24px; padding:18px; color:#fff; position:relative; overflow:hidden;
+  background:linear-gradient(140deg,var(--accent),color-mix(in srgb,var(--accent) 48%,var(--orange)));
+  box-shadow:0 16px 34px rgba(var(--accent-rgb),.4);
+}
+.active-card::after{content:"";position:absolute;inset:0;background:radial-gradient(circle at 88% 6%,rgba(255,255,255,.22),transparent 42%)}
+.active-card>*{position:relative;z-index:1}
+.ac-station{font-size:12px;opacity:.9}
+.ac-gauge{position:relative;display:grid;place-items:center;flex:none}
+.ac-gp{position:absolute;font-size:22px;font-weight:800}
+.ac-stat{display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:3px 0}
+.ac-stat span{opacity:.85}
+.ac-foot{display:flex;align-items:center;gap:8px;margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,.2)}
+.muted2{font-size:12px;opacity:.85}
+.ac-go{margin-inline-start:auto;display:inline-flex;align-items:center;gap:3px;font-size:13px;font-weight:700;background:rgba(255,255,255,.2);padding:7px 12px;border-radius:11px}
+.ac-go .cv{display:inline-grid;width:15px;height:15px}.ac-go .cv svg{width:15px;height:15px}
+
+.wstrip{display:flex;align-items:center;gap:13px;margin-top:14px;padding:14px;border-radius:var(--r-lg);background:var(--surface);border:1px solid var(--border);box-shadow:var(--shadow-sm)}
+.ws-ic{width:46px;height:46px;border-radius:14px;background:var(--accent-soft);color:var(--accent-strong);display:grid;place-items:center;flex:none}
+.ws-ic svg{width:23px;height:23px}
+.ws-add{display:inline-flex;align-items:center;gap:5px;background:var(--accent);color:#fff;font-size:12.5px;font-weight:700;padding:9px 13px;border-radius:12px}
+.ws-add svg{width:15px;height:15px}
+</style>
+
+<script src="../assets/app-mobile.js"></script>
+<script>
+(function(){
+  // گیج دایره‌ای کارت فعال
+  (function(){
+    var R=40,C=46,sw=8,circ=2*Math.PI*R,pct=51,len=circ*pct/100;
+    document.getElementById('homeGauge').innerHTML=
+      '<circle cx="46" cy="46" r="40" fill="none" stroke="rgba(255,255,255,.25)" stroke-width="8"/>'+
+      '<circle cx="46" cy="46" r="40" fill="none" stroke="#fff" stroke-width="8" stroke-linecap="round" stroke-dasharray="'+len+' '+(circ-len)+'" transform="rotate(-90 46 46)"/>';
+  })();
+
+  var st=[
+    {n:'میدان آزادی',d:'۱٫۲ کیلومتر',type:'DC سریع · CCS2',free:'۴ از ۶ آزاد',price:'۳٬۲۰۰',st:['آزاد','pill-green'],c:'var(--green)',cat:'fast'},
+    {n:'برج میلاد',d:'۳٫۵ کیلومتر',type:'DC سریع · CHAdeMO',free:'۲ از ۸ آزاد',price:'۳٬۲۰۰',st:['پرتراکم','pill-amber'],c:'var(--amber)',cat:'fast'},
+    {n:'پارک ملت',d:'۴٫۱ کیلومتر',type:'AC · Type2',free:'۳ از ۴ آزاد',price:'۹۸۰',st:['آزاد','pill-green'],c:'var(--green)',cat:'public'},
+    {n:'مرکز خرید کوروش',d:'۵٫۸ کیلومتر',type:'AC + DC',free:'۸ از ۱۰ آزاد',price:'۲٬۸۰۰',st:['آزاد','pill-green'],c:'var(--green)',cat:'public'},
+  ];
+  document.getElementById('stations').innerHTML=st.map(function(s){
+    return '<a href="charger.html" class="station rise" data-cat="'+s.cat+'">'+
+      '<div class="st-img">'+window.icon('plug')+'</div>'+
+      '<div style="flex:1">'+
+        '<div class="row between"><span class="st-name">'+s.n+'</span><span class="pill '+s.st[1]+'"><span class="pdot"></span>'+s.st[0]+'</span></div>'+
+        '<div class="st-meta">'+s.type+'</div>'+
+        '<div class="st-foot">'+
+          '<span class="row" style="gap:4px;color:var(--text-2)">'+window.icon('nav')+s.d+'</span>'+
+          '<span class="muted">·</span><span class="muted">'+s.free+'</span>'+
+          '<span style="margin-inline-start:auto" class="fw7 tnum">'+s.price+' <span class="fs12 muted">ت/kWh</span></span>'+
+        '</div>'+
+      '</div>'+
+    '</a>';
+  }).join('');
+  document.querySelectorAll('.st-foot .row svg, .station .st-foot svg').forEach(function(s){s.style.width='14px';s.style.height='14px';});
+
+  document.querySelectorAll('#seg button').forEach(function(b,idx){
+    b.addEventListener('click',function(){
+      document.querySelectorAll('#seg button').forEach(function(x){x.classList.remove('active');});b.classList.add('active');
+      document.querySelectorAll('.station').forEach(function(c){
+        var cat=c.getAttribute('data-cat');
+        var show=idx===0||(idx===1&&cat==='fast')||(idx===2&&cat==='public');
+        c.style.display=show?'':'none';
+      });
+    });
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,307 @@
+طرح کالن سامانه مدیریت شارژ و پرداخت خودرو برقی
+1.معماری کالن سیستم
+سیستم از۵الیه اصلی تشکیل میشود:
+1.1 Central Cloud Platform (CSMS)
+مرکز کنترل اصلی
+وظایف:
+•مدیریت شارژرها
+•مدیریت کاربران
+•مدیریت پرداخت
+•مدیریت کیف پول
+•مدیریت تعرفهها
+•مدیریت مالی
+•مدیریتRFID
+•مدیریتQR
+•مانیتورینگ لحظهای
+•مدیریت اپلیکیشنها
+•گزارشگیری
+•APIمرکزی
+1.2 Edge Station Controller
+کنترلر محلی هر ایستگاه
+روی یکMini PCیاIndustrial PCنصب میشود.
+اجزاء:
+•Linux
+•Local API
+•Local Database
+•OCPP Gateway
+•GSM Modem
+•WiFi Hotspot
+•RFID Service
+•QR Service
+•SMS Service
+وظیفه:
+در زمان قطع اینترنت بتواند به صورت مستقل کار کند.
+1.3 Charger Network
+شامل:
+•Fast Charger
+ارتباط:
+OCPP 1.6
+1.4 Mobile Apps
+Android
+•پیدا کردن شارژر
+•رزرو
+•شروع شارژ
+•توقف شارژ
+•پرداخت
+•کیف پول
+•مشاهده سوابق
+iOS
+همان امکاناتAndroid
+1.5 Web Applications
+پنل کاربر
+•مشاهده شارژها
+•کیف پول
+•پرداخت
+•مدیریتRFID
+پنل اپراتور
+•مدیریت ایستگاه
+پنل مالی
+•تسویه
+•درآمد
+•صورتحساب
+پنل پشتیبانی
+•مشاهده خطاها
+•کنترل شارژرها
+2.سناریوی ارتباط آنالین
+Mobile App
+|
+Internet
+|
+Central Server
+|
+OCPP
+|
+Charger
+کاربر:
+•شارژر را انتخاب میکند
+•پرداخت میکند
+•شارژ شروع میشود
+3.سناریوی ارتباط آفالین(Intranet Mode)
+هر ایستگاه دارای:
+•Mini PC
+•WiFi Access Point
+•GSM Modem
+•Local Database
+کاربر نزدیک دستگاه:
+Mobile
+|
+Station WiFi
+|
+Local Server
+|
+Charger
+متصل میشود.
+ا
+مثل:
+http://station.local
+یا
+192.168.4.1
+4.ثبت نام محلی بدون اینترنت
+کاربر:
+1.بهWiFiایستگاه وصل میشود
+2.شماره موبایل وارد میکند
+3.سیستمOTPتولید میکند
+4.GSM Modemپیامک ارسال میکند
+5.کاربر تایید میکند
+6.حساب محلی ایجاد میشود
+اطلعات درLocal DBذخیره میشود.
+بعد از وصل اینترنت:
+Sync -> Cloud
+انجام میشود.
+5.احراز هویت کاربران
+روش اول: شماره موبایل
+OTP
+روش دوم: RFID
+کارت
+روش سوم: QR
+اسکنQR
+روش چهارم: NFC
+موبایل
+روش پنجم: نام کاربری و رمز
+6.سناریویRFID
+صدور کارت
+مدیر:
+•کارت ثبت میکند
+•به کاربر اختصاص میدهد
+استفاده
+کاربر کارت را نزدیک دستگاه میگیرد.
+RFID Reader
+|
+Edge Controller
+|
+Authorize
+در صورت تایید:
+Remote Start
+انجام میشود.
+7.سناریویRFIDآفالین
+در زمان قطع اینترنت:
+RFID Reader
+|
+Local DB
+|
+Charger
+بررسی میشود.
+اگر کارت معتبر باشد:
+شروع شارژ
+سپس بعدا ا با مرکزSyncمیشود.
+8.سناریویQR Code
+روی هر کانکتورQRنصب میشود.
+مثال:
+charger://CP-1001/connector/2
+یا
+https://charge.company.com/c/CP1001/2
+کاربرQRرا اسکن میکند.
+سیستم:
+•شارژر را شناسایی میکند
+•کانکتور را انتخاب میکند
+•پرداخت را آغاز میکند
+9. QRآفالین
+QRشامل:
+Station ID
+Connector ID
+Token
+است.
+پس از اتصال بهWiFiمحلی:
+کاربر بدون اینترنت میتواند شارژ را شروع کند.
+10.کیف پول(Wallet)
+هر کاربر دارای:
+•موجودی
+•اعتبار
+•پاداش
+است.
+عملیات:
+•شارژ حساب
+•برداشت
+•پرداخت شارژ
+11.موتور تعرفه(Tariff Engine)
+پشتیبانی:
+بر اساس انرژی
+Price per kWh
+بر اساس زمان
+Price per Minute
+ترکیبی
+Energy + Time
+ساعات اوج مصرف
+Peak / Off-Peak
+تعرفه ویژه اعضا
+Member Pricing
+12.سیستم پرداخت
+روشها:
+کارت بانکی
+درگاه بانکی
+Wallet
+RFID Wallet
+پرداخت سازمانی
+Corporate Account
+13.مدیریت مالی
+دفتر کل مالی
+Ledger
+تراکنشها
+Financial Transactions
+فاکتور
+Invoices
+تسویه
+Settlements
+مالیات
+Tax Reports
+درآمد ایستگاه
+Station Revenue
+14.سیستم همگامسازی(Sync Engine)
+بایدEvent Basedباشد.
+مثال:
+User Created
+Transaction Started
+Transaction Stopped
+Payment Created
+RFID Assigned
+در صف قرار میگیرند.
+سپس:
+Local Queue
+|
+Cloud Queue
+سینک میشوند.
+15.سیستم اعالنها
+Push Notification
+SMS
+Email
+WhatsApp Business API
+اعلنها:
+•شروع شارژ
+•پایان شارژ
+•قطع ارتباط
+•خطا
+•کمبود موجودی
+16.مدیریت سازمانی
+کاربران سازمانی:
+•شهرداری
+•تاکسی برقی
+•شرکتها
+امکانات:
+•چند راننده
+•چند کارتRFID
+•سقف مصرف
+•گزارش سازمانی
+17.مانیتورینگ وNOC
+نمایش زنده:
+•Online/Offline
+•Fault
+•Energy
+•Revenue
+•Utilization
+نقشه زنده کشور
+18.معماری پایگاه داده
+Cloud Database
+•users
+•wallets
+•payments
+•invoices
+•tariffs
+•stations
+•chargers
+•connectors
+•sessions
+•transactions
+•rfid_cards
+•qr_tokens
+•settlements
+Local Database
+•cached_users
+•cached_rfid
+•cached_wallets
+•pending_transactions
+•pending_sync
+19.نقشهای سیستم
+Super Admin
+کل سامانه
+Financial Manager
+مالی
+Station Operator
+اپراتور ایستگاه
+Support
+پشتیبانی
+Corporate Manager
+مدیر سازمان
+Customer
+کاربر نهایی
+20.فازهای توسعه
+Phase 1
+•CSMS
+•OCPP
+•مدیریت شارژر
+•RFID
+•QR
+Phase 2
+•Android
+•iOS
+•Wallet
+•Payment
+Phase 3
+•Offline Mode
+•Local Registration
+•GSM OTP
+•Sync Engine
+Phase 4
+•Corporate Accounts
+•Revenue Sharing
+•Settlement
+•BI Dashboard

@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SafirCharge — رزرو شارژ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/app.css">
+</head>
+<body data-page="reservations" data-title="رزرو شارژ" data-crumb="مدیریت شبکه">
+<div class="main">
+  <div class="content">
+
+    <div class="flex between items-center mt-8" style="margin-bottom:18px">
+      <div class="flex items-center gap-12">
+        <select class="fselect" style="width:auto;min-width:180px"><option>میدان آزادی</option><option>برج میلاد</option><option>نمایشگاه بین‌المللی</option><option>ونک</option></select>
+        <span class="pill pill-green"><span class="pdot"></span>پایش زنده</span>
+      </div>
+      <div class="seg" id="daySeg"><button class="active">امروز</button><button>فردا</button><button>شنبه</button></div>
+    </div>
+
+    <!-- KPI -->
+    <div class="kpi-grid">
+      <div class="mini-stat"><div class="ms-ic ic-green" data-ic="plug"></div><div><div class="ms-v tnum">۳</div><div class="ms-l">کانکتور آزاد</div></div></div>
+      <div class="mini-stat"><div class="ms-ic ic-orange" data-ic="bolt"></div><div><div class="ms-v tnum">۵</div><div class="ms-l">در حال شارژ</div></div></div>
+      <div class="mini-stat"><div class="ms-ic ic-blue" data-ic="calendar"></div><div><div class="ms-v tnum">۲۸</div><div class="ms-l">رزرو امروز</div></div></div>
+      <div class="mini-stat"><div class="ms-ic ic-violet" data-ic="chart"></div><div><div class="ms-v tnum">۷۴٪</div><div class="ms-l">نرخ تحقق رزرو</div></div></div>
+    </div>
+
+    <div class="grid col-2-1 mt-16">
+      <!-- جدول زمانی رزرو -->
+      <div class="card">
+        <div class="card-head"><div><h3>جدول زمانی کانکتورها</h3><div class="ch-sub">میدان آزادی · امروز · سبز=آزاد، نارنجی=در حال شارژ، آبی=رزرو</div></div></div>
+        <div class="card-pad">
+          <div class="timeline-grid" id="tlGrid"></div>
+          <div class="flex gap-16 mt-16">
+            <span class="legend-inline"><i style="background:var(--green)"></i>آزاد</span>
+            <span class="legend-inline"><i style="background:var(--orange)"></i>در حال شارژ</span>
+            <span class="legend-inline"><i style="background:var(--accent)"></i>رزرو شده</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- وضعیت زندهٔ کانکتورها -->
+      <div class="card">
+        <div class="card-head"><h3>وضعیت زنده و زمان آزاد شدن</h3></div>
+        <div class="card-pad" style="padding-top:8px" id="liveList"></div>
+      </div>
+    </div>
+
+    <!-- لیست رزروها -->
+    <div class="card mt-16">
+      <div class="card-head">
+        <div><h3>رزروهای ثبت‌شده</h3><div class="ch-sub">میدان آزادی · امروز</div></div>
+        <div class="head-actions">
+          <div class="search" style="max-width:220px"><input placeholder="جستجوی کاربر یا کد…"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></div>
+          <button class="btn btn-sm btn-primary" id="manualBtn"><span class="bic" data-ic="plus"></span> رزرو دستی</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table class="tbl">
+          <thead><tr><th>کد رزرو</th><th>کاربر</th><th>کانکتور</th><th>زمان</th><th>خودرو</th><th>مدت تخمینی</th><th>وضعیت</th><th></th></tr></thead>
+          <tbody id="resBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- مودال رزرو دستی -->
+<div class="modal-overlay" id="resModal">
+  <div class="modal" style="max-width:640px">
+    <div class="modal-head">
+      <h3>ثبت رزرو دستی</h3>
+      <button class="icon-btn" id="closeRes" style="width:34px;height:34px"><span data-ic="x"></span></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="ffield"><label>کاربر <span class="req">*</span></label><input class="finput" id="rUser" placeholder="جستجوی نام یا موبایل…"></div>
+        <div class="ffield"><label>خودرو</label><select class="fselect"><option>ایویکو اسکایول ET5</option><option>کیا EV6</option><option>تسلا مدل ۳</option><option>هیوندای آیونیک ۵</option></select></div>
+        <div class="ffield"><label>ایستگاه</label><select class="fselect" id="rStation"><option>میدان آزادی</option><option>برج میلاد</option><option>نمایشگاه بین‌المللی</option><option>ونک</option></select></div>
+        <div class="ffield"><label>کانکتور</label><select class="fselect" id="rConn"><option>A3 · DC CCS2 · آزاد</option><option>B2 · AC Type2 · آزاد</option><option>B3 · AC Type2 · آزاد</option><option>A1 · DC CCS2 · به‌زودی آزاد (۸ دقیقه)</option></select></div>
+      </div>
+
+      <div class="sec-title" style="font-size:14px;margin:18px 0 10px">تاریخ و ساعت</div>
+      <div class="day-pick" id="rDays">
+        <button type="button" class="rday active" data-d="0"><span class="rd-w">امروز</span><span class="rd-n tnum">۲۳ آذر</span></button>
+        <button type="button" class="rday" data-d="1"><span class="rd-w">فردا</span><span class="rd-n tnum">۲۴ آذر</span></button>
+        <button type="button" class="rday" data-d="2"><span class="rd-w">شنبه</span><span class="rd-n tnum">۲۵ آذر</span></button>
+      </div>
+      <div class="rslot-grid" id="rSlots"></div>
+
+      <div class="ffield" style="margin-top:18px"><label>مدت تخمینی شارژ</label>
+        <div class="seg" id="rDur" style="width:100%"><button class="active" style="flex:1">۲۰ دقیقه</button><button style="flex:1">۳۰ دقیقه</button><button style="flex:1">۴۵ دقیقه</button><button style="flex:1">۶۰ دقیقه</button></div>
+      </div>
+      <label class="toggle-row"><div><div class="fw7 fs13">ارسال پیامک تأیید به کاربر</div><div class="fhint">اطلاع‌رسانی زمان و کد رزرو</div></div><span class="switch on" data-sw><i></i></span></label>
+    </div>
+    <div class="modal-foot">
+      <span class="muted fs13" style="margin-inline-end:auto" id="rSummary">زمانی انتخاب نشده</span>
+      <button class="btn" id="cancelRes">انصراف</button>
+      <button class="btn btn-primary" id="saveRes"><span class="bic" data-ic="check"></span> ثبت رزرو</button>
+    </div>
+  </div>
+</div>
+
+<style>
+.bic{display:inline-grid;width:16px;height:16px}.bic svg{width:16px;height:16px}
+.day-pick{display:flex;gap:9px}
+.rday{flex:1;display:flex;flex-direction:column;gap:3px;padding:11px;border:1.5px solid var(--border);border-radius:12px;background:var(--surface);font-family:inherit}
+.rday.active{border-color:var(--accent);background:var(--accent-soft)}
+.rd-w{font-weight:700;font-size:13px;color:var(--text)}.rd-n{font-size:11px;color:var(--muted)}
+.rslot-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-top:12px}
+.rslot{padding:9px 4px;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);font-family:inherit;font-weight:700;font-size:12.5px;color:var(--text);font-variant-numeric:tabular-nums}
+.rslot.taken{opacity:.4;text-decoration:line-through;pointer-events:none}
+.rslot.sel{border-color:var(--accent);background:var(--accent);color:#fff}
+.toggle-row{display:flex;align-items:center;justify-content:space-between;gap:16px;background:var(--surface-2);border:1px solid var(--border-2);border-radius:12px;padding:13px 15px;cursor:pointer;margin-top:16px}
+.switch{width:44px;height:25px;border-radius:20px;background:var(--surface-3);position:relative;flex:none;transition:background .15s}
+.switch i{position:absolute;top:3px;inset-inline-start:3px;width:19px;height:19px;border-radius:50%;background:#fff;box-shadow:var(--shadow-sm);transition:transform .16s}
+.switch.on{background:var(--green)}
+html[dir=rtl] .switch.on i{transform:translateX(-19px)}
+.mini-stat{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:16px;display:flex;align-items:center;gap:13px;box-shadow:var(--shadow-sm)}
+.ms-ic{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;flex:none}.ms-ic svg{width:22px;height:22px}
+.ms-v{font-size:22px;font-weight:800}.ms-l{font-size:12px;color:var(--muted)}
+.ic-violet{background:color-mix(in srgb,var(--violet) 12%,white);color:var(--violet)}
+html[data-theme="dark"] .ic-violet{background:color-mix(in srgb,var(--violet) 26%,#0e1a26);color:#b794f4}
+.legend-inline{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--text-2);font-weight:600}.legend-inline i{width:10px;height:10px;border-radius:3px}
+
+.timeline-grid{display:flex;flex-direction:column;gap:8px}
+.tl-row{display:flex;align-items:center;gap:10px}
+.tl-label{width:54px;flex:none;font-size:12px;font-weight:700;color:var(--text-2)}
+.tl-track{flex:1;display:flex;gap:3px}
+.tl-cell{flex:1;height:30px;border-radius:5px;position:relative}
+.tl-cell.free{background:var(--green-soft)}
+.tl-cell.busy{background:var(--orange)}
+.tl-cell.res{background:var(--accent)}
+.tl-hours{display:flex;gap:3px;margin-inline-start:64px;margin-top:6px}
+.tl-hours span{flex:1;text-align:center;font-size:10px;color:var(--muted)}
+
+.lv{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border-2)}
+.lv:last-child{border-bottom:none}
+.lv .lv-ic{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;flex:none}.lv-ic svg{width:19px;height:19px}
+.lv .lv-main{flex:1;min-width:0}
+.lv .lv-t{font-weight:700;font-size:13px}
+.lv .lv-prog{height:5px;border-radius:5px;background:var(--surface-3);overflow:hidden;margin-top:6px}
+.lv .lv-prog i{display:block;height:100%;background:linear-gradient(90deg,var(--orange),#fbbf24)}
+.lv .lv-eta{text-align:center;flex:none}
+.lv .lv-eta b{font-size:14px}.lv .lv-eta span{display:block;font-size:10px;color:var(--muted)}
+</style>
+
+<script src="assets/app.js"></script>
+<script>
+(function(){
+  document.querySelectorAll('[data-ic]').forEach(function(el){el.innerHTML=window.icon(el.getAttribute('data-ic'));});
+  function toFa(n){return String(n).replace(/[0-9]/g,function(d){return '۰۱۲۳۴۵۶۷۸۹'[d];});}
+
+  // جدول زمانی: ۶ کانکتور × ۱۲ بازهٔ نیم‌ساعته (۱۲ تا ۱۸)
+  var rows=['A1','A2','A3','B1','B2','B3'];
+  // 0=free 1=busy 2=res
+  var data=[
+    [1,1,1,0,0,2,2,0,0,0,1,1],
+    [1,1,0,0,2,2,0,0,1,1,1,0],
+    [0,0,0,2,2,0,0,0,0,2,2,0],
+    [1,1,1,1,0,0,2,2,0,0,0,0],
+    [0,0,2,2,0,0,0,1,1,0,0,2],
+    [0,2,2,0,0,1,1,0,0,0,2,2]
+  ];
+  var cls=['free','busy','res'];
+  document.getElementById('tlGrid').innerHTML=rows.map(function(r,i){
+    return '<div class="tl-row"><span class="tl-label">'+r+'</span><div class="tl-track">'+
+      data[i].map(function(v){return '<span class="tl-cell '+cls[v]+'"></span>';}).join('')+'</div></div>';
+  }).join('')+'<div class="tl-hours">'+['۱۲','۱۳','۱۴','۱۵','۱۶','۱۷'].map(function(h){return '<span>'+h+'</span>';}).join('')+'</div>';
+
+  // وضعیت زنده
+  var live=[
+    {id:'A1',soc:72,eta:'۸ دقیقه',u:'مهدی احمدی'},
+    {id:'A2',soc:45,eta:'۲۴ دقیقه',u:'سارا رحیمی'},
+    {id:'B1',soc:88,eta:'۶ دقیقه',u:'علی کریمی'},
+    {id:'B3',soc:33,eta:'۳۸ دقیقه',u:'زهرا موسوی'},
+    {id:'A2',soc:61,eta:'۱۵ دقیقه',u:'حسین نوری'}
+  ];
+  document.getElementById('liveList').innerHTML=live.map(function(c){
+    return '<div class="lv"><div class="lv-ic ic-orange">'+window.icon('plug')+'</div>'+
+      '<div class="lv-main"><div class="lv-t">کانکتور '+c.id+' · '+c.u+'</div>'+
+      '<div class="fs12 muted" style="margin-top:1px">خودرو '+toFa(c.soc)+'٪ شارژ شده</div>'+
+      '<div class="lv-prog"><i style="width:'+c.soc+'%"></i></div></div>'+
+      '<div class="lv-eta"><b>'+c.eta+'</b><span>تا آزاد شدن</span></div></div>';
+  }).join('');
+
+  // رزروها
+  var res=[
+    ['RS‑۸۸۲۱','مهدی احمدی','A3','۱۶:۳۰','ایویکو ET5','۴۰ دقیقه',['تأییدشده','pill-green']],
+    ['RS‑۸۸۲۲','نگار صادقی','A2','۱۴:۰۰','کیا EV6','۳۵ دقیقه',['در انتظار','pill-amber']],
+    ['RS‑۸۸۲۳','امیر تهرانی','B2','۱۲:۳۰','تسلا مدل ۳','۲۵ دقیقه',['تأییدشده','pill-green']],
+    ['RS‑۸۸۲۴','فاطمه قاسمی','B3','۱۹:۰۰','هیوندای آیونیک','۴۵ دقیقه',['تأییدشده','pill-green']],
+    ['RS‑۸۸۲۵','رضا اکبری','A1','۱۷:۳۰','BYD اتو ۳','۳۰ دقیقه',['لغوشده','pill-red']],
+    ['RS‑۸۸۲۶','مریم حسینی','B1','۱۵:۰۰','MG 4','۲۰ دقیقه',['در انتظار','pill-amber']]
+  ];
+  document.getElementById('resBody').innerHTML=res.map(function(r){
+    return '<tr><td class="mono">'+r[0]+'</td><td class="cell-strong">'+r[1]+'</td>'+
+      '<td><span class="tag">کانکتور '+r[2]+'</span></td><td class="tnum cell-strong">'+r[3]+'</td>'+
+      '<td class="cell-muted">'+r[4]+'</td><td class="tnum">'+r[5]+'</td>'+
+      '<td><span class="pill '+r[6][1]+'">'+(r[6][1]==='pill-green'?'<span class="pdot"></span>':'')+r[6][0]+'</span></td>'+
+      '<td><button class="btn btn-sm">جزئیات</button></td></tr>';
+  }).join('');
+
+  document.querySelectorAll('#daySeg button').forEach(function(b){b.addEventListener('click',function(){document.querySelectorAll('#daySeg button').forEach(function(x){x.classList.remove('active');});b.classList.add('active');});});
+
+  // مودال رزرو دستی
+  var modal=document.getElementById('resModal');
+  document.getElementById('manualBtn').addEventListener('click',function(){modal.classList.add('open');});
+  document.getElementById('closeRes').addEventListener('click',function(){modal.classList.remove('open');});
+  document.getElementById('cancelRes').addEventListener('click',function(){modal.classList.remove('open');});
+  modal.addEventListener('click',function(e){if(e.target===modal)modal.classList.remove('open');});
+  document.querySelectorAll('#resModal [data-sw]').forEach(function(s){s.closest('.toggle-row').addEventListener('click',function(){s.classList.toggle('on');});});
+
+  var RSLOTS=['۱۲:۰۰','۱۲:۳۰','۱۳:۰۰','۱۳:۳۰','۱۴:۰۰','۱۴:۳۰','۱۵:۰۰','۱۵:۳۰','۱۶:۰۰','۱۶:۳۰','۱۷:۰۰','۱۷:۳۰'];
+  var rTaken={0:[1,2,5,7],1:[0,3,8],2:[4,9,10]};
+  var rDay=0,rSlot=null;
+  function renderRSlots(){
+    var tk=rTaken[rDay]||[];
+    document.getElementById('rSlots').innerHTML=RSLOTS.map(function(s,i){
+      var t=tk.indexOf(i)>-1;
+      return '<button type="button" class="rslot'+(t?' taken':'')+(rSlot===i?' sel':'')+'" data-i="'+i+'"'+(t?' disabled':'')+'>'+s+'</button>';
+    }).join('');
+    document.querySelectorAll('#rSlots .rslot').forEach(function(b){b.addEventListener('click',function(){if(b.classList.contains('taken'))return;rSlot=+b.getAttribute('data-i');renderRSlots();updateSummary();});});
+  }
+  function updateSummary(){
+    var s=document.getElementById('rSummary');
+    if(rSlot!=null){var d=document.querySelector('#rDays .rday.active .rd-w').textContent;s.textContent=d+' · ساعت '+RSLOTS[rSlot];s.style.color='var(--text)';}
+    else{s.textContent='زمانی انتخاب نشده';s.style.color='';}
+  }
+  renderRSlots();
+  document.querySelectorAll('#rDays .rday').forEach(function(b){b.addEventListener('click',function(){document.querySelectorAll('#rDays .rday').forEach(function(x){x.classList.remove('active');});b.classList.add('active');rDay=+b.getAttribute('data-d');rSlot=null;renderRSlots();updateSummary();});});
+  document.querySelectorAll('#rDur button').forEach(function(b){b.addEventListener('click',function(){document.querySelectorAll('#rDur button').forEach(function(x){x.classList.remove('active');});b.classList.add('active');});});
+  document.getElementById('saveRes').addEventListener('click',function(){modal.classList.remove('open');});
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,23 @@
+.card-lite{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:14px;box-shadow:var(--shadow-sm)}
+.sec-head{display:flex;justify-content:space-between;align-items:center;margin:18px 0 10px}
+.sec-head h3{margin:0;font-size:15px}
+.qgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.qitem{display:flex;flex-direction:column;align-items:center;gap:8px;padding:12px 6px;border-radius:14px;background:var(--surface);border:1px solid var(--border);text-decoration:none;color:inherit;font-size:11px;font-weight:600}
+.qic{width:40px;height:40px;border-radius:12px;display:grid;place-items:center}
+.qic svg{width:20px;height:20px}
+.menu-list{display:flex;flex-direction:column;gap:8px}
+.menu-item{display:flex;align-items:center;gap:12px;padding:14px;border-radius:14px;background:var(--surface);border:1px solid var(--border);text-decoration:none;color:inherit;font-weight:600}
+.menu-item svg{width:20px;height:20px;color:var(--text-2)}
+.profile-card{display:flex;align-items:center;gap:14px;padding:16px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg)}
+.pc-av{width:52px;height:52px;border-radius:16px;background:var(--accent-soft);color:var(--accent-strong);display:grid;place-items:center;font-weight:800;font-size:20px}
+.balance-card{padding:20px;border-radius:20px;background:linear-gradient(140deg,var(--accent),color-mix(in srgb,var(--accent) 50%,var(--violet)));color:#fff}
+.bc-label{font-size:13px;opacity:.9}.bc-val{font-size:28px;font-weight:800;margin-top:6px}
+.tx-row{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--border-2)}
+.kpi-inline{display:flex;gap:24px}
+.charge-hero{text-align:center;padding:32px 16px}
+.active-card{display:block;border-radius:24px;padding:18px;color:#fff;background:linear-gradient(140deg,var(--accent),color-mix(in srgb,var(--accent) 48%,var(--orange)));box-shadow:0 16px 34px rgba(var(--accent-rgb),.35);text-decoration:none}
+.ac-stat{display:flex;justify-content:space-between;font-size:13px;padding:4px 0}
+.wstrip{display:flex;align-items:center;gap:13px;margin-top:14px;padding:14px;border-radius:var(--r-lg);background:var(--surface);border:1px solid var(--border);text-decoration:none;color:inherit}
+.ws-ic{width:46px;height:46px;border-radius:14px;background:var(--accent-soft);color:var(--accent-strong);display:grid;place-items:center;flex:none}
+.ws-ic svg{width:23px;height:23px}
+.cv{display:inline-grid;width:16px;height:16px}.cv svg{width:16px;height:16px}

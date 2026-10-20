@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SafirCharge — جزئیات شارژر</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/app-mobile.css">
+</head>
+<body data-tab="map" data-no-tab>
+<div class="phone">
+  <!-- تصویر بالا -->
+  <div class="hero">
+    <div class="hero-bg"><span data-ic="plug"></span></div>
+    <button class="hero-back" onclick="history.back()"><span data-ic="back"></span></button>
+    <button class="hero-share"><span data-ic="share"></span></button>
+    <span class="hero-pill pill pill-green"><span class="pdot"></span>۴ کانکتور آزاد</span>
+  </div>
+
+  <div class="screen" style="padding-top:16px">
+    <div class="row between">
+      <div>
+        <h2 style="font-size:21px">شارژر میدان آزادی</h2>
+        <div class="muted fs13 mt4">تهران، میدان آزادی، ابتدای بزرگراه لشکری</div>
+      </div>
+    </div>
+
+    <div class="row mt12" style="gap:8px;flex-wrap:wrap">
+      <span class="tag" style="display:inline-flex;align-items:center;gap:5px"><b class="tnum">۴٫۸</b> <span style="color:var(--orange)">★</span> (۲۱۴)</span>
+      <span class="tag"><span class="tnum">۱٫۲</span> کیلومتر</span>
+      <span class="tag pill-green" style="border-radius:7px">۲۴ ساعته</span>
+    </div>
+
+    <div class="row mt16" style="gap:10px">
+      <button class="btn btn-soft" style="flex:1"><span data-ic="nav"></span> مسیریابی</button>
+      <a href="reserve.html" class="btn btn-soft" style="flex:1"><span data-ic="calendar"></span> رزرو</a>
+      <button class="btn btn-ghost" style="flex:none;width:52px" aria-label="علاقه‌مندی"><span data-ic="star"></span></button>
+    </div>
+
+    <div class="sec-title">انتخاب کانکتور</div>
+    <div style="display:flex;flex-direction:column;gap:10px" id="connectors"></div>
+
+    <div class="sec-title">تعرفه</div>
+    <div class="card card-p">
+      <div class="lrow" style="padding-top:0">
+        <div class="l-ic ic-blue" data-ic="bolt"></div>
+        <div class="l-main"><div class="l-title">هزینهٔ انرژی</div><div class="l-sub">شارژ سریع DC</div></div>
+        <div class="l-end tnum">۳٬۲۰۰ <span class="fs12 muted">ت/kWh</span></div>
+      </div>
+      <div class="lrow">
+        <div class="l-ic ic-amber" data-ic="clock"></div>
+        <div class="l-main"><div class="l-title">هزینهٔ اشغال</div><div class="l-sub">پس از پایان شارژ</div></div>
+        <div class="l-end tnum">۵۰۰ <span class="fs12 muted">ت/دقیقه</span></div>
+      </div>
+      <div class="lrow" style="padding-bottom:0">
+        <div class="l-ic ic-green" data-ic="leaf"></div>
+        <div class="l-main"><div class="l-title">ساعات کم‌باری</div><div class="l-sub">۰۰:۰۰ تا ۰۶:۰۰</div></div>
+        <div class="l-end tnum" style="color:var(--green)">۲٬۱۰۰ <span class="fs12 muted">ت/kWh</span></div>
+      </div>
+    </div>
+
+    <div class="sec-title">امکانات رفاهی</div>
+    <div class="row" style="gap:18px;flex-wrap:wrap;color:var(--text-2);font-size:12.5px;font-weight:600">
+      <span class="amen"><span data-ic="car"></span>پارکینگ</span>
+      <span class="amen"><span data-ic="coins"></span>کافه</span>
+      <span class="amen"><span data-ic="shield"></span>نگهبانی</span>
+      <span class="amen"><span data-ic="bolt"></span>WiFi رایگان</span>
+    </div>
+  </div>
+
+  <!-- نوار شروع شارژ -->
+  <div class="startbar">
+    <div>
+      <div class="muted fs12">کانکتور انتخاب‌شده</div>
+      <div class="fw8" id="selName">A1 · DC CCS2 · ۱۸۰kW</div>
+    </div>
+    <a href="charging.html" class="btn btn-orange" style="width:auto;padding:0 24px"><span data-ic="bolt"></span> شروع شارژ</a>
+  </div>
+</div>
+
+<style>
+.hero{position:relative;height:200px;flex:none}
+.hero-bg{position:absolute;inset:0;background:linear-gradient(140deg,var(--accent),color-mix(in srgb,var(--accent) 50%,var(--orange)));display:grid;place-items:center;color:rgba(255,255,255,.5)}
+.hero-bg svg{width:72px;height:72px}
+.hero-back,.hero-share{position:absolute;top:54px;width:42px;height:42px;border-radius:13px;background:rgba(255,255,255,.92);color:var(--text);display:grid;place-items:center;box-shadow:var(--shadow-sm);border:none}
+.hero-back{right:18px}.hero-share{left:18px}
+.hero-back svg,.hero-share svg{width:20px;height:20px}
+.hero-pill{position:absolute;bottom:16px;right:18px}
+
+.conn-card{display:flex;align-items:center;gap:13px;padding:14px;border:1.5px solid var(--border);border-radius:16px;background:var(--surface);cursor:pointer;transition:all .15s}
+.conn-card.sel{border-color:var(--accent);background:var(--accent-soft)}
+.conn-card.busy{opacity:.55}
+.conn-card .ci{width:46px;height:46px;border-radius:13px;display:grid;place-items:center;flex:none}
+.conn-card .ci svg{width:22px;height:22px}
+.conn-radio{width:22px;height:22px;border-radius:50%;border:2px solid var(--border);flex:none;display:grid;place-items:center}
+.conn-card.sel .conn-radio{border-color:var(--accent)}
+.conn-card.sel .conn-radio::after{content:"";width:11px;height:11px;border-radius:50%;background:var(--accent)}
+
+.amen{display:inline-flex;align-items:center;gap:6px}
+.amen svg{width:18px;height:18px;color:var(--accent)}
+
+.startbar{position:absolute;bottom:0;left:0;right:0;background:color-mix(in srgb,var(--surface) 94%,transparent);backdrop-filter:blur(14px);border-top:1px solid var(--border);box-shadow:var(--shadow-up);display:flex;align-items:center;gap:12px;padding:14px 20px calc(18px + env(safe-area-inset-bottom,0));z-index:20}
+.startbar .btn svg{width:18px;height:18px}
+</style>
+
+<script src="../assets/app-mobile.js"></script>
+<script>
+(function(){
+  var conns=[
+    {id:'A1',t:'DC CCS2',pw:'۱۸۰ kW',st:'free',ic:'ic-green'},
+    {id:'A2',t:'DC CHAdeMO',pw:'۵۰ kW',st:'free',ic:'ic-green'},
+    {id:'B1',t:'AC Type2',pw:'۲۲ kW',st:'free',ic:'ic-green'},
+    {id:'B2',t:'AC Type2',pw:'۲۲ kW',st:'busy',ic:'ic-orange'}
+  ];
+  document.getElementById('connectors').innerHTML=conns.map(function(c,i){
+    var busy=c.st==='busy';
+    return '<div class="conn-card '+(i===0?'sel':'')+(busy?' busy':'')+'" data-name="'+c.id+' · '+c.t+' · '+c.pw+'">'+
+      '<div class="ci '+c.ic+'">'+window.icon('plug')+'</div>'+
+      '<div style="flex:1"><div class="fw7">کانکتور '+c.id+' · '+c.t+'</div>'+
+      '<div class="fs12 muted mt4">حداکثر توان '+c.pw+'</div></div>'+
+      (busy?'<span class="pill pill-orange">مشغول</span>':'<span class="conn-radio"></span>')+
+    '</div>';
+  }).join('');
+  document.querySelectorAll('.conn-card').forEach(function(c){
+    if(c.classList.contains('busy'))return;
+    c.addEventListener('click',function(){
+      document.querySelectorAll('.conn-card').forEach(function(x){x.classList.remove('sel');});
+      c.classList.add('sel');
+      document.getElementById('selName').textContent=c.getAttribute('data-name');
+    });
+  });
+})();
+</script>
+</body>
+</html>

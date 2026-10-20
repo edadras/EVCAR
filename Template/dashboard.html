@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SafirCharge — داشبورد و مانیتورینگ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/app.css">
+</head>
+<body data-page="dashboard" data-title="داشبورد و مانیتورینگ" data-crumb="مدیریت شبکه">
+<div class="main">
+  <div class="content">
+
+    <!-- نوار اقدام -->
+    <div class="flex between items-center mt-8" style="margin-bottom:18px">
+      <div class="flex items-center gap-12">
+        <div class="seg" id="rangeSeg">
+          <button class="active">امروز</button>
+          <button>هفته</button>
+          <button>ماه</button>
+        </div>
+        <span class="pill pill-green"><span class="pdot"></span>سامانه پایدار</span>
+      </div>
+      <div class="flex gap-8">
+        <button class="btn btn-sm"><span class="ic">↻</span> به‌روزرسانی</button>
+        <button class="btn btn-sm btn-primary" id="exportBtn">خروجی گزارش</button>
+      </div>
+    </div>
+
+    <!-- KPI -->
+    <div class="kpi-grid">
+      <div class="kpi rise" style="animation-delay:.02s">
+        <div class="kpi-ic ic-blue" data-ic="bolt"></div>
+        <div class="kpi-label">شارژرهای آنلاین</div>
+        <div class="kpi-val tnum">۱٬۲۴۸ <small>/ ۱٬۲۶۶</small></div>
+        <div class="kpi-foot"><span class="trend-up">▲ ۹۸٫۶٪</span><span class="muted">در دسترس</span></div>
+        <svg class="kpi-spark" width="92" height="40" viewBox="0 0 92 40" data-spark="up" data-color="var(--accent)"></svg>
+      </div>
+      <div class="kpi rise" style="animation-delay:.06s">
+        <div class="kpi-ic ic-green" data-ic="leaf"></div>
+        <div class="kpi-label">انرژی تحویلی امروز</div>
+        <div class="kpi-val tnum">۳۸٬۴۲۰ <small>kWh</small></div>
+        <div class="kpi-foot"><span class="trend-up">▲ ۱۲٫۴٪</span><span class="muted">نسبت به دیروز</span></div>
+        <svg class="kpi-spark" width="92" height="40" viewBox="0 0 92 40" data-spark="up" data-color="var(--green)"></svg>
+      </div>
+      <div class="kpi rise" style="animation-delay:.1s">
+        <div class="kpi-ic ic-orange" data-ic="coins"></div>
+        <div class="kpi-label">درآمد امروز</div>
+        <div class="kpi-val tnum">۲۸۴٫۷ <small>میلیون تومان</small></div>
+        <div class="kpi-foot"><span class="trend-up">▲ ۸٫۱٪</span><span class="muted">نسبت به دیروز</span></div>
+        <svg class="kpi-spark" width="92" height="40" viewBox="0 0 92 40" data-spark="up" data-color="var(--orange)"></svg>
+      </div>
+      <div class="kpi rise" style="animation-delay:.14s">
+        <div class="kpi-ic ic-violet" data-ic="activity"></div>
+        <div class="kpi-label">جلسات فعال</div>
+        <div class="kpi-val tnum">۲۴۷</div>
+        <div class="kpi-foot"><span class="trend-down">▼ ۳٫۲٪</span><span class="muted">نرخ بهره‌برداری ۶۲٪</span></div>
+        <svg class="kpi-spark" width="92" height="40" viewBox="0 0 92 40" data-spark="down" data-color="var(--violet)"></svg>
+      </div>
+    </div>
+
+    <!-- نمودار + بهره‌برداری -->
+    <div class="grid col-2-1 mt-16">
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <h3>روند انرژی و درآمد</h3>
+            <div class="ch-sub">۲۴ ساعت گذشته · به تفکیک ساعت</div>
+          </div>
+          <div class="head-actions">
+            <span class="legend-inline"><i style="background:var(--accent)"></i> انرژی (kWh)</span>
+            <span class="legend-inline"><i style="background:var(--orange)"></i> درآمد</span>
+          </div>
+        </div>
+        <div class="card-pad">
+          <svg id="mainChart" width="100%" height="240" viewBox="0 0 720 240" preserveAspectRatio="none"></svg>
+          <div class="chart-axis" id="chartAxis"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h3>بهره‌برداری شبکه</h3></div>
+        <div class="card-pad">
+          <div class="flex items-center gap-16">
+            <svg width="132" height="132" viewBox="0 0 132 132" id="donut"></svg>
+            <div class="legend">
+              <div class="li"><span class="sw" style="background:var(--green)"></span><span>در حال شارژ</span><b class="tnum" style="margin-inline-start:auto">۶۲۴</b></div>
+              <div class="li"><span class="sw" style="background:var(--accent)"></span><span>آماده</span><b class="tnum" style="margin-inline-start:auto">۴۹۸</b></div>
+              <div class="li"><span class="sw" style="background:var(--amber)"></span><span>رزرو شده</span><b class="tnum" style="margin-inline-start:auto">۱۲۶</b></div>
+              <div class="li"><span class="sw" style="background:var(--red)"></span><span>خطا / آفلاین</span><b class="tnum" style="margin-inline-start:auto">۱۸</b></div>
+            </div>
+          </div>
+          <hr class="sep">
+          <div class="lrow">
+            <div class="l-ic ic-blue" data-ic="plug"></div>
+            <div class="l-main"><div class="l-title">کانکتورهای DC سریع</div><div class="l-sub">میانگین توان ۸۴ کیلووات</div></div>
+            <div class="l-end"><b class="tnum">۴۱۲</b></div>
+          </div>
+          <div class="lrow">
+            <div class="l-ic ic-green" data-ic="plug"></div>
+            <div class="l-main"><div class="l-title">کانکتورهای AC</div><div class="l-sub">میانگین توان ۲۲ کیلووات</div></div>
+            <div class="l-end"><b class="tnum">۸۵۴</b></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- نقشه + هشدارها -->
+    <div class="grid col-2-1 mt-16">
+      <div class="card">
+        <div class="card-head">
+          <div><h3>نقشهٔ زندهٔ شبکه</h3><div class="ch-sub">۸ کلان‌شهر · کلیک روی نشانگر برای جزئیات</div></div>
+          <div class="head-actions"><a href="stations.html" class="btn btn-sm">نمای کامل نقشه</a></div>
+        </div>
+        <div class="card-pad">
+          <div class="map-panel" id="map" style="height:320px"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div><h3>هشدارها و خطاها</h3></div>
+          <div class="head-actions"><a href="support.html" class="btn btn-sm">همه</a></div>
+        </div>
+        <div class="card-pad" style="padding-top:6px">
+          <div class="lrow">
+            <div class="l-ic ic-red" data-ic="alert"></div>
+            <div class="l-main"><div class="l-title">قطع ارتباط شارژر CP‑۲۲۰۴</div><div class="l-sub">برج میلاد · ۶ دقیقه پیش</div></div>
+            <span class="pill pill-red">بحرانی</span>
+          </div>
+          <div class="lrow">
+            <div class="l-ic ic-amber" data-ic="alert"></div>
+            <div class="l-main"><div class="l-title">خطای دما — کانکتور ۲</div><div class="l-sub">میدان آزادی · ۱۹ دقیقه پیش</div></div>
+            <span class="pill pill-amber">هشدار</span>
+          </div>
+          <div class="lrow">
+            <div class="l-ic ic-amber" data-ic="alert"></div>
+            <div class="l-main"><div class="l-title">افت ولتاژ ورودی</div><div class="l-sub">نمایشگاه بین‌المللی · ۴۱ دقیقه پیش</div></div>
+            <span class="pill pill-amber">هشدار</span>
+          </div>
+          <div class="lrow">
+            <div class="l-ic ic-blue" data-ic="refresh"></div>
+            <div class="l-main"><div class="l-title">به‌روزرسانی میان‌افزار موفق</div><div class="l-sub">۳۲ شارژر · ۱ ساعت پیش</div></div>
+            <span class="pill pill-accent">اطلاع</span>
+          </div>
+          <div class="lrow">
+            <div class="l-ic ic-green" data-ic="bolt"></div>
+            <div class="l-main"><div class="l-title">ایستگاه ونک دوباره آنلاین شد</div><div class="l-sub">۱ ساعت پیش</div></div>
+            <span class="pill pill-green">رفع شد</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- جلسات زنده -->
+    <div class="card mt-16">
+      <div class="card-head">
+        <div><h3>جلسات شارژ زنده</h3><div class="ch-sub">۲۴۷ جلسه فعال در سراسر شبکه</div></div>
+        <div class="head-actions">
+          <span class="pill pill-green"><span class="pdot"></span>زنده</span>
+          <a href="sessions.html" class="btn btn-sm">مشاهدهٔ همه</a>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table class="tbl">
+          <thead><tr>
+            <th>کاربر</th><th>ایستگاه / شارژر</th><th>کانکتور</th><th>پیشرفت</th>
+            <th>انرژی</th><th>توان لحظه‌ای</th><th>مدت</th><th>هزینه</th><th>وضعیت</th>
+          </tr></thead>
+          <tbody>
+            <tr>
+              <td><div class="cell-user"><span class="uavatar" style="background:#0E6BA8">م.ا</span><div><div class="cell-strong">مهدی احمدی</div><div class="cell-muted mono">EV‑۸۸۲۱</div></div></div></td>
+              <td><div class="cell-strong">میدان آزادی</div><div class="cell-muted mono">CP‑۱۰۰۱</div></td>
+              <td><span class="tag">DC CCS2</span></td>
+              <td style="min-width:130px"><div class="bar"><i style="width:۷۲%;width:72%"></i></div><div class="cell-muted tnum" style="margin-top:4px">۷۲٪</div></td>
+              <td class="tnum cell-strong">۴۲٫۸ kWh</td>
+              <td class="tnum">۸۶ kW</td>
+              <td class="tnum">۳۲ دق</td>
+              <td class="tnum cell-strong">۱۲۸٬۴۰۰</td>
+              <td><span class="pill pill-green"><span class="pdot"></span>در حال شارژ</span></td>
+            </tr>
+            <tr>
+              <td><div class="cell-user"><span class="uavatar" style="background:#16A34A">س.ر</span><div><div class="cell-strong">سارا رحیمی</div><div class="cell-muted mono">EV‑۴۵۰۹</div></div></div></td>
+              <td><div class="cell-strong">برج میلاد</div><div class="cell-muted mono">CP‑۲۲۰۷</div></td>
+              <td><span class="tag">DC CHAdeMO</span></td>
+              <td style="min-width:130px"><div class="bar"><i style="width:45%"></i></div><div class="cell-muted tnum" style="margin-top:4px">۴۵٪</div></td>
+              <td class="tnum cell-strong">۲۶٫۱ kWh</td>
+              <td class="tnum">۵۰ kW</td>
+              <td class="tnum">۲۱ دق</td>
+              <td class="tnum cell-strong">۷۸٬۳۰۰</td>
+              <td><span class="pill pill-green"><span class="pdot"></span>در حال شارژ</span></td>
+            </tr>
+            <tr>
+              <td><div class="cell-user"><span class="uavatar" style="background:#F97316">ع.ک</span><div><div class="cell-strong">علی کریمی</div><div class="cell-muted mono">EV‑۱۲۳۴</div></div></div></td>
+              <td><div class="cell-strong">ونک</div><div class="cell-muted mono">CP‑۳۳۱۲</div></td>
+              <td><span class="tag">AC Type2</span></td>
+              <td style="min-width:130px"><div class="bar bar-orange"><i style="width:18%"></i></div><div class="cell-muted tnum" style="margin-top:4px">۱۸٪</div></td>
+              <td class="tnum cell-strong">۸٫۴ kWh</td>
+              <td class="tnum">۲۲ kW</td>
+              <td class="tnum">۱۲ دق</td>
+              <td class="tnum cell-strong">۲۵٬۲۰۰</td>
+              <td><span class="pill pill-green"><span class="pdot"></span>در حال شارژ</span></td>
+            </tr>
+            <tr>
+              <td><div class="cell-user"><span class="uavatar" style="background:#7C3AED">ز.م</span><div><div class="cell-strong">زهرا موسوی</div><div class="cell-muted mono">EV‑۹۹۰۲</div></div></div></td>
+              <td><div class="cell-strong">نمایشگاه بین‌المللی</div><div class="cell-muted mono">CP‑۵۱۰۸</div></td>
+              <td><span class="tag">DC CCS2</span></td>
+              <td style="min-width:130px"><div class="bar"><i style="width:94%"></i></div><div class="cell-muted tnum" style="margin-top:4px">۹۴٪</div></td>
+              <td class="tnum cell-strong">۵۸٫۲ kWh</td>
+              <td class="tnum">۳۲ kW</td>
+              <td class="tnum">۴۷ دق</td>
+              <td class="tnum cell-strong">۱۷۴٬۶۰۰</td>
+              <td><span class="pill pill-amber">رو به اتمام</span></td>
+            </tr>
+            <tr>
+              <td><div class="cell-user"><span class="uavatar" style="background:#0891B2">ح.ن</span><div><div class="cell-strong">حسین نوری</div><div class="cell-muted mono">EV‑۳۳۴۵</div></div></div></td>
+              <td><div class="cell-strong">صادقیه</div><div class="cell-muted mono">CP‑۴۴۲۰</div></td>
+              <td><span class="tag">AC Type2</span></td>
+              <td style="min-width:130px"><div class="bar bar-accent"><i style="width:8%"></i></div><div class="cell-muted tnum" style="margin-top:4px">۸٪</div></td>
+              <td class="tnum cell-strong">۳٫۱ kWh</td>
+              <td class="tnum">۱۱ kW</td>
+              <td class="tnum">۴ دق</td>
+              <td class="tnum cell-strong">۹٬۳۰۰</td>
+              <td><span class="pill pill-accent">شروع شد</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<style>
+.legend-inline { display:inline-flex; align-items:center; gap:6px; font-size:12px; color:var(--text-2); font-weight:600; }
+.legend-inline i { width:10px; height:10px; border-radius:3px; display:inline-block; }
+.chart-axis { display:flex; justify-content:space-between; margin-top:8px; color:var(--muted); font-size:11px; }
+.kpi-ic[data-ic] svg, .l-ic[data-ic] svg, .c-ic[data-ic] svg { width:100%; height:100%; }
+</style>
+
+<script src="assets/app.js"></script>
+<script>
+(function () {
+  // پر کردن آیکون‌ها
+  document.querySelectorAll('[data-ic]').forEach(function (el) {
+    el.innerHTML = window.icon(el.getAttribute('data-ic'));
+  });
+
+  // اسپارک‌لاین‌های KPI
+  document.querySelectorAll('[data-spark]').forEach(function (s) {
+    var up = s.getAttribute('data-spark') === 'up';
+    var base = [5,7,6,9,8,11,10,13,12,15,14,18];
+    var vals = up ? base : base.slice().reverse();
+    var c = s.getAttribute('data-color');
+    var p = window.areaPath(vals, 92, 40, 3);
+    var l = window.linePath(vals, 92, 40, 3);
+    s.innerHTML = '<path d="'+p+'" fill="'+c+'" opacity=".12"/><path d="'+l+'" fill="none" stroke="'+c+'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>';
+  });
+
+  // نمودار اصلی — دو سری
+  (function () {
+    var W=720, H=240, pad=10;
+    var energy=[14,12,10,9,11,16,22,30,28,26,31,38,42,40,36,33,29,34,41,45,39,32,24,18];
+    var revenue=[10,8,7,6,9,13,18,25,24,22,27,33,37,35,31,28,25,30,36,40,34,28,21,15];
+    function path(vals, area){
+      var max=48, min=0;
+      var step=(W-pad*2)/(vals.length-1);
+      var d=vals.map(function(v,i){var x=pad+i*step;var y=pad+(H-pad*2)*(1-(v-min)/(max-min));return (i?'L':'M')+x.toFixed(1)+' '+y.toFixed(1);}).join(' ');
+      if(area) d+=' L'+(W-pad)+' '+(H-pad)+' L'+pad+' '+(H-pad)+' Z';
+      return d;
+    }
+    var svg=document.getElementById('mainChart');
+    var grid='';
+    for(var g=0; g<=4; g++){var y=pad+(H-pad*2)*g/4; grid+='<line x1="'+pad+'" y1="'+y+'" x2="'+(W-pad)+'" y2="'+y+'" stroke="var(--border)" stroke-width="1" stroke-dasharray="3 5"/>';}
+    svg.innerHTML =
+      '<defs><linearGradient id="gE" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--accent)" stop-opacity=".28"/><stop offset="1" stop-color="var(--accent)" stop-opacity="0"/></linearGradient></defs>'+
+      grid+
+      '<path d="'+path(energy,true)+'" fill="url(#gE)"/>'+
+      '<path d="'+path(energy)+'" fill="none" stroke="var(--accent)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>'+
+      '<path d="'+path(revenue)+'" fill="none" stroke="var(--orange)" stroke-width="2.4" stroke-dasharray="2 4" stroke-linecap="round" stroke-linejoin="round"/>';
+    var ax=document.getElementById('chartAxis');
+    ['۰۰','۰۴','۰۸','۱۲','۱۶','۲۰','۲۴'].forEach(function(t){var sp=document.createElement('span');sp.textContent=t;ax.appendChild(sp);});
+  })();
+
+  // دونات
+  (function () {
+    var data=[{v:624,c:'var(--green)'},{v:498,c:'var(--accent)'},{v:126,c:'var(--amber)'},{v:18,c:'var(--red)'}];
+    var total=data.reduce(function(a,b){return a+b.v;},0);
+    var R=54, C=66, sw=16, circ=2*Math.PI*R, off=0;
+    var rings=data.map(function(d){
+      var frac=d.v/total, len=frac*circ;
+      var el='<circle cx="'+C+'" cy="'+C+'" r="'+R+'" fill="none" stroke="'+d.c+'" stroke-width="'+sw+'" stroke-dasharray="'+len+' '+(circ-len)+'" stroke-dashoffset="'+(-off)+'" transform="rotate(-90 '+C+' '+C+')" stroke-linecap="butt"/>';
+      off+=len; return el;
+    }).join('');
+    document.getElementById('donut').innerHTML = rings +
+      '<text x="'+C+'" y="'+(C-4)+'" text-anchor="middle" font-size="22" font-weight="800" fill="var(--text)" font-family="Vazirmatn">۶۲٪</text>'+
+      '<text x="'+C+'" y="'+(C+14)+'" text-anchor="middle" font-size="10" fill="var(--muted)" font-family="Vazirmatn">بهره‌برداری</text>';
+  })();
+
+  // نقشه
+  (function () {
+    var map=document.getElementById('map');
+    var pins=[
+      {x:48,y:42,c:'var(--green)',n:'تهران',k:'۴۸۲ شارژر',big:true},
+      {x:63,y:30,c:'var(--accent)',n:'مشهد',k:'۱۹۶ شارژر'},
+      {x:30,y:58,c:'var(--accent)',n:'اصفهان',k:'۱۵۴ شارژر'},
+      {x:22,y:40,c:'var(--green)',n:'تبریز',k:'۹۸ شارژر'},
+      {x:36,y:78,c:'var(--orange)',n:'شیراز',k:'۸۷ شارژر'},
+      {x:72,y:62,c:'var(--accent)',n:'کرمان',k:'۵۲ شارژر'},
+      {x:18,y:72,c:'var(--amber)',n:'اهواز',k:'۴۶ شارژر'},
+      {x:58,y:75,c:'var(--green)',n:'یزد',k:'۳۳ شارژر'},
+    ];
+    var bg='<svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none" style="position:absolute;inset:0;opacity:.5">'+
+      '<defs><pattern id="dots" width="5" height="5" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r=".5" fill="var(--muted)" opacity=".4"/></pattern></defs>'+
+      '<rect width="100" height="100" fill="url(#dots)"/>'+
+      '<path d="M14 30 Q40 18 70 26 T92 40 Q88 70 64 82 Q40 92 22 76 Q10 58 14 30 Z" fill="color-mix(in srgb, var(--accent) 7%, transparent)" stroke="color-mix(in srgb, var(--accent) 28%, transparent)" stroke-width=".6"/>'+
+      '</svg>';
+    var pinHTML=pins.map(function(p){
+      var sz=p.big?36:30;
+      return '<div class="pin" style="left:'+p.x+'%;top:'+p.y+'%" title="'+p.n+' — '+p.k+'">'+
+        '<div class="pin-body" style="background:'+p.c+';width:'+sz+'px;height:'+sz+'px"><span>'+(p.big?'★':'⚡')+'</span></div>'+
+        (p.c==='var(--green)'?'<div class="pin-pulse" style="background:'+p.c+';opacity:.3"></div>':'')+
+        '</div>';
+    }).join('');
+    map.innerHTML = bg + pinHTML;
+  })();
+
+  // سگمنت
+  document.querySelectorAll('#rangeSeg button').forEach(function(b){
+    b.addEventListener('click',function(){
+      document.querySelectorAll('#rangeSeg button').forEach(function(x){x.classList.remove('active');});
+      b.classList.add('active');
+    });
+  });
+})();
+</script>
+</body>
+</html>
