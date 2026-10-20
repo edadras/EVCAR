@@ -35,4 +35,9 @@ return [
         ],
     ],
 
+    // اعلان پوش اپ موبایل (Firebase Cloud Messaging HTTP v1) — مسیر فایل JSON حساب سرویس
+    'fcm' => [
+        'credentials' => env('FCM_CREDENTIALS', ''),
+    ],
+
 ];

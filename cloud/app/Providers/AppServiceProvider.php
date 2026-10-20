@@ -2,6 +2,10 @@
 
 namespace App\Providers;
 
+use App\Models\ChargingSession;
+use App\Models\Payment;
+use App\Observers\ChargingSessionObserver;
+use App\Observers\PaymentObserver;
 use App\Services\App\ConnectivityService;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\View;
@@ -16,6 +20,9 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        ChargingSession::observe(ChargingSessionObserver::class);
+        Payment::observe(PaymentObserver::class);
+
         // Docker / پورت غیراستاندارد: asset() همیشه همان origin مرورگر را بگیرد
         if (! $this->app->runningInConsole() && request()->hasHeader('Host')) {
             URL::forceRootUrl(request()->getSchemeAndHttpHost());

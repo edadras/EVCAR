@@ -6,11 +6,13 @@ use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Models\Campaign;
 use App\Models\ChargingSession;
+use App\Models\DeviceToken;
 use App\Models\EvCatalogVehicle;
 use App\Models\Payment;
 use App\Models\QrToken;
 use App\Models\Reservation;
 use App\Models\RfidCard;
+use App\Models\Station;
 use App\Models\SupportTicket;
 use App\Models\TicketMessage;
 use App\Models\User;
@@ -24,6 +26,7 @@ use App\Services\Auth\CustomerAuthService;
 use App\Services\Charging\CloudChargingSessionService;
 use App\Services\Finance\PaymentGatewayService;
 use App\Services\Navigator\EvNavigatorService;
+use App\Services\Notifications\FcmPushService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -118,7 +121,7 @@ class MobileApiController extends Controller
             'active_session' => $d['activeSession'] ? $this->sessionPayload($d['activeSession']) : null,
             'featured_offer' => $d['featuredOffer'] ? $this->campaignPayload($d['featuredOffer']) : null,
             'campaigns_count' => $d['campaigns']->count(),
-            'nearby_stations' => $d['nearbyStations'],
+            'nearby_stations' => $this->markFavorites($user, $d['nearbyStations']),
         ]);
     }
 
@@ -128,7 +131,7 @@ class MobileApiController extends Controller
 
         return response()->json([
             'markers' => $d['mapMarkers'],
-            'stations' => $d['mapStations'],
+            'stations' => $this->markFavorites($request->user(), $d['mapStations']),
             'stats' => $d['mapStats'],
             'center' => $d['mapCenter'],
         ]);
@@ -169,6 +172,7 @@ class MobileApiController extends Controller
                 'lat' => $station->latitude ? (float) $station->latitude : null,
                 'lng' => $station->longitude ? (float) $station->longitude : null,
                 'max_power_kw' => (int) $station->chargers->max('max_power_kw'),
+                'favorite' => in_array($station->code, (array) ($user->meta['favorite_stations'] ?? []), true),
                 'chargers_count' => $station->chargers->count(),
                 'rating' => $station->meta['rating'] ?? null,
                 'reviews' => $station->meta['reviews'] ?? null,
@@ -426,6 +430,84 @@ class MobileApiController extends Controller
     public function context(Request $request, ConnectivityService $connectivity): JsonResponse
     {
         return response()->json(['connectivity' => $connectivity->build($request->user()), 'backend' => 'cloud']);
+    }
+
+    // ───────────────────────── دستگاه، موقعیت، علاقه‌مندی ─────────────────────────
+
+    /** ثبت توکن اعلان پوش (FCM) دستگاه. */
+    public function registerDevice(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'token' => ['required', 'string', 'max:512'],
+            'platform' => ['nullable', 'in:android,ios,web'],
+        ]);
+        DeviceToken::updateOrCreate(
+            ['token_hash' => hash('sha256', $data['token'])],
+            ['user_id' => $request->user()->id, 'token' => $data['token'], 'platform' => $data['platform'] ?? 'android', 'provider' => 'fcm', 'last_seen_at' => now()],
+        );
+
+        return response()->json(['ok' => true, 'push_enabled' => app(FcmPushService::class)->enabled()]);
+    }
+
+    public function unregisterDevice(Request $request): JsonResponse
+    {
+        $data = $request->validate(['token' => ['required', 'string', 'max:512']]);
+        DeviceToken::where('user_id', $request->user()->id)->where('token_hash', hash('sha256', $data['token']))->delete();
+
+        return response()->json(['ok' => true]);
+    }
+
+    /** موقعیت فعلی گوشی برای «نزدیک‌ترین ایستگاه‌ها» و فاصله‌ها (مانند موقعیت مرجع وب‌اپ). */
+    public function updateLocation(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'lat' => ['required', 'numeric', 'between:24,40'],
+            'lng' => ['required', 'numeric', 'between:44,64'],
+        ]);
+        $user = $request->user();
+        $meta = $user->meta ?? [];
+        $meta['lat'] = round((float) $data['lat'], 6);
+        $meta['lng'] = round((float) $data['lng'], 6);
+        $meta['location_at'] = now()->toIso8601String();
+        $user->update(['meta' => $meta]);
+
+        return response()->json(['ok' => true]);
+    }
+
+    public function toggleFavorite(Request $request, string $code): JsonResponse
+    {
+        abort_unless(Station::where('code', $code)->exists(), 404);
+        $user = $request->user();
+        $meta = $user->meta ?? [];
+        $favs = array_values(array_unique((array) ($meta['favorite_stations'] ?? [])));
+        $on = ! in_array($code, $favs, true);
+        $favs = $on ? [...$favs, $code] : array_values(array_diff($favs, [$code]));
+        $meta['favorite_stations'] = $favs;
+        $user->update(['meta' => $meta]);
+
+        return response()->json(['ok' => true, 'favorite' => $on, 'message' => $on ? 'به علاقه‌مندی‌ها اضافه شد.' : 'از علاقه‌مندی‌ها حذف شد.']);
+    }
+
+    /** اعلان‌های جدیدتر از شناسهٔ داده‌شده (اپ برای نمایش اعلان محلی دوره‌ای می‌پرسد). */
+    public function notificationsSince(Request $request): JsonResponse
+    {
+        $after = (int) $request->query('after', 0);
+        $items = UserNotification::where('user_id', $request->user()->id)
+            ->where('id', '>', $after)->orderBy('id')->limit(10)->get();
+
+        return response()->json([
+            'items' => $items->map(fn (UserNotification $n) => ['id' => $n->id, 'type' => $n->type, 'title' => $n->title, 'body' => $n->body])->values(),
+            'latest_id' => (int) (UserNotification::where('user_id', $request->user()->id)->max('id') ?? 0),
+            'unread' => UserNotification::where('user_id', $request->user()->id)->whereNull('read_at')->count(),
+        ]);
+    }
+
+    /** @param  array<int, array<string, mixed>>  $cards */
+    private function markFavorites(User $user, array $cards): array
+    {
+        $favs = (array) ($user->meta['favorite_stations'] ?? []);
+
+        return array_map(fn (array $c) => $c + ['favorite' => in_array($c['code'] ?? null, $favs, true)], $cards);
     }
 
     // ───────────────────────── کمکی‌ها ─────────────────────────

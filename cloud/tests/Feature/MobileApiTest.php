@@ -101,6 +101,11 @@ class MobileApiTest extends TestCase
             ->assertOk()->assertJsonPath('redirect', 'topup/result');
         $this->getJson('/api/v1/mobile/wallet', $auth)->assertJsonPath('balance', 250_000);
 
+        // پروفایل: شهر و کد ملی در meta کاربر ذخیره می‌شوند
+        $this->postJson('/api/v1/mobile/profile', ['first_name' => 'رضا', 'last_name' => 'کریمی', 'national_id' => '0012345678', 'city' => 'اصفهان'], $auth)->assertOk();
+        $this->getJson('/api/v1/mobile/me', $auth)
+            ->assertJsonPath('user.name', 'رضا کریمی')->assertJsonPath('user.city', 'اصفهان')->assertJsonPath('user.national_id', '0012345678');
+
         $this->postJson('/api/v1/mobile/settings', ['charge_target_soc' => 90], $auth)->assertOk()->assertJsonPath('prefs.charge_target_soc', 90);
 
         // بدون اسکن QR شروع شارژ مجاز نیست
