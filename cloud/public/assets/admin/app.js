@@ -87,6 +87,8 @@
     { group: "مدیریت شبکه", items: [
       { id: "dashboard", t: "داشبورد و مانیتورینگ", ic: "grid", path: "", dot: true },
       { id: "monitoring", t: "مانیتورینگ زنده شبکه", ic: "activity", path: "monitoring", dot: true },
+      { id: "alerts", t: "هشدارهای عملیاتی", ic: "bell", path: "alerts" },
+      { id: "insights", t: "تحلیل، پیش‌بینی و خروجی", ic: "bars", path: "insights" },
       { id: "stations", t: "ایستگاه‌ها و نقشه", ic: "map", path: "stations" },
       { id: "sessions", t: "جلسات شارژ", ic: "bolt", path: "sessions", badge: "۲۴" },
       { id: "reservations", t: "رزرو شارژ", ic: "calendar", path: "reservations" },

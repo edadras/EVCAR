@@ -8,6 +8,11 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/assets/mobile/app-mobile.css">
+    <link rel="manifest" href="/app.webmanifest">
+    <meta name="theme-color" content="#0e63c9">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="SafirCharge">
+    <link rel="apple-touch-icon" href="/assets/pwa/apple-touch-icon.png">
     @stack('styles')
 </head>
 <body
@@ -57,8 +62,14 @@ window.SC_API = {
 <script src="/assets/mobile/arrival-monitor.js"></script>
 @endif
 @stack('scripts')
+<script>
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
+  window.addEventListener('load', function () { navigator.serviceWorker.register('/app-sw.js', { scope: '/app' }).catch(function () {}); });
+}
+</script>
 <style>
-.sc-backend-badge{position:fixed;top:calc(8px + env(safe-area-inset-top,0));left:50%;transform:translateX(-50%);z-index:300;border:none;border-radius:20px;padding:4px 12px;font-family:inherit;font-size:11px;font-weight:800;letter-spacing:.02em;cursor:pointer;box-shadow:var(--shadow-md)}
+.sc-backend-badge{position:fixed;bottom:calc(92px + env(safe-area-inset-bottom,0));left:max(12px,calc(50% - var(--phone-w,430px)/2 + 12px));z-index:300;opacity:.92;border:none;border-radius:20px;padding:4px 12px;font-family:inherit;font-size:11px;font-weight:800;letter-spacing:.02em;cursor:pointer;box-shadow:var(--shadow-md)}
+body[data-no-tab] .sc-backend-badge{bottom:calc(120px + env(safe-area-inset-bottom,0))}
 .sc-backend-badge.cloud{background:var(--accent-soft);color:var(--accent-strong)}
 .sc-backend-badge.edge{background:var(--green-soft);color:var(--green)}
 .sc-bp-overlay{position:fixed;inset:0;background:rgba(8,16,24,.55);display:flex;align-items:flex-end;justify-content:center;opacity:0;visibility:hidden;transition:opacity .2s;z-index:400;padding:0 12px}

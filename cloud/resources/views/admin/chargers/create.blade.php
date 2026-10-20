@@ -23,7 +23,16 @@
             </select>
           </div>
           <div class="ffield"><label>تعداد کانکتور <span class="req">*</span></label><input class="finput tnum" name="connector_count" type="number" min="1" max="4" value="{{ old('connector_count', 2) }}" required dir="ltr" style="text-align:right"></div>
+          <div class="ffield"><label>اتصال OCPP</label>
+            <select class="fselect" name="connection_mode">
+              <option value="auto">خودکار (Edge اگر ایستگاه دارد، وگرنه مستقیم)</option>
+              <option value="direct">مستقیم به سرور اصلی</option>
+              <option value="edge">از طریق Edge ایستگاه</option>
+            </select>
+          </div>
+          <div class="ffield"><label>رمز OCPP (Basic Auth، اختیاری)</label><input class="finput" name="ocpp_password" type="password" minlength="8" autocomplete="new-password" dir="ltr"></div>
         </div>
+        <div class="fs12 muted mt-12">آدرس OCPP در تنظیمات شارژر: مستقیم ← <span dir="ltr">ws://&lt;سرور&gt;:9100/ocpp/&lt;شناسه&gt;</span> · از طریق Edge ← <span dir="ltr">ws://&lt;IP ایستگاه&gt;:9000/ocpp/&lt;شناسه&gt;</span></div>
         <button type="submit" class="btn btn-primary mt-16" style="height:48px"><span class="bic" data-ic="plus"></span> ثبت شارژر</button>
       </form>
     </div>

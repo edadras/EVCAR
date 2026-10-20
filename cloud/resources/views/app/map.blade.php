@@ -156,10 +156,22 @@
     });
   });
 
-  if(markers.length){
-    var bounds=L.latLngBounds(markers.map(function(m){return [m.lat,m.lng];}));
-    map.fitBounds(bounds.pad(0.15));
+  // نمای اولیه: ایستگاه‌های نزدیک کاربر (نه کل کشور)، با درنظر گرفتن پنل پایین صفحه.
+  function distKm(a,b,c,d){var r=Math.PI/180,x=(c-a)*r,y=(d-b)*r*Math.cos((a+c)/2*r);return Math.sqrt(x*x+y*y)*6371;}
+  function fitNearby(lat,lng){
+    var near=markers.map(function(m){return {m:m,d:distKm(lat,lng,m.lat,m.lng)};}).sort(function(a,b){return a.d-b.d;});
+    var pick=near.filter(function(x){return x.d<=40;});
+    if(!pick.length)pick=near.slice(0,3);
+    if(!pick.length){map.setView([lat,lng],12);return;}
+    var pts=pick.map(function(x){return [x.m.lat,x.m.lng];});pts.push([lat,lng]);
+    var sheet=document.querySelector('.map-sheet,.sheet,[data-sheet]');
+    var bottom=sheet?Math.min(sheet.offsetHeight,window.innerHeight*0.55):window.innerHeight*0.45;
+    map.fitBounds(L.latLngBounds(pts),{paddingTopLeft:[24,110],paddingBottomRight:[24,bottom+16],maxZoom:14});
   }
+  // اندازهٔ واقعی کانتینر پس از چیدمان صفحه (جلوگیری از نمایش نیمه‌کارهٔ کاشی‌ها).
+  setTimeout(function(){map.invalidateSize();if(markers.length)fitNearby(userLat,userLng);},250);
+  window.addEventListener('resize',function(){map.invalidateSize();});
+  if(markers.length){fitNearby(center.lat,center.lng);}
   apply();
 })();
 </script>

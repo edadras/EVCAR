@@ -1,11 +1,13 @@
 <?php
 
+use App\Http\Controllers\Admin\AlertController;
 use App\Http\Controllers\Admin\ApiController;
 use App\Http\Controllers\Admin\AuthController;
 use App\Http\Controllers\Admin\ChargerController;
 use App\Http\Controllers\Admin\ChargingSessionController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\EvCatalogVehicleController;
+use App\Http\Controllers\Admin\InsightsController;
 use App\Http\Controllers\Admin\NotificationController;
 use App\Http\Controllers\Admin\PageController;
 use App\Http\Controllers\Admin\PartnerController;
@@ -51,6 +53,10 @@ Route::middleware(['auth', 'staff'])->group(function () {
 
     // مدیریت شبکه
     Route::get('monitoring', [PageController::class, 'monitoring'])->name('monitoring');
+    Route::get('alerts', [AlertController::class, 'index'])->name('alerts.index');
+    Route::post('alerts/{alert}/resolve', [AlertController::class, 'resolve'])->name('alerts.resolve');
+    Route::get('insights', [InsightsController::class, 'index'])->name('insights');
+    Route::get('exports/{type}', [InsightsController::class, 'export'])->name('exports')->where('type', 'sessions|revenue|tax|settlements');
     Route::resource('stations', StationController::class)->except(['destroy']);
     Route::get('stations/{station}/chargers/create', [ChargerController::class, 'create'])->name('stations.chargers.create');
     Route::post('stations/{station}/chargers', [ChargerController::class, 'store'])->name('stations.chargers.store');

@@ -11,11 +11,8 @@ use App\Models\Connector;
 use App\Models\EdgeStation;
 use App\Models\InventoryItem;
 use App\Models\InventoryMovement;
-use App\Models\Invoice;
-use App\Models\InvoiceItem;
 use App\Models\Organization;
 use App\Models\Partner;
-use App\Models\Payment;
 use App\Models\QrToken;
 use App\Models\RepairOrder;
 use App\Models\Reservation;
@@ -53,6 +50,10 @@ class AdminDemoSeeder extends Seeder
         ['name' => 'پل سفید', 'city' => 'اهواز', 'province' => 'خوزستان', 'lat' => 31.3183, 'lng' => 48.6706],
         ['name' => 'میدان شهدا', 'city' => 'کرمان', 'province' => 'کرمان', 'lat' => 30.2839, 'lng' => 57.0834],
         ['name' => 'امیرچخماق', 'city' => 'یزد', 'province' => 'یزد', 'lat' => 31.8974, 'lng' => 54.3569],
+        // ایستگاه‌های بین‌راهی آزادراه تهران–قم–کاشان–اصفهان (برای مسیریاب برقی)
+        ['name' => 'مجتمع خدماتی قم', 'city' => 'قم', 'province' => 'قم', 'lat' => 34.6416, 'lng' => 50.8746],
+        ['name' => 'ورودی کاشان', 'city' => 'کاشان', 'province' => 'اصفهان', 'lat' => 33.9850, 'lng' => 51.4100],
+        ['name' => 'مجتمع بین‌راهی نطنز', 'city' => 'نطنز', 'province' => 'اصفهان', 'lat' => 33.5130, 'lng' => 51.9160],
     ];
 
     private array $customerNames = [
@@ -198,7 +199,7 @@ class AdminDemoSeeder extends Seeder
                         'connector_type' => $c % 2 ? 'CCS2' : 'Type2',
                         'is_online' => $online,
                         'last_heartbeat_at' => $online ? now()->subSeconds(rand(5, 120)) : now()->subHours(rand(1, 8)),
-                        'status' => $online ? 'active' : 'inactive',
+                        'status' => 'active',
                     ]
                 );
 
@@ -210,12 +211,21 @@ class AdminDemoSeeder extends Seeder
                         [
                             'uuid' => (string) Str::uuid(),
                             'ocpp_status' => $ocpp,
-                            'operational_status' => $online ? 'active' : 'inactive',
+                            'operational_status' => 'active',
                             'max_power_kw' => $charger->max_power_kw,
                             'status_updated_at' => now(),
                         ]
                     );
                 }
+            }
+
+            // فقط دو ایستگاه دمو کنترلر محلی (Edge) دارند؛ بقیه شارژرهایشان مستقیم به
+            // سرور OCPP ابری وصل می‌شوند (ws://<cloud>:9100/ocpp/<ChargePointId>).
+            if ($i > 1) {
+                EdgeStation::where('station_id', $station->id)->delete();
+                $stations->push($station);
+
+                continue;
             }
 
             $edgeToken = match ($i) {
@@ -290,19 +300,22 @@ class AdminDemoSeeder extends Seeder
             );
 
             $letters = ['ب', 'ج', 'د', 'س', 'ص', 'ط', 'ق', 'ل', 'م', 'ن'];
-            Vehicle::updateOrCreate(
-                ['user_id' => $user->id, 'plate_normalized' => sprintf('%02d%s%03d%02d', rand(10, 99), $letters[$idx % count($letters)], rand(100, 999), rand(10, 99))],
-                [
-                    'uuid' => (string) Str::uuid(),
-                    'plate_two' => (string) rand(10, 99),
-                    'plate_letter' => $letters[$idx % count($letters)],
-                    'plate_three' => (string) rand(100, 999),
-                    'plate_province' => (string) rand(10, 99),
-                    'brand' => ['تسلا', 'بی‌وای‌دی', 'هیوندای', 'کیا', 'MG'][$idx % 5],
-                    'model' => 'EV',
-                    'is_default' => true,
-                ]
-            );
+            if (! Vehicle::where('user_id', $user->id)->exists()) {
+                Vehicle::create(
+                    [
+                        'user_id' => $user->id,
+                        'plate_normalized' => sprintf('%02d%s%03d%02d', rand(10, 99), $letters[$idx % count($letters)], rand(100, 999), rand(10, 99)),
+                        'battery_kwh' => [75, 60, 77, 64, 51][$idx % 5],
+                        'uuid' => (string) Str::uuid(),
+                        'plate_two' => (string) rand(10, 99),
+                        'plate_letter' => $letters[$idx % count($letters)],
+                        'plate_three' => (string) rand(100, 999),
+                        'plate_province' => (string) rand(10, 99),
+                        'brand' => ['تسلا', 'بی‌وای‌دی', 'هیوندای', 'کیا', 'MG'][$idx % 5],
+                        'model' => 'EV',
+                        'is_default' => true,
+                    ]);
+            }
 
             WalletTransaction::create([
                 'uuid' => (string) Str::uuid(),
@@ -332,13 +345,13 @@ class AdminDemoSeeder extends Seeder
             $connector->update(['qr_token_uuid' => $token->uuid]);
         }
 
-        RfidCard::updateOrCreate(
+        RfidCard::withTrashed()->updateOrCreate(
             ['id_tag' => 'RFID-DEMO-001'],
             ['uuid' => (string) Str::uuid(), 'user_id' => $customers->first()->id, 'card_label' => 'کارت VIP', 'status' => 'active', 'issued_at' => now()->subMonths(2)]
-        );
+        )->restore();
 
         for ($r = 2; $r <= 8; $r++) {
-            RfidCard::updateOrCreate(
+            RfidCard::withTrashed()->updateOrCreate(
                 ['id_tag' => 'RFID-DEMO-'.str_pad((string) $r, 3, '0', STR_PAD_LEFT)],
                 [
                     'uuid' => (string) Str::uuid(),
@@ -347,7 +360,7 @@ class AdminDemoSeeder extends Seeder
                     'status' => 'active',
                     'issued_at' => now()->subDays(rand(10, 90)),
                 ]
-            );
+            )->restore();
         }
 
         $connectors = Connector::with('charger.station')->get();
@@ -402,24 +415,24 @@ class AdminDemoSeeder extends Seeder
             $ticket = SupportTicket::updateOrCreate(
                 ['ticket_number' => 'TK-'.(9200 + $t)],
                 [
-                'uuid' => (string) Str::uuid(),
-                'user_id' => $customers->random()->id,
-                'station_id' => $stations->random()->id,
-                'assigned_to' => $staff->random()->id,
-                'category' => $isRefund ? 'payment' : ['charger', 'app', 'network'][rand(0, 2)],
-                'priority' => $isRefund ? 'high' : ['low', 'normal', 'high'][rand(0, 2)],
-                'status' => $isRefund ? ['open', 'in_progress', 'open'][$t - 1] : ['open', 'in_progress', 'resolved'][rand(0, 2)],
-                'subject' => $isRefund
-                    ? 'درخواست استرداد '.number_format($refundAmounts[$t - 1]).' تومان'
-                    : 'مشکل شارژر شماره '.$t,
-                'body' => $isRefund ? 'شارژ ناقص انجام شد و مبلغ باید بازگردد.' : 'گزارش مشکل از سمت کاربر',
-            ]);
+                    'uuid' => (string) Str::uuid(),
+                    'user_id' => $customers->random()->id,
+                    'station_id' => $stations->random()->id,
+                    'assigned_to' => $staff->random()->id,
+                    'category' => $isRefund ? 'payment' : ['charger', 'app', 'network'][rand(0, 2)],
+                    'priority' => $isRefund ? 'high' : ['low', 'normal', 'high'][rand(0, 2)],
+                    'status' => $isRefund ? ['open', 'in_progress', 'open'][$t - 1] : ['open', 'in_progress', 'resolved'][rand(0, 2)],
+                    'subject' => $isRefund
+                        ? 'درخواست استرداد '.number_format($refundAmounts[$t - 1]).' تومان'
+                        : 'مشکل شارژر شماره '.$t,
+                    'body' => $isRefund ? 'شارژ ناقص انجام شد و مبلغ باید بازگردد.' : 'گزارش مشکل از سمت کاربر',
+                ]);
             TicketMessage::updateOrCreate(
                 ['support_ticket_id' => $ticket->id, 'message' => 'شارژر پس از اتصال قطع می‌شود.'],
                 [
-                'user_id' => $ticket->user_id,
-                'is_staff_reply' => false,
-            ]);
+                    'user_id' => $ticket->user_id,
+                    'is_staff_reply' => false,
+                ]);
         }
 
         Campaign::updateOrCreate(
@@ -568,6 +581,6 @@ class AdminDemoSeeder extends Seeder
         );
 
         $this->command?->info("Seeded: {$stations->count()} stations, {$sessionCount} sessions, {$customers->count()} customers");
-        $this->command?->info("Admin: admin@safircharge.ir / Admin@123456");
+        $this->command?->info('Admin: admin@safircharge.ir / Admin@123456');
     }
 }

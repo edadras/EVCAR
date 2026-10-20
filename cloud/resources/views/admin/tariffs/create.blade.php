@@ -63,8 +63,18 @@
                 </select>
               </div>
               <div class="ffield"><label class="toggle-row" style="margin:0;padding:12px 0"><span>تعرفهٔ پیش‌فرض شبکه</span><input type="checkbox" name="is_default" value="1" @checked(old('is_default', $tariff?->is_default)) style="width:18px;height:18px"></label></div>
-              <div class="ffield"><label>ضریب اوج مصرف</label><input class="finput tnum" dir="ltr" style="text-align:right" value="۱٫۴۰×"></div>
-              <div class="ffield"><label>ضریب کم‌باری</label><input class="finput tnum" dir="ltr" style="text-align:right" value="۰٫۶۵×"></div>
+@php
+    $peakRule = $tariff?->rules?->firstWhere('rule_type', 'peak');
+    $offRule = $tariff?->rules?->firstWhere('rule_type', 'off_peak');
+    $tMeta = $tariff?->meta ?? [];
+@endphp
+              <div class="ffield"><label>ضریب اوج مصرف (خالی = ندارد)</label><input class="finput tnum" name="peak_multiplier" type="number" step="0.01" min="0" dir="ltr" style="text-align:right" value="{{ old('peak_multiplier', $peakRule?->multiplier) }}" placeholder="1.40"></div>
+              <div class="ffield"><label>ساعت اوج (شروع–پایان)</label><div class="row" style="gap:6px"><input class="finput tnum" name="peak_start" type="time" value="{{ old('peak_start', $peakRule ? substr((string) $peakRule->start_time, 0, 5) : '17:00') }}"><input class="finput tnum" name="peak_end" type="time" value="{{ old('peak_end', $peakRule ? substr((string) $peakRule->end_time, 0, 5) : '23:00') }}"></div></div>
+              <div class="ffield"><label>ضریب کم‌باری (خالی = ندارد)</label><input class="finput tnum" name="offpeak_multiplier" type="number" step="0.01" min="0" dir="ltr" style="text-align:right" value="{{ old('offpeak_multiplier', $offRule?->multiplier) }}" placeholder="0.65"></div>
+              <div class="ffield"><label>ساعت کم‌باری (شروع–پایان)</label><div class="row" style="gap:6px"><input class="finput tnum" name="offpeak_start" type="time" value="{{ old('offpeak_start', $offRule ? substr((string) $offRule->start_time, 0, 5) : '00:00') }}"><input class="finput tnum" name="offpeak_end" type="time" value="{{ old('offpeak_end', $offRule ? substr((string) $offRule->end_time, 0, 5) : '06:00') }}"></div></div>
+              <div class="ffield"><label>هزینهٔ اشغال پس از پایان شارژ (ریال/دقیقه)</label><input class="finput tnum" name="idle_fee_per_minute" type="number" min="0" dir="ltr" style="text-align:right" value="{{ old('idle_fee_per_minute', $tMeta['idle_fee_per_minute'] ?? '') }}" placeholder="0"></div>
+              <div class="ffield"><label>زمان مجاز رایگان (دقیقه)</label><input class="finput tnum" name="idle_grace_minutes" type="number" min="0" max="240" dir="ltr" style="text-align:right" value="{{ old('idle_grace_minutes', $tMeta['idle_grace_minutes'] ?? 10) }}"></div>
+              <div class="ffield"><label>تخفیف اعضای سازمانی (٪)</label><input class="finput tnum" name="member_discount_percent" type="number" step="0.5" min="0" max="100" dir="ltr" style="text-align:right" value="{{ old('member_discount_percent', $tariff?->member_discount_percent ?? 0) }}"></div>
             </div>
           </div>
         </div>

@@ -4,7 +4,6 @@ namespace App\Services\App;
 
 use App\Models\Campaign;
 use App\Models\ChargingSession;
-use App\Models\Connector;
 use App\Models\QrToken;
 use App\Models\Reservation;
 use App\Models\RfidCard;
@@ -15,6 +14,7 @@ use App\Models\User;
 use App\Models\Vehicle;
 use App\Models\WalletTransaction;
 use App\Services\Audit\AuditService;
+use App\Services\Charging\CloudChargingSessionService;
 use App\Services\Charging\ConnectorAvailabilityService;
 use App\Support\Geo;
 
@@ -24,6 +24,7 @@ class MobileAppService
         private MobileAppPresenter $presenter,
         private ConnectorAvailabilityService $availability,
         private AuditService $audit,
+        private CloudChargingSessionService $charging,
     ) {}
 
     /** @return array{lat:float,lng:float} */
@@ -173,7 +174,7 @@ class MobileAppService
         ];
     }
 
-    public function reservations(User $user): array
+    public function reservations(User $user, ?string $stationCode = null): array
     {
         $stations = Station::where('status', 'active')->with(['chargers.connectors'])->orderBy('name')->get();
         $connectorOptions = $stations->mapWithKeys(function (Station $st) {
@@ -193,7 +194,13 @@ class MobileAppService
             return [$st->id => $options];
         });
 
-        $defaultStation = $stations->first();
+        // ایستگاه انتخاب‌شده از صفحهٔ شارژر، وگرنه نزدیک‌ترین ایستگاه به موقعیت مرجع کاربر.
+        $ref = Geo::defaultRef();
+        $defaultStation = ($stationCode ? $stations->firstWhere('code', $stationCode) : null)
+            ?? $stations->filter(fn ($s) => $s->latitude && $s->longitude)
+                ->sortBy(fn ($s) => Geo::haversineKm($ref['lat'], $ref['lng'], (float) $s->latitude, (float) $s->longitude))
+                ->first()
+            ?? $stations->first();
         $stationsPayload = $stations->map(fn (Station $st) => [
             'id' => $st->id,
             'name' => $st->name,
@@ -249,6 +256,7 @@ class MobileAppService
             'freeCount' => $station ? $this->presenter->stationFreeCount($station) : 0,
             'tariffEnergy' => $tariff['energy'],
             'tariffIdle' => $tariff['idle'],
+            'tariffIdleGrace' => $tariff['idle_grace'] ?? null,
             'tariffOffpeak' => $tariff['offpeak'],
             'tariffOffpeakHours' => $tariff['offpeak_hours'],
         ];
@@ -314,15 +322,18 @@ class MobileAppService
             foreach ($charger->connectors as $cn) {
                 $snap = $this->availability->snapshot($cn);
                 $label = ($letters[$ci] ?? 'C').$cn->connector_number;
-                $charging = $cn->ocpp_status === 'Charging';
                 $session = $activeSessions->get($cn->id);
+                $charging = $cn->ocpp_status === 'Charging' || $session !== null;
+                $live = $session ? $this->charging->liveMetrics($session) : null;
                 $rows[] = [
                     'id' => $label,
                     'db_id' => $cn->id,
                     'free' => $snap['reservable'],
                     'charging' => $charging,
-                    'soc' => $session ? $this->presenter->activeSessionGauge($session) : null,
-                    'eta' => $session?->meta['eta_minutes'] ?? null,
+                    'state' => $snap['state'],
+                    'reason' => $snap['reason'],
+                    'soc' => $live['pct'] ?? null,
+                    'eta' => $live['eta'] ?? null,
                 ];
             }
         }

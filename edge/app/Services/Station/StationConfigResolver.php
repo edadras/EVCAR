@@ -50,8 +50,19 @@ class StationConfigResolver
 
     public function plprUrl(): string
     {
-        $default = env('ANPR_PLPR_URL', 'http://host.docker.internal:8502');
+        $default = config('safircharge.anpr.plpr_url', 'http://host.docker.internal:8502');
 
         return rtrim((string) ($this->anpr()['plpr_url'] ?? $default), '/');
+    }
+
+    /** آدرس ابر: تنظیم پنل ایستگاه، در غیر این صورت CLOUD_API_URL. */
+    public function cloudApiUrl(): string
+    {
+        return rtrim((string) ($this->station()?->cloud_api_url ?: config('services.cloud.api_url', '')), '/');
+    }
+
+    public function cloudSyncToken(): ?string
+    {
+        return $this->station()?->cloud_sync_token ?: config('services.cloud.sync_token');
     }
 }

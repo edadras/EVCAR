@@ -3,6 +3,9 @@
 namespace App\Http\Controllers\App;
 
 use App\Http\Controllers\Controller;
+use App\Models\Campaign;
+use App\Models\SupportTicket;
+use App\Services\App\ChargingAuthorizationService;
 use App\Services\App\MobileAppService;
 use Illuminate\View\View;
 
@@ -67,7 +70,7 @@ class PageController extends Controller
 
     public function reserve(): View
     {
-        return view('app.reserve', $this->app->reservations($this->user()));
+        return view('app.reserve', $this->app->reservations($this->user(), request('station')));
     }
 
     public function support(): View
@@ -82,7 +85,7 @@ class PageController extends Controller
 
     public function charger(): View
     {
-        $auth = app(\App\Services\App\ChargingAuthorizationService::class);
+        $auth = app(ChargingAuthorizationService::class);
         $qrGrant = $auth->tryGrantFromQrToken(request('qr'));
 
         return view('app.charger', array_merge(
@@ -114,7 +117,7 @@ class PageController extends Controller
 
     public function offers(): View
     {
-        return view('app.offers', ['campaigns' => \App\Models\Campaign::where('status', 'active')->get()]);
+        return view('app.offers', ['campaigns' => Campaign::where('status', 'active')->get()]);
     }
 
     public function plate(): View
@@ -142,7 +145,7 @@ class PageController extends Controller
         $user = $this->user();
         $ticketId = request('id');
         if ($ticketId) {
-            $ticket = \App\Models\SupportTicket::where('user_id', $user->id)->findOrFail($ticketId);
+            $ticket = SupportTicket::where('user_id', $user->id)->findOrFail($ticketId);
 
             return view('app.ticket', $this->app->ticketDetail($user, $ticket));
         }

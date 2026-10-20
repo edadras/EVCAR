@@ -4,7 +4,6 @@ namespace App\Services\Sync;
 
 use App\Enums\UserRole;
 use App\Models\Charger;
-use App\Models\Connector;
 use App\Models\EdgeStation;
 use App\Models\QrToken;
 use App\Models\RfidCard;
@@ -15,6 +14,7 @@ use App\Models\Vehicle;
 use App\Models\Wallet;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 class EdgeSyncPayloadBuilder
 {
@@ -79,6 +79,10 @@ class EdgeSyncPayloadBuilder
         $payload['removed'] = [
             'vehicles' => Vehicle::onlyTrashed()->where('deleted_at', '>', $since)->pluck('uuid')->values()->all(),
             'rfid_cards' => RfidCard::onlyTrashed()->where('deleted_at', '>', $since)->pluck('uuid')->values()->all(),
+            'tariffs' => Tariff::withTrashed()
+                ->where('updated_at', '>', $since)
+                ->where(fn ($q) => $q->where('status', '!=', 'active')->orWhereNotNull('deleted_at'))
+                ->pluck('uuid')->values()->all(),
         ];
 
         $payload['mode'] = 'delta';
@@ -113,6 +117,13 @@ class EdgeSyncPayloadBuilder
         Collection $tariffs,
         Collection $qrTokens,
     ): array {
+        $assignedTariffIds = DB::table('station_tariffs')
+            ->where('station_id', $station->id)
+            ->where(fn ($q) => $q->whereNull('effective_from')->orWhere('effective_from', '<=', now()))
+            ->where(fn ($q) => $q->whereNull('effective_until')->orWhere('effective_until', '>', now()))
+            ->pluck('tariff_id')
+            ->all();
+
         return [
             'mode' => 'snapshot',
             'station' => [
@@ -121,6 +132,7 @@ class EdgeSyncPayloadBuilder
                 'name' => $station->name,
                 'wifi_ssid' => $station->wifi_ssid,
                 'local_hostname' => $station->local_hostname,
+                'grid_limit_kw' => isset($station->meta['grid_limit_kw']) ? (float) $station->meta['grid_limit_kw'] : null,
             ],
             'edge' => [
                 'uuid' => $edge->uuid,
@@ -129,7 +141,7 @@ class EdgeSyncPayloadBuilder
             'edge_config' => $this->edgeConfig($edge),
             'users' => $users->map(fn (User $u) => $this->serializeUser($u))->values()->all(),
             'chargers' => $this->serializeChargers($station->chargers),
-            'tariffs' => $tariffs->map(fn ($t) => $this->serializeTariff($t))->values()->all(),
+            'tariffs' => $tariffs->map(fn ($t) => $this->serializeTariff($t, $assignedTariffIds))->values()->all(),
             'qr_tokens' => $qrTokens->map(fn ($qr) => $this->serializeQrToken($qr))->values()->all(),
             'synced_at' => now()->toIso8601String(),
             'cursor' => now()->toIso8601String(),
@@ -205,16 +217,22 @@ class EdgeSyncPayloadBuilder
     }
 
     /** @return array<string, mixed> */
-    private function serializeTariff(Tariff $t): array
+    /** @param  list<int>  $assignedTariffIds */
+    private function serializeTariff(Tariff $t, array $assignedTariffIds = []): array
     {
         return [
+            'is_default' => (bool) $t->is_default,
+            'station_assigned' => in_array($t->id, $assignedTariffIds, true),
             'uuid' => $t->uuid,
             'name' => $t->name,
             'pricing_model' => $t->pricing_model,
             'price_per_kwh' => $t->price_per_kwh,
             'price_per_minute' => $t->price_per_minute,
             'session_fee' => $t->session_fee,
-            'rules' => $t->rules,
+            'meta' => array_intersect_key($t->meta ?? [], array_flip(['idle_fee_per_minute', 'idle_grace_minutes'])),
+            'rules' => $t->rules()->get()->map->only([
+                'rule_type', 'day_of_week', 'start_time', 'end_time', 'price_per_kwh', 'price_per_minute', 'multiplier', 'priority',
+            ])->values()->all(),
         ];
     }
 
@@ -242,6 +260,9 @@ class EdgeSyncPayloadBuilder
             'charge_point_id' => $ch->charge_point_id,
             'max_power_kw' => $ch->max_power_kw,
             'is_online' => $ch->is_online,
+            'connector_type' => $ch->connector_type,
+            // رمز Basic Auth شارژر (OCPP Security Profile 1) برای بررسی روی Edge
+            'ocpp_password' => $ch->meta['ocpp_password'] ?? null,
             'connectors' => $ch->connectors->map(fn ($cn) => [
                 'uuid' => $cn->uuid,
                 'connector_number' => $cn->connector_number,

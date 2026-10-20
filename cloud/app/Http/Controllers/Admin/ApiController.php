@@ -14,14 +14,15 @@ use App\Models\Partner;
 use App\Models\RepairOrder;
 use App\Models\Reservation;
 use App\Models\Station;
-use App\Models\User;
 use App\Models\SupportTicket;
+use App\Models\User;
 use App\Models\Wallet;
 use App\Models\WalletTransaction;
 use App\Services\Admin\AdminViewDataService;
 use App\Services\Edge\EdgeCommandService;
 use App\Services\ReservationService;
 use App\Support\Persian;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -193,7 +194,7 @@ class ApiController extends Controller
             'duration_minutes' => ['required', 'integer', 'min:15', 'max:180'],
         ]);
 
-        $from = \Carbon\Carbon::parse($data['reserved_from']);
+        $from = Carbon::parse($data['reserved_from']);
         $until = $from->copy()->addMinutes((int) $data['duration_minutes']);
 
         if ($error = $this->reservations->validateNewReservation(

@@ -8,7 +8,7 @@ use App\Models\Partner;
 use App\Models\Settlement;
 use App\Models\Station;
 use App\Models\SupportTicket;
-use Carbon\Carbon;
+use App\Services\Admin\AdminMetricsService;
 use Illuminate\Support\Collection;
 
 class PartnerMetricsService
@@ -85,7 +85,7 @@ class PartnerMetricsService
                 ->with(['chargers.connectors'])
                 ->get(),
             'mapMarkers' => array_values(array_filter(
-                app(\App\Services\Admin\AdminMetricsService::class)->stationMapMarkers(),
+                app(AdminMetricsService::class)->stationMapMarkers(),
                 fn ($m) => in_array($m['id'], Station::where('partner_id', $partner->id)->pluck('id')->all(), true)
             )),
         ];

@@ -31,10 +31,12 @@
         $connectorLabel = $session->connector
             ? 'کانکتور '.Persian::digits($session->connector->connector_number)
             : ($session->charger?->charge_point_id ?? '—');
-        $goalPct = (int) ($session->meta['target_soc'] ?? 80);
-        $powerKw = (int) ($session->meta['power_kw'] ?? 0);
-        $secs = (int) ($session->duration_seconds ?? ($session->started_at ? now()->diffInSeconds($session->started_at) : 0));
-        $costToman = (int) round((float) $session->cost_amount / 10);
+        $live = app(\App\Services\Charging\CloudChargingSessionService::class)->liveMetrics($session);
+        $goalPct = (int) $live['goal'];
+        $powerKw = (int) $live['power'];
+        $secs = (int) $live['secs'];
+        $costToman = (int) $live['cost'];
+        $gaugePct = (int) $live['pct'];
         $walletBalance = (int) round((float) ($wallet?->balance ?? 0) / 10);
     }
 @endphp
@@ -54,7 +56,7 @@
             <div class="gb-bolt" data-ic="bolt"></div>
             <div class="gb-pct tnum" id="pct">@if($edgeMode)…@else{{ Persian::digits($gaugePct) }}٪@endif</div>
             <div class="gb-lbl">شارژ باتری</div>
-            <div class="gb-add tnum" id="added">+{{ Persian::kwh($edgeMode ? 0 : $session->energy_kwh) }} kWh افزوده شد</div>
+            <div class="gb-add tnum" id="added">+{{ Persian::kwh($edgeMode ? 0 : (float) $session->energy_kwh, (float) $session?->energy_kwh < 10 ? 2 : 1) }} kWh افزوده شد</div>
         </div>
     </div>
 
@@ -128,7 +130,9 @@ html[data-theme="dark"] .charging-phone{background:linear-gradient(180deg,#0b1d2
 @php
 $chargingState = [
     'pct' => $gaugePct,
-    'energy' => (float) ($edgeMode ? 0 : $session->energy_kwh),
+    'energy' => (float) ($edgeMode ? 0 : ($live['energy'] ?? $session->energy_kwh)),
+    'eta' => $edgeMode ? null : ($live['eta'] ?? null),
+    'state' => $edgeMode ? null : ($live['state'] ?? null),
     'secs' => $secs,
     'cost' => $costToman,
     'goal' => $goalPct,
@@ -147,7 +151,7 @@ $chargingState = [
   var pct=state.pct, energy=state.energy, secs=state.secs;
 
   function fa(n){return Math.round(n).toLocaleString('fa-IR');}
-  function faF(n){return Number(n).toLocaleString('fa-IR',{minimumFractionDigits:1,maximumFractionDigits:1});}
+  function faF(n){var d=Number(n)<10?2:1;return Number(n).toLocaleString('fa-IR',{minimumFractionDigits:d,maximumFractionDigits:d});}
   function fmtDur(s){
     var m=Math.floor(s/60),ss=s%60;
     return (m<10?'۰'+fa(m):fa(m))+':'+(ss<10?'۰'+fa(ss):fa(ss));
@@ -166,10 +170,11 @@ $chargingState = [
     document.getElementById('dur').textContent=fmtDur(secs);
     var left=Math.max(0,state.goal-pct);
     document.getElementById('goalLeft').textContent=fa(left)+'٪ مانده';
-    if(state.power){
-      var rem=left>0&&state.power>0?Math.max(1,Math.round(left/state.power*60/state.goal*10)):0;
-      document.getElementById('eta').innerHTML=(rem?'~'+fa(rem):'—')+' <small>دق</small>';
-    }
+    // زمان باقی‌مانده را سرور با ظرفیت باتری و توان واقعی محاسبه می‌کند.
+    document.getElementById('eta').innerHTML=(state.eta?'~'+fa(state.eta):'—')+' <small>دق</small>';
+    if(state.power)document.getElementById('power').innerHTML=fa(state.power)+' <small>kW</small>';
+    var btn=document.getElementById('stopBtn');
+    if(btn&&state.state==='stop_requested'){btn.disabled=true;btn.textContent='در حال توقف شارژ…';}
   }
   render();
 
@@ -181,12 +186,11 @@ $chargingState = [
       .then(function(d){
         if(d.active){
           pct=d.pct; energy=d.energy; secs=d.secs; state.cost=d.cost; state.goal=d.goal; state.power=d.power;
+          state.eta=d.eta; state.state=d.state;
           render();
-          if(d.power)document.getElementById('power').innerHTML=fa(d.power)+' <small>kW</small>';
-          if(d.eta)document.getElementById('eta').innerHTML='~'+fa(d.eta)+' <small>دق</small>';
           return;
         }
-        if(!state.edgeMode)return;
+        if(!state.edgeMode){window.location.href=@json(route('app.history'));return;}
         fetch(statusCloud,{headers:{'Accept':'application/json','X-Requested-With':'XMLHttpRequest'}})
           .then(function(r){return r.json();})
           .then(function(cloud){
@@ -195,7 +199,7 @@ $chargingState = [
               state.goal=cloud.goal; state.power=cloud.power; render();
               return;
             }
-            window.location.href=@json(route('app.home'));
+            window.location.href=@json(route('app.history'));
           }).catch(function(){});
       }).catch(function(){});
   }

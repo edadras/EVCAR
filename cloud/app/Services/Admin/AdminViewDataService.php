@@ -7,7 +7,6 @@ use App\Models\AnprEvent;
 use App\Models\Charger;
 use App\Models\ChargingSession;
 use App\Models\Connector;
-use App\Models\EdgeStation;
 use App\Models\InventoryItem;
 use App\Models\InventoryMovement;
 use App\Models\Invoice;
@@ -15,10 +14,9 @@ use App\Models\Organization;
 use App\Models\Partner;
 use App\Models\Payment;
 use App\Models\RepairOrder;
-use App\Models\Settlement;
-use App\Models\SyncInbox;
 use App\Models\Reservation;
 use App\Models\RfidCard;
+use App\Models\Settlement;
 use App\Models\Station;
 use App\Models\SupportTicket;
 use App\Models\User;
@@ -26,6 +24,8 @@ use App\Models\Vehicle;
 use App\Models\Wallet;
 use App\Models\WalletTransaction;
 use App\Services\Charging\ConnectorAvailabilityService;
+use App\Services\Stations\RemoteStationService;
+use App\Services\Stations\StationAnprService;
 use App\Support\Persian;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
@@ -183,7 +183,7 @@ class AdminViewDataService
     /** @return array<string, mixed> */
     public function remoteStationJs(Station $station): array
     {
-        return app(\App\Services\Stations\RemoteStationService::class)->jsPayload($station);
+        return app(RemoteStationService::class)->jsPayload($station);
     }
 
     /** @return Collection<int, SupportTicket|RepairOrder> */
@@ -224,7 +224,7 @@ class AdminViewDataService
     /** @return array<int, array<string, mixed>> */
     public function stationsPageJs(): array
     {
-        $anpr = app(\App\Services\Stations\StationAnprService::class);
+        $anpr = app(StationAnprService::class);
 
         return Station::with(['chargers.connectors', 'edgeStation'])
             ->withCount('chargers')
@@ -860,8 +860,8 @@ class AdminViewDataService
             ->orderBy('name')
             ->get()
             ->mapWithKeys(function (Station $st) {
-                $options = $st->chargers->flatMap(function (Charger $ch) use ($st) {
-                    return $ch->connectors->map(function (Connector $cn) use ($ch, $st) {
+                $options = $st->chargers->flatMap(function (Charger $ch) {
+                    return $ch->connectors->map(function (Connector $cn) use ($ch) {
                         $snap = $this->availability->snapshot($cn);
 
                         return [

@@ -11,10 +11,13 @@ use App\Models\CachedWallet;
 use App\Models\EdgeCharger;
 use App\Models\EdgeConnector;
 use App\Models\StationIdentity;
+use App\Services\Ocpp\ChargePointCommander;
 use Illuminate\Support\Str;
 
 class SnapshotApplier
 {
+    public function __construct(private ChargePointCommander $commander) {}
+
     /** @param  array<string, mixed>  $data */
     public function apply(array $data): array
     {
@@ -45,6 +48,10 @@ class SnapshotApplier
             if (! empty($st['local_hostname'])) {
                 $updates['local_hostname'] = $st['local_hostname'];
             }
+            if (array_key_exists('grid_limit_kw', $st)) {
+                // سقف توان انشعاب ایستگاه برای تقسیم هوشمند توان بین کانکتورها
+                $updates['meta'] = array_merge($station->meta ?? [], ['grid_limit_kw' => $st['grid_limit_kw']]);
+            }
             $station->update($updates);
         }
 
@@ -55,6 +62,14 @@ class SnapshotApplier
         foreach ($data['removed']['vehicles'] ?? [] as $uuid) {
             CachedVehicle::where('cloud_vehicle_uuid', $uuid)->delete();
             $stats['removed_vehicles']++;
+        }
+
+        foreach ($data['removed']['tariffs'] ?? [] as $uuid) {
+            CachedTariff::where('cloud_tariff_uuid', $uuid)->delete();
+        }
+
+        if (($data['mode'] ?? null) === 'snapshot' && isset($data['tariffs']) && is_array($data['tariffs'])) {
+            CachedTariff::whereNotIn('cloud_tariff_uuid', array_column($data['tariffs'], 'uuid'))->delete();
         }
 
         foreach ($data['removed']['rfid_cards'] ?? [] as $uuid) {
@@ -151,38 +166,54 @@ class SnapshotApplier
                     'price_per_minute' => $t['price_per_minute'] ?? null,
                     'session_fee' => $t['session_fee'] ?? 0,
                     'rules' => $t['rules'] ?? [],
+                    'is_default' => (bool) ($t['is_default'] ?? false),
+                    'meta' => is_array($t['meta'] ?? null) ? $t['meta'] : null,
+                    'station_assigned' => (bool) ($t['station_assigned'] ?? false),
                     'synced_at' => now(),
                 ]
             );
             $stats['tariffs']++;
         }
 
+        // با OCPP داخلی، وضعیت زندهٔ شارژر/کانکتور را خود Edge از شارژر می‌گیرد و
+        // نباید با دادهٔ (قدیمی‌تر) ابر بازنویسی شود.
+        $liveStatus = $this->commander->isMetered();
+
         foreach ($data['chargers'] ?? [] as $ch) {
-            $charger = EdgeCharger::updateOrCreate(
-                ['charge_point_id' => $ch['charge_point_id']],
-                [
-                    'uuid' => EdgeCharger::where('charge_point_id', $ch['charge_point_id'])->value('uuid') ?? (string) Str::uuid(),
-                    'cloud_charger_uuid' => $ch['uuid'],
-                    'max_power_kw' => $ch['max_power_kw'] ?? 0,
-                    'is_online' => (bool) ($ch['is_online'] ?? false),
-                    'status' => ($ch['is_online'] ?? false) ? 'active' : 'inactive',
-                ]
-            );
+            $charger = EdgeCharger::firstOrNew(['charge_point_id' => $ch['charge_point_id']]);
+            if (! $charger->exists) {
+                $charger->uuid = (string) Str::uuid();
+                $charger->is_online = $liveStatus ? false : (bool) ($ch['is_online'] ?? false);
+                $charger->status = $charger->is_online ? 'active' : 'inactive';
+            } elseif (! $liveStatus) {
+                $charger->is_online = (bool) ($ch['is_online'] ?? false);
+                $charger->status = $charger->is_online ? 'active' : 'inactive';
+            }
+            $charger->cloud_charger_uuid = $ch['uuid'];
+            $charger->max_power_kw = $ch['max_power_kw'] ?? 0;
+            $chargerMeta = $charger->meta ?? [];
+            if (array_key_exists('ocpp_password', $ch)) {
+                $chargerMeta['ocpp_password'] = $ch['ocpp_password'] ?: null;
+            }
+            if (! empty($ch['connector_type'])) {
+                $chargerMeta['connector_type'] = $ch['connector_type'];
+            }
+            $charger->meta = array_filter($chargerMeta, fn ($v) => $v !== null);
+            $charger->save();
             $stats['chargers']++;
 
             foreach ($ch['connectors'] ?? [] as $cn) {
-                EdgeConnector::updateOrCreate(
-                    ['charger_id' => $charger->id, 'connector_number' => $cn['connector_number']],
-                    [
-                        'uuid' => EdgeConnector::where('charger_id', $charger->id)
-                            ->where('connector_number', $cn['connector_number'])
-                            ->value('uuid') ?? (string) Str::uuid(),
-                        'cloud_connector_uuid' => $cn['uuid'],
-                        'ocpp_status' => $cn['ocpp_status'] ?? 'Unavailable',
-                        'max_power_kw' => $cn['max_power_kw'] ?? $charger->max_power_kw,
-                        'operational_status' => 'active',
-                    ]
-                );
+                $connector = EdgeConnector::firstOrNew(['charger_id' => $charger->id, 'connector_number' => $cn['connector_number']]);
+                if (! $connector->exists) {
+                    $connector->uuid = (string) Str::uuid();
+                    $connector->ocpp_status = $liveStatus ? 'Unavailable' : ($cn['ocpp_status'] ?? 'Unavailable');
+                } elseif (! $liveStatus) {
+                    $connector->ocpp_status = $cn['ocpp_status'] ?? 'Unavailable';
+                }
+                $connector->cloud_connector_uuid = $cn['uuid'];
+                $connector->max_power_kw = $cn['max_power_kw'] ?? $charger->max_power_kw;
+                $connector->operational_status = 'active';
+                $connector->save();
             }
         }
 

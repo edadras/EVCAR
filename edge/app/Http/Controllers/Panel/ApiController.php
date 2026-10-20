@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Panel;
 
 use App\Http\Controllers\Controller;
-use App\Models\CachedUser;
 use App\Models\EdgeChargingSession;
 use App\Services\Charging\EdgeChargingService;
 use App\Services\Panel\PanelCommandService;
@@ -146,13 +145,8 @@ class ApiController extends Controller
             return response()->json(['ok' => false, 'error' => 'جلسه فعال یافت نشد.'], 404);
         }
 
-        $user = CachedUser::where('uuid', $session->cached_user_uuid)->first();
-        if (! $user) {
-            return response()->json(['ok' => false, 'error' => 'کاربر جلسه یافت نشد.'], 422);
-        }
-
         try {
-            $stopped = $this->charging->stop($user);
+            $stopped = $this->charging->stopSession($session, 'Local');
         } catch (\Throwable $e) {
             return response()->json(['ok' => false, 'error' => $e->getMessage()], 422);
         }

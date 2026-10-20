@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Station;
 use App\Services\Admin\AdminMetricsService;
 use App\Services\Admin\AdminViewDataService;
+use App\Services\Stations\StationAnprService;
 use Illuminate\View\View;
 
 class PageController extends Controller
@@ -27,8 +29,8 @@ class PageController extends Controller
 
         return view('admin.reservations', [
             'station' => $bundle['station'] ?? null,
-            'stations' => \App\Models\Station::orderByRaw("CASE WHEN status = 'active' THEN 0 ELSE 1 END")->orderBy('name')->get(['id', 'name', 'status']),
-            'reservableStations' => \App\Models\Station::where('status', 'active')->orderBy('name')->get(['id', 'name']),
+            'stations' => Station::orderByRaw("CASE WHEN status = 'active' THEN 0 ELSE 1 END")->orderBy('name')->get(['id', 'name', 'status']),
+            'reservableStations' => Station::where('status', 'active')->orderBy('name')->get(['id', 'name']),
             'filters' => $bundle['filters'] ?? [],
             'kpis' => $bundle['kpis'] ?? [],
             'reservationsJs' => $bundle,
@@ -155,17 +157,17 @@ class PageController extends Controller
 
     public function remote(): View
     {
-        $stations = \App\Models\Station::orderBy('name')->get(['id', 'name', 'code']);
+        $stations = Station::orderBy('name')->get(['id', 'name', 'code']);
         $stationId = request('station');
         $station = $stationId
-            ? \App\Models\Station::with(['chargers.connectors', 'edgeStation'])->find($stationId)
-            : \App\Models\Station::with(['chargers.connectors', 'edgeStation'])->first();
+            ? Station::with(['chargers.connectors', 'edgeStation'])->find($stationId)
+            : Station::with(['chargers.connectors', 'edgeStation'])->first();
         $remoteJs = $station
             ? $this->viewData->remoteStationJs($station)
             : ['devs' => [], 'stationName' => '—', 'stationCode' => '—', 'online' => false];
 
         $anprPanel = $station
-            ? app(\App\Services\Stations\StationAnprService::class)->panelData($station)
+            ? app(StationAnprService::class)->panelData($station)
             : ['enabled' => false];
 
         return view('admin.remote', compact('station', 'stations', 'remoteJs', 'anprPanel'));

@@ -5,6 +5,7 @@ namespace App\Services\Sync;
 use App\Models\EdgeChargingSession;
 use App\Models\PendingTransaction;
 use App\Models\SyncOutbox;
+use Illuminate\Support\Str;
 
 class SyncOutboxService
 {
@@ -16,7 +17,7 @@ class SyncOutboxService
         ?string $aggregateUuid = null,
     ): SyncOutbox {
         return SyncOutbox::create([
-            'event_uuid' => (string) \Illuminate\Support\Str::uuid(),
+            'event_uuid' => (string) Str::uuid(),
             'event_type' => $eventType,
             'aggregate_type' => $aggregateType,
             'aggregate_uuid' => $aggregateUuid ?? ($payload['uuid'] ?? null),

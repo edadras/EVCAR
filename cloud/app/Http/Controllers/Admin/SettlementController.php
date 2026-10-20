@@ -5,12 +5,10 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\ChargingSession;
 use App\Models\Partner;
-use App\Models\Settlement;
-use App\Models\SettlementItem;
 use App\Models\Station;
+use App\Services\Finance\SettlementService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class SettlementController extends Controller
@@ -46,58 +44,13 @@ class SettlementController extends Controller
             'payment_reference' => ['nullable', 'string', 'max:128'],
         ]);
 
-        $partner = Partner::findOrFail($data['partner_id']);
-        $stationIds = Station::where('partner_id', $partner->id)->pluck('id');
-        $periodStart = $data['period_start'];
-        $periodEnd = $data['period_end'];
-
-        $sessions = ChargingSession::whereIn('station_id', $stationIds)
-            ->whereBetween('started_at', [$periodStart, $periodEnd.' 23:59:59']);
-
-        $gross = (float) $sessions->sum('cost_amount');
-        $energy = (float) $sessions->sum('energy_kwh');
-        $sessionCount = (int) $sessions->count();
-        $partnerShare = round($gross * ($partner->revenue_share_percent / 100), 2);
-        $platformFee = round($gross - $partnerShare, 2);
-        $maintenance = (float) ($data['maintenance_fee'] ?? 0) * 10;
-        $netShare = max(0, $partnerShare - $maintenance);
-
-        $settlement = Settlement::create([
-            'uuid' => (string) Str::uuid(),
-            'settlement_number' => 'STL-'.now()->format('ym').'-'.Str::upper(Str::random(4)),
-            'partner_id' => $partner->id,
-            'period_start' => $periodStart,
-            'period_end' => $periodEnd,
-            'status' => 'pending',
-            'gross_revenue' => $gross,
-            'platform_fee' => $platformFee,
-            'partner_share' => $netShare,
-            'energy_kwh' => $energy,
-            'session_count' => $sessionCount,
-            'payment_reference' => $data['payment_reference'] ?? null,
-            'meta' => ['maintenance_fee' => $maintenance],
-        ]);
-
-        foreach (Station::whereIn('id', $stationIds)->get() as $station) {
-            $stGross = (float) ChargingSession::where('station_id', $station->id)
-                ->whereBetween('started_at', [$periodStart, $periodEnd.' 23:59:59'])
-                ->sum('cost_amount');
-            if ($stGross <= 0) {
-                continue;
-            }
-            SettlementItem::create([
-                'settlement_id' => $settlement->id,
-                'station_id' => $station->id,
-                'gross_revenue' => $stGross,
-                'partner_share' => round($stGross * ($partner->revenue_share_percent / 100), 2),
-                'energy_kwh' => ChargingSession::where('station_id', $station->id)
-                    ->whereBetween('started_at', [$periodStart, $periodEnd.' 23:59:59'])
-                    ->sum('energy_kwh'),
-                'session_count' => ChargingSession::where('station_id', $station->id)
-                    ->whereBetween('started_at', [$periodStart, $periodEnd.' 23:59:59'])
-                    ->count(),
-            ]);
-        }
+        $settlement = app(SettlementService::class)->generate(
+            Partner::findOrFail($data['partner_id']),
+            $data['period_start'],
+            $data['period_end'],
+            (float) ($data['maintenance_fee'] ?? 0) * 10,
+            $data['payment_reference'] ?? null,
+        );
 
         return redirect()
             ->route('admin.settlement')

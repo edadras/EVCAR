@@ -1,0 +1,23 @@
+{
+  "name": "SafirCharge — شارژ خودرو برقی",
+  "short_name": "SafirCharge",
+  "description": "یافتن ایستگاه، رزرو، شروع و پرداخت شارژ خودرو برقی",
+  "lang": "fa",
+  "dir": "rtl",
+  "start_url": "/app",
+  "scope": "/app",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f2f6fa",
+  "theme_color": "#0e63c9",
+  "icons": [
+    { "src": "/assets/pwa/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/assets/pwa/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/assets/pwa/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "اسکن QR", "url": "/app/scan" },
+    { "name": "نقشه ایستگاه‌ها", "url": "/app/map" },
+    { "name": "شارژ فعال", "url": "/app/charging" }
+  ]
+}

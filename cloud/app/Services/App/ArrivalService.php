@@ -131,6 +131,7 @@ class ArrivalService
                     ->post(rtrim($base, '/').$path, []);
             } catch (\Throwable $e) {
                 $lastError = $e->getMessage();
+
                 continue;
             }
 

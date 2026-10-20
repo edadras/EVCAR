@@ -5,6 +5,8 @@ namespace App\Services\Stations;
 use App\Models\AnprEvent;
 use App\Models\EdgeStation;
 use App\Models\Station;
+use App\Services\Admin\AdminMetricsService;
+use App\Services\Admin\AdminViewDataService;
 use App\Support\Persian;
 use Illuminate\Support\Str;
 
@@ -153,8 +155,8 @@ class StationAnprService
             ->get();
 
         $latest = $events->first();
-        $presenter = app(\App\Services\Admin\AdminViewDataService::class);
-        $bundle = app(\App\Services\Admin\AdminMetricsService::class)->anprKpis($station->id);
+        $presenter = app(AdminViewDataService::class);
+        $bundle = app(AdminMetricsService::class)->anprKpis($station->id);
 
         $cameraRows = [];
         foreach ($cameras as $cam) {

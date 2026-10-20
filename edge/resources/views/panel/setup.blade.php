@@ -39,7 +39,7 @@
                 <div class="field"><label>توکن سینک</label><input id="clToken" type="password" placeholder="فقط در صورت تغییر"></div>
                 <div class="flex gap-8"><button type="button" class="btn" id="saveCloud">ذخیره مرکز</button><span class="pill" id="clStatus">—</span></div>
                 <hr style="border:none;border-top:1px solid var(--border-2);margin:18px 0">
-                <div class="fw7 fs13 mb8">OCPP Gateway محلی</div>
+                <div class="fw7 fs13 mb8">OCPP (سرور داخلی یا Gateway خارجی)</div>
                 <div class="field"><label>آدرس OCPP API</label><input id="ocUrl" type="text"></div>
                 <div class="field"><label>ایمیل OCPP</label><input id="ocEmail" type="text"></div>
                 <div class="field"><label>رمز OCPP</label><input id="ocPass" type="password" placeholder="فقط در صورت تغییر"></div>
@@ -179,7 +179,9 @@
     document.getElementById('clStatus').textContent=c.reachable?'مرکز متصل':'مرکز آفلاین';
     document.getElementById('ocUrl').value=o.api_url||'';
     document.getElementById('ocEmail').value=o.email||'';
-    document.getElementById('ocppMsg').textContent=o.configured?'OCPP پیکربندی شده':'OCPP تنظیم نشده — کنترل شبیه‌سازی می‌شود';
+    document.getElementById('ocppMsg').textContent=o.driver==='builtin'
+      ?('سرور OCPP داخلی · پورت '+o.listen_port+' · آدرس شارژر: ws://<IP-ایستگاه>:'+o.listen_port+'/ocpp/<ChargePointId> · متصل: '+((o.online_chargers||[]).join('، ')||'هیچ'))
+      :(o.driver==='simulator'?'حالت شبیه‌ساز — شارژر واقعی کنترل نمی‌شود':(o.configured?'OCPP Gateway پیکربندی شده':'OCPP Gateway تنظیم نشده'));
   }
   function renderDevices(devs){
     var box=document.getElementById('devicesBox');

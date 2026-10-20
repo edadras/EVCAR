@@ -7,6 +7,7 @@ use App\Models\EdgeCharger;
 use App\Models\EdgeConnector;
 use App\Models\GsmMessageLog;
 use App\Models\GsmModemConfig;
+use App\Models\OcppMessageLog;
 use App\Models\StationIdentity;
 use App\Services\Anpr\AnprIngestService;
 use App\Services\Anpr\PlprLiteClient;
@@ -57,10 +58,13 @@ class PanelSetupService
                 'cloud_station_uuid' => $station?->cloud_station_uuid,
             ],
             'ocpp' => [
+                'driver' => $ocpp['driver'] ?? 'builtin',
+                'listen_port' => (int) ($ocpp['listen_port'] ?? 9000),
+                'online_chargers' => EdgeCharger::where('is_online', true)->pluck('charge_point_id')->all(),
                 'api_url' => $ocpp['api_url'] ?? '',
                 'email' => $ocpp['email'] ?? '',
                 'password_set' => ! empty($ocpp['password']),
-                'configured' => $this->ocpp->configured(),
+                'configured' => ($ocpp['driver'] ?? 'builtin') === 'builtin' || $this->ocpp->configured(),
             ],
             'anpr' => [
                 'plpr_url' => $anpr['plpr_url'] ?? '',
@@ -226,6 +230,24 @@ class PanelSetupService
     /** @return array<string, mixed> */
     public function testOcpp(): array
     {
+        $driver = (string) ($this->config->ocpp()['driver'] ?? 'builtin');
+        if ($driver === 'builtin') {
+            $online = EdgeCharger::where('is_online', true)->pluck('charge_point_id')->all();
+            $lastMessage = OcppMessageLog::max('created_at');
+
+            return [
+                'ok' => $online !== [],
+                'message' => $online !== []
+                    ? 'شارژرهای متصل: '.implode('، ', $online)
+                    : 'هیچ شارژری متصل نیست. آدرس OCPP شارژر را ws://<IP-ایستگاه>:'.(int) ($this->config->ocpp()['listen_port'] ?? 9000).'/ocpp/<ChargePointId> تنظیم کنید'
+                        .($lastMessage ? ' (آخرین پیام: '.$lastMessage.')' : ' و از اجرای ocpp:serve مطمئن شوید.'),
+            ];
+        }
+
+        if ($driver === 'simulator') {
+            return ['ok' => true, 'message' => 'حالت شبیه‌ساز فعال است — شارژر واقعی کنترل نمی‌شود.'];
+        }
+
         if (! $this->ocpp->configured()) {
             return ['ok' => false, 'error' => 'OCPP Gateway پیکربندی نشده است.'];
         }

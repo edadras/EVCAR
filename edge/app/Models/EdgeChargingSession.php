@@ -15,6 +15,7 @@ class EdgeChargingSession extends Model
         'pending_sync', 'synced_at',
         'id_tag', 'auth_method', 'status', 'started_at', 'stopped_at',
         'energy_kwh', 'duration_seconds', 'cost_amount', 'currency', 'meta',
+        'ocpp_transaction_id', 'meter_start_wh', 'meter_stop_wh', 'stop_reason',
     ];
 
     protected function casts(): array
@@ -22,6 +23,7 @@ class EdgeChargingSession extends Model
         return [
             'started_at' => 'datetime',
             'stopped_at' => 'datetime',
+            'synced_at' => 'datetime',
             'energy_kwh' => 'decimal:3',
             'cost_amount' => 'decimal:2',
             'meta' => 'array',

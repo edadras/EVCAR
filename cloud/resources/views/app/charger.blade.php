@@ -55,7 +55,7 @@
         @else
         <button class="chg-tool-btn" type="button" disabled><span data-ic="nav"></span><span>مسیریابی</span></button>
         @endif
-        <a href="{{ route('app.reserve') }}" class="chg-tool-btn"><span data-ic="calendar"></span><span>رزرو</span></a>
+        <a href="{{ route('app.reserve', ['station' => $station->code]) }}" class="chg-tool-btn"><span data-ic="calendar"></span><span>رزرو</span></a>
         <button class="chg-tool-icon" type="button" aria-label="علاقه‌مندی"><span data-ic="star"></span></button>
     </div>
 
@@ -85,13 +85,13 @@
         </div>
         <div class="lrow">
             <div class="l-ic ic-amber" data-ic="clock"></div>
-            <div class="l-main"><div class="l-title">هزینهٔ اشغال</div><div class="l-sub">پس از پایان شارژ</div></div>
+            <div class="l-main"><div class="l-title">هزینهٔ اشغال</div><div class="l-sub">پس از پایان شارژ@if(($tariffIdleGrace ?? null)) · {{ Persian::digits($tariffIdleGrace) }} دقیقه رایگان@endif</div></div>
             <div class="l-end tnum">@if($tariffIdle){{ Persian::money($tariffIdle) }} <span class="fs12 muted">ت/دقیقه</span>@else—@endif</div>
         </div>
         <div class="lrow" style="padding-bottom:0">
             <div class="l-ic ic-green" data-ic="leaf"></div>
             <div class="l-main"><div class="l-title">ساعات کم‌باری</div><div class="l-sub">{{ $tariffOffpeakHours }}</div></div>
-            <div class="l-end tnum" style="color:var(--green)">{{ Persian::money($tariffOffpeak) }} <span class="fs12 muted">ت/kWh</span></div>
+            <div class="l-end tnum" style="color:var(--green)">@if($tariffOffpeak){{ Persian::money($tariffOffpeak) }} <span class="fs12 muted">ت/kWh</span>@else—@endif</div>
         </div>
     </div>
 
@@ -113,6 +113,13 @@
     <form method="POST" action="{{ route('app.charging.start') }}" id="startForm" style="margin:0">
         @csrf
         <input type="hidden" name="connector_id" id="connectorId" value="{{ $firstConn['db_id'] ?? '' }}">
+        <label class="fs12 muted" style="display:inline-flex;align-items:center;gap:6px;margin-inline-end:8px">شارژ فعلی
+            <select name="start_soc" id="startSoc" style="padding:6px 8px;border-radius:10px;border:1px solid var(--border-2);background:var(--bg-2,transparent);color:inherit">
+                @foreach([5,10,15,20,25,30,40,50,60,70,80] as $pct)
+                <option value="{{ $pct }}" @selected($pct === 20)>{{ Persian::digits($pct) }}٪</option>
+                @endforeach
+            </select>
+        </label>
         <button type="submit" class="btn btn-orange" id="startBtn" style="width:auto;padding:0 24px" disabled><span data-ic="bolt"></span> شروع شارژ</button>
     </form>
 </div>
@@ -184,6 +191,9 @@
   var arrivalUrl=@json(route('app.arrival'));
   var chargingUrl=@json(route('app.charging'));
   var denyMsg='برای شروع شارژ، QR کانکتور را اسکن کنید، کارت RFID را بزنید، یا پلاک خودرو توسط دوربین ثبت شود.';
+  var startForm=document.getElementById('startForm');
+  var startBtn=document.getElementById('startBtn');
+  var stateLabels={charging:['در حال شارژ','pill-orange'],offline:['آفلاین','pill-muted'],fault:['خطا','pill-red'],reserved:['رزرو','pill-amber'],inactive:['غیرفعال','pill-muted']};
 
   var allowedUuids=new Set();
   var edgeGrants={};
@@ -238,7 +248,7 @@
   function updateStartBtn(){
     var uuid=selectedUuid();
     var ok=!!uuid&&isAllowed(uuid)&&document.querySelector('.conn-card.sel:not(.busy)');
-    startBtn.disabled=!ok;
+    if(startBtn)startBtn.disabled=!ok;
     updateBanner();
   }
 
@@ -251,8 +261,8 @@
       return '<div class="conn-card '+(sel?'sel':'')+(busy?' busy':'')+(locked?' locked':'')+(allowed?' auth-ok':'')+'" data-idx="'+i+'" data-name="'+c.name+'" data-id="'+c.db_id+'" data-uuid="'+(c.uuid||'')+'">'+
         '<div class="ci '+c.ic+'">'+window.icon('plug')+'</div>'+
         '<div style="flex:1"><div class="fw7">کانکتور '+c.id+' · '+c.t+'</div>'+
-        '<div class="fs12 muted mt4">حداکثر توان '+c.pw+'</div></div>'+
-        (busy?'<span class="pill pill-orange">مشغول</span>':(allowed?'<span class="pill pill-green">مجاز</span>':'<span class="pill pill-muted">قفل</span>'))+
+        '<div class="fs12 muted mt4">حداکثر توان '+c.pw+(busy&&c.reason?' · '+c.reason:'')+'</div></div>'+
+        (busy?'<span class="pill '+((stateLabels[c.state]||['مشغول','pill-orange'])[1])+'">'+((stateLabels[c.state]||['مشغول'])[0])+'</span>':(allowed?'<span class="pill pill-green">مجاز</span>':'<span class="pill pill-muted">قفل</span>'))+
       '</div>';
     }).join('');
 
@@ -325,9 +335,6 @@
     });
   }
 
-  var startForm=document.getElementById('startForm');
-  var startBtn=document.getElementById('startBtn');
-
   startForm.addEventListener('submit',function(e){
     e.preventDefault();
     var uuid=selectedUuid();
@@ -346,7 +353,7 @@
       chain=chain.then(function(){return authorizeEdgeQr(uuid);});
     }
     chain.then(function(){
-      return window.scPost(@json(route('app.charging.start')), (window.SC_API&&window.SC_API.chargingStartEdge)||'/api/v1/app/charging/start', {connector_uuid:uuid});
+      return window.scPost(@json(route('app.charging.start')), (window.SC_API&&window.SC_API.chargingStartEdge)||'/api/v1/app/charging/start', {connector_uuid:uuid,start_soc:parseInt((document.getElementById('startSoc')||{}).value||'20',10)});
     }).then(function(r){return r.json().then(function(d){return {ok:r.ok,d:d};});})
       .then(function(res){
         if(!res.ok)throw new Error(res.d.message||denyMsg);

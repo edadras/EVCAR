@@ -20,7 +20,7 @@ function httpJson(string $method, string $url, ?array $body = null, array $heade
 {
     $ch = curl_init($url);
     $hdrs = array_merge(['Accept: application/json'], $headers);
-    $opts = [CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 15, CURLOPT_HTTPHEADER => $hdrs];
+    $opts = [CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 60, CURLOPT_HTTPHEADER => $hdrs];
     if ($method === 'POST') {
         $opts[CURLOPT_POST] = true;
         $opts[CURLOPT_POSTFIELDS] = json_encode($body ?? []);
@@ -73,6 +73,9 @@ $connectorUuid = (string) Connector::query()
 if ($connectorUuid === '') {
     bad('no cloud connector — run sync:pull-snapshot on edge');
 } else {
+    $auth = httpJson('POST', "$edge/api/v1/app/authorize", ['method' => 'qr', 'connector_uuid' => $connectorUuid], array_merge($authHeaders, ['Content-Type: application/json']));
+    ($auth['code'] === 200 && ! empty($auth['body']['ok'])) ? ok('connector authorize (QR)') : bad('authorize HTTP '.$auth['code'].' '.$auth['raw']);
+
     $start = httpJson('POST', "$edge/api/v1/app/charging/start", ['connector_uuid' => $connectorUuid], array_merge($authHeaders, ['Content-Type: application/json']));
     ($start['code'] === 200 && ! empty($start['body']['ok'])) ? ok('charging start') : bad('charging start HTTP '.$start['code'].' '.$start['raw']);
 

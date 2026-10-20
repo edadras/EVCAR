@@ -156,11 +156,11 @@ class ReportsBundleService
         }
 
         $sessionTotal = (int) (clone $scoped())->count();
-        $completedSessions = (clone $scoped())->where('status', 'completed')->count();
+        $completedSessions = (clone $scoped())->whereIn('status', ['completed', 'stopped'])->count();
         $stoppedSessions = (clone $scoped())->whereIn('status', ['stopped', 'cancelled'])->count();
         $failedSessions = (clone $scoped())->whereIn('status', ['failed', 'interrupted'])->count();
         $sessDenom = max(1, $completedSessions + $stoppedSessions + $failedSessions);
-        $avgDurationMin = (int) round((float) (clone $scoped())->where('status', 'completed')->avg('duration_seconds') / 60);
+        $avgDurationMin = (int) round((float) (clone $scoped())->whereIn('status', ['completed', 'stopped'])->avg('duration_seconds') / 60);
         $successPct = (int) round($completedSessions / $sessDenom * 100);
 
         $orgUserCount = User::where('role', UserRole::Customer)->whereNotNull('organization_id')->count();
@@ -372,9 +372,9 @@ class ReportsBundleService
             'energy' => $energy,
             'revenue' => $revenue,
             'sessions' => $sessions,
-            'completed' => (int) (clone $q)->where('status', 'completed')->count(),
+            'completed' => (int) (clone $q)->whereIn('status', ['completed', 'stopped'])->count(),
             'failed' => (int) (clone $q)->whereIn('status', ['failed', 'cancelled', 'interrupted'])->count(),
-            'avg_duration_min' => (int) round((float) (clone $q)->where('status', 'completed')->avg('duration_seconds') / 60),
+            'avg_duration_min' => (int) round((float) (clone $q)->whereIn('status', ['completed', 'stopped'])->avg('duration_seconds') / 60),
             'peak_kw' => (float) (clone $q)->join('chargers', 'chargers.id', '=', 'charging_sessions.charger_id')->max('chargers.max_power_kw'),
             'new_users' => (int) User::where('role', UserRole::Customer)->whereBetween('created_at', [$start, $end])->count(),
             'active_users' => (int) (clone $q)->whereNotNull('user_id')->distinct('user_id')->count('user_id'),

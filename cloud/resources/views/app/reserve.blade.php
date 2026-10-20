@@ -40,7 +40,7 @@
     <div class="avail-row">
         <div class="av-box"><div class="av-n tnum" id="statFree" style="color:var(--green)">{{ Persian::digits($stationStats['free'] ?? 0) }}</div><div class="av-l">آزاد اکنون</div></div>
         <div class="av-box"><div class="av-n tnum" id="statBusy" style="color:var(--amber)">{{ Persian::digits($stationStats['busy'] ?? 0) }}</div><div class="av-l">مشغول</div></div>
-        <div class="av-box"><div class="av-n tnum" id="statSoon" style="color:var(--accent-strong)">{{ Persian::digits($stationStats['soon'] ?? 0) }}</div><div class="av-l">به‌زودی آزاد</div></div>
+        <div class="av-box"><div class="av-n tnum" id="statSoon" style="color:var(--accent-strong)">{{ Persian::digits($stationStats['soon'] ?? 0) }}</div><div class="av-l">خارج از دسترس</div></div>
     </div>
 
     <div class="sec-title">وضعیت کانکتورها <span class="live-dot"></span><span class="fs12 muted" style="font-weight:400">زنده</span></div>
@@ -215,10 +215,16 @@ window.__RESERVE = @json($reserveConfig);
           '<div class="cn-main"><div class="cn-t">کانکتور '+c.id+'</div><div class="cn-s">'+(c.t||'آمادهٔ رزرو')+'</div></div>'+
           '<span class="cn-free-tag">آزاد · آمادهٔ شارژ</span></div>';
       }
+      if(!c.charging){
+        var lbl={offline:'آفلاین',fault:'خارج از سرویس',reserved:'رزرو شده',inactive:'غیرفعال'}[c.state]||'در دسترس نیست';
+        return '<div class="conn'+sel+'" data-id="'+c.db_id+'"><div class="cn-ic ic-amber">'+window.icon('plug')+'</div>'+
+          '<div class="cn-main"><div class="cn-t">کانکتور '+c.id+'</div><div class="cn-s">'+(c.reason||lbl)+'</div></div>'+
+          '<span class="pill pill-muted">'+lbl+'</span></div>';
+      }
       return '<div class="conn'+sel+'" data-id="'+c.db_id+'"><div class="cn-ic ic-orange">'+window.icon('plug')+'</div>'+
         '<div class="cn-main"><div class="cn-t">کانکتور '+c.id+'</div><div class="cn-s">خودروی فعلی: '+fa(c.soc||0)+'٪ شارژ شده</div>'+
         '<div class="cn-prog"><i style="width:'+(c.soc||0)+'%"></i></div></div>'+
-        '<div class="cn-eta"><div class="e-v">'+fa(c.eta||0)+' دق</div><div class="e-l">تا آزاد شدن</div></div></div>';
+        '<div class="cn-eta"><div class="e-v">'+(c.eta?'~'+fa(c.eta)+' دق':'—')+'</div><div class="e-l">تا آزاد شدن</div></div></div>';
     }).join('');
     document.querySelectorAll('#connList .conn.free').forEach(function(el){
       el.style.cursor='pointer';

@@ -5,7 +5,7 @@
 @section('phone')
 @php
     $prefs = $prefs ?? [];
-    $targetSoc = (int) ($prefs['charge_target_soc'] ?? 90);
+    $targetSoc = (int) ($prefs['charge_target_soc'] ?? 80);
 @endphp
 <div class="appbar" style="padding-top:2px">
     <a href="{{ route('app.account') }}" class="ab-btn"><span data-ic="back"></span></a>

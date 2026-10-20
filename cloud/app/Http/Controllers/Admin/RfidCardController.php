@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\ChargingSession;
 use App\Models\RfidCard;
 use App\Models\User;
+use App\Services\App\MobileAppPresenter;
 use App\Services\Audit\AuditService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -57,7 +58,7 @@ class RfidCardController extends Controller
     public function edit(RfidCard $rfid): View
     {
         $rfid->load(['user', 'organization']);
-        $auditRows = app(\App\Services\App\MobileAppPresenter::class)
+        $auditRows = app(MobileAppPresenter::class)
             ->auditRows($this->audit->forSubject($rfid, 20));
 
         return view('admin.rfid.create', ['card' => $rfid, 'auditRows' => $auditRows]);

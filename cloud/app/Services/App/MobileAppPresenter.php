@@ -4,11 +4,10 @@ namespace App\Services\App;
 
 use App\Models\AuditLog;
 use App\Models\ChargingSession;
-use App\Models\Connector;
 use App\Models\QrToken;
 use App\Models\RfidCard;
 use App\Models\Station;
-use App\Models\SupportTicket;
+use App\Models\SystemSetting;
 use App\Models\Tariff;
 use App\Models\User;
 use App\Models\Vehicle;
@@ -58,7 +57,10 @@ class MobileAppPresenter
 
     public function headerDate(?string $city = null): string
     {
-        $line = now()->translatedFormat('l j F');
+        // تاریخ شمسی مانند «سه‌شنبه ۲۸ مهر»؛ بدون افزونهٔ intl به تاریخ میلادی برمی‌گردد.
+        $line = class_exists(\IntlDateFormatter::class)
+            ? (string) (new \IntlDateFormatter('fa_IR@calendar=persian', \IntlDateFormatter::FULL, \IntlDateFormatter::NONE, 'Asia/Tehran', \IntlDateFormatter::TRADITIONAL, 'EEEE d MMMM'))->format(now())
+            : now()->translatedFormat('l j F');
         if ($city) {
             $line .= ' · '.$city;
         }
@@ -92,7 +94,7 @@ class MobileAppPresenter
                 'distance_km' => $km,
                 'lat' => $st->latitude ? (float) $st->latitude : null,
                 'lng' => $st->longitude ? (float) $st->longitude : null,
-                'type' => ($isFast ? 'DC سریع' : 'AC').' · '.($st->chargers->first()?->connector_type ?? 'Type2'),
+                'type' => ($isFast ? 'DC سریع' : 'AC').' · '.($st->chargers->pluck('connector_type')->filter()->unique()->sort()->implode(' / ') ?: 'Type2'),
                 'free' => Persian::digits($free).' از '.Persian::digits($total).' آزاد',
                 'free_count' => $free,
                 'price' => $this->defaultTariffToman() !== null
@@ -225,6 +227,8 @@ class MobileAppPresenter
                     't' => $charger->connector_type ?? 'Type2',
                     'pw' => Persian::digits((int) ($cn->max_power_kw ?: $charger->max_power_kw)).' kW',
                     'st' => $busy ? 'busy' : 'free',
+                    'state' => $snap['state'],
+                    'reason' => $snap['reason'],
                     'ic' => $busy ? 'ic-orange' : 'ic-green',
                     'name' => $label.' · '.($charger->connector_type ?? 'Type2').' · '.Persian::digits((int) ($cn->max_power_kw ?: $charger->max_power_kw)).' kW',
                 ];
@@ -280,20 +284,25 @@ class MobileAppPresenter
             ];
         }
 
-        $idle = $tariff->price_per_minute
-            ? (int) round((float) $tariff->price_per_minute / 10)
-            : (int) round($energy * 0.15);
+        // فقط مقادیر واقعاً تنظیم‌شده نمایش داده می‌شوند (نه درصد فرضی از قیمت انرژی).
+        $idle = (int) round((float) ($tariff->meta['idle_fee_per_minute'] ?? 0) / 10);
 
         $offpeakRule = $tariff->rules()->where('rule_type', 'off_peak')->first();
-        $offpeak = $offpeakRule && $offpeakRule->price_per_kwh
-            ? (int) round((float) $offpeakRule->price_per_kwh / 10)
-            : (int) round($energy * 0.65);
+        $offpeak = 0;
+        if ($offpeakRule) {
+            $offpeak = $offpeakRule->price_per_kwh
+                ? (int) round((float) $offpeakRule->price_per_kwh / 10)
+                : (int) round($energy * (float) ($offpeakRule->multiplier ?: 1));
+        }
 
-        $hours = $tariff->meta['off_peak_hours'] ?? '00:00 تا 06:00';
+        $hours = $offpeakRule
+            ? substr((string) $offpeakRule->start_time, 0, 5).' تا '.substr((string) $offpeakRule->end_time, 0, 5)
+            : '—';
 
         return [
             'energy' => $energy,
             'idle' => $idle,
+            'idle_grace' => $idle > 0 ? (int) ($tariff->meta['idle_grace_minutes'] ?? 10) : null,
             'offpeak' => $offpeak,
             'offpeak_hours' => Persian::digits($hours),
         ];
@@ -319,8 +328,8 @@ class MobileAppPresenter
     public function supportContact(): array
     {
         return [
-            'phone' => \App\Models\SystemSetting::text('app', 'support_phone', '1570'),
-            'faq' => json_decode(\App\Models\SystemSetting::text('app', 'support_faq', ''), true) ?: [
+            'phone' => SystemSetting::text('app', 'support_phone', '1570'),
+            'faq' => json_decode(SystemSetting::text('app', 'support_faq', ''), true) ?: [
                 ['q' => 'چگونه کیف پولم را شارژ کنم؟', 'a' => 'از صفحهٔ کیف پول، گزینهٔ «افزایش موجودی» را بزنید و مبلغ را از طریق درگاه بانکی پرداخت کنید.'],
                 ['q' => 'شارژ خودکار با پلاک چگونه کار می‌کند؟', 'a' => 'پس از ثبت پلاک خودرو، با ورود به ایستگاه‌های مجهز به دوربین، شارژ خودکار آغاز و هزینه از کیف پول کسر می‌شود.'],
                 ['q' => 'اگر شارژر خراب باشد چه کنم؟', 'a' => 'از همین صفحه درخواست پشتیبانی ثبت کنید یا با پشتیبانی تماس بگیرید.'],

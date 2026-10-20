@@ -171,6 +171,8 @@ class AppController extends Controller
 
         $data = $request->validate([
             'connector_uuid' => ['required', 'string', 'max:64'],
+            'start_soc' => ['nullable', 'integer', 'min:0', 'max:99'],
+            'target_soc' => ['nullable', 'integer', 'min:20', 'max:100'],
         ]);
 
         try {
@@ -185,7 +187,10 @@ class AppController extends Controller
                 ]);
             }
 
-            $session = $this->charging->start($user, $data['connector_uuid']);
+            $session = $this->charging->start($user, $data['connector_uuid'], array_filter([
+                'start_soc' => $data['start_soc'] ?? null,
+                'target_soc' => $data['target_soc'] ?? null,
+            ], fn ($v) => $v !== null));
 
             return response()->json([
                 'ok' => true,

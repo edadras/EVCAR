@@ -1,0 +1,32 @@
+# OCPP Security Profile 2 — WebSocket امن (wss) با TLS
+# کپی در /etc/nginx/conf.d/ و مسیر گواهی‌ها را تنظیم کنید.
+# آدرس شارژر: wss://ocpp.example.ir/ocpp/<ChargePointId>  (+ رمز Basic Auth شارژر از پنل ادمین)
+#   upstream ابر:   sc_cloud_ocpp:9100   (ایستگاه بدون Edge)
+#   upstream Edge:  sc_edge_ocpp:9000    (روی Mini PC ایستگاه)
+server {
+    listen 443 ssl;
+    http2 off;                       # WebSocket روی HTTP/1.1
+    server_name ocpp.example.ir;
+
+    ssl_certificate     /etc/nginx/certs/fullchain.pem;
+    ssl_certificate_key /etc/nginx/certs/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;   # OCPP 1.6 Security Whitepaper: حداقل TLS 1.2
+    ssl_ciphers HIGH:!aNULL:!MD5;
+
+    # Security Profile 3 (گواهی کلاینت شارژر) — در صورت نیاز فعال کنید:
+    # ssl_client_certificate /etc/nginx/certs/charger-ca.pem;
+    # ssl_verify_client on;
+
+    location /ocpp/ {
+        proxy_pass http://sc_cloud_ocpp:9100;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header Authorization $http_authorization;
+        proxy_set_header Sec-WebSocket-Protocol $http_sec_websocket_protocol;
+        proxy_read_timeout 3600s;
+        proxy_send_timeout 3600s;
+    }
+}

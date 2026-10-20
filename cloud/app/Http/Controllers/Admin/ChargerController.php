@@ -27,6 +27,8 @@ class ChargerController extends Controller
             'max_power_kw' => ['nullable', 'integer', 'min:1', 'max:500'],
             'connector_type' => ['nullable', 'string', 'max:32'],
             'connector_count' => ['required', 'integer', 'min:1', 'max:4'],
+            'connection_mode' => ['nullable', 'in:auto,edge,direct'],
+            'ocpp_password' => ['nullable', 'string', 'min:8', 'max:40'],
         ]);
 
         $charger = $station->chargers()->create([
@@ -36,7 +38,11 @@ class ChargerController extends Controller
             'serial_number' => $data['serial_number'] ?? null,
             'max_power_kw' => $data['max_power_kw'] ?? null,
             'connector_type' => $data['connector_type'] ?? null,
-            'status' => 'inactive',
+            // وضعیت اداری فعال؛ آنلاین بودن را خود اتصال OCPP تعیین می‌کند.
+            'status' => 'active',
+            'is_online' => false,
+            'connection_mode' => $data['connection_mode'] ?? 'auto',
+            'meta' => array_filter(['ocpp_password' => $data['ocpp_password'] ?? null]),
         ]);
 
         for ($i = 1; $i <= $data['connector_count']; $i++) {
@@ -44,7 +50,7 @@ class ChargerController extends Controller
                 'charger_id' => $charger->id,
                 'connector_number' => $i,
                 'ocpp_status' => 'Unavailable',
-                'operational_status' => 'inactive',
+                'operational_status' => 'active',
             ]);
         }
 

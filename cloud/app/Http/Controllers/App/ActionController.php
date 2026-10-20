@@ -15,10 +15,12 @@ use App\Models\UserNotification;
 use App\Models\Vehicle;
 use App\Models\Wallet;
 use App\Models\WalletTransaction;
-use App\Services\Audit\AuditService;
 use App\Services\App\ChargingAuthorizationService;
+use App\Services\Audit\AuditService;
 use App\Services\Charging\CloudChargingSessionService;
 use App\Services\Charging\ConnectorAvailabilityService;
+use App\Services\ReservationService;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -107,7 +109,7 @@ class ActionController extends Controller
         return back()->with('success', 'رمز عبور با موفقیت تغییر کرد.');
     }
 
-    public function storeReservation(Request $request, \App\Services\ReservationService $reservations): RedirectResponse
+    public function storeReservation(Request $request, ReservationService $reservations): RedirectResponse
     {
         $data = $request->validate([
             'station_id' => ['required', 'exists:stations,id'],
@@ -116,8 +118,8 @@ class ActionController extends Controller
             'reserved_until' => ['required', 'date', 'after:reserved_from'],
         ]);
 
-        $from = \Carbon\Carbon::parse($data['reserved_from']);
-        $until = \Carbon\Carbon::parse($data['reserved_until']);
+        $from = Carbon::parse($data['reserved_from']);
+        $until = Carbon::parse($data['reserved_until']);
 
         if ($error = $reservations->validateNewReservation(
             $this->user()->id,
@@ -129,7 +131,7 @@ class ActionController extends Controller
             return back()->withErrors(['reservation' => $error])->withInput();
         }
 
-        $connector = \App\Models\Connector::findOrFail($data['connector_id']);
+        $connector = Connector::findOrFail($data['connector_id']);
 
         Reservation::create([
             'uuid' => (string) Str::uuid(),
@@ -252,9 +254,11 @@ class ActionController extends Controller
         Request $request,
         ConnectorAvailabilityService $availability,
         ChargingAuthorizationService $chargeAuth,
+        CloudChargingSessionService $charging,
     ): RedirectResponse {
         $data = $request->validate([
             'connector_id' => ['required', 'exists:connectors,id'],
+            'start_soc' => ['nullable', 'integer', 'min:0', 'max:99'],
         ]);
 
         $user = $this->user();
@@ -284,27 +288,19 @@ class ActionController extends Controller
         $prefs = $user->meta['app_prefs'] ?? [];
         $targetSoc = (int) ($prefs['charge_target_soc'] ?? 80);
 
-        ChargingSession::create([
-            'uuid' => (string) Str::uuid(),
-            'station_id' => $connector->charger->station_id,
-            'charger_id' => $connector->charger_id,
-            'connector_id' => $connector->id,
-            'user_id' => $user->id,
-            'vehicle_id' => $vehicle?->id,
-            'tariff_id' => $tariff?->id,
-            'auth_method' => $chargeAuth->grantTypeFor($connector) ?? 'qr',
-            'status' => 'active',
-            'started_at' => now(),
-            'energy_kwh' => 0,
-            'cost_amount' => 0,
-            'meta' => [
-                'soc' => 10,
-                'target_soc' => $targetSoc,
-                'power_kw' => (int) ($connector->max_power_kw ?: $connector->charger->max_power_kw),
-            ],
-        ]);
-
-        $connector->update(['ocpp_status' => 'Charging']);
+        try {
+            $charging->requestStart(
+                $user,
+                $connector,
+                $chargeAuth->grantTypeFor($connector) ?? 'qr',
+                $tariff,
+                $vehicle,
+                $targetSoc,
+                isset($data['start_soc']) ? (int) $data['start_soc'] : null,
+            );
+        } catch (\RuntimeException $e) {
+            return back()->withErrors(['charging' => $e->getMessage()]);
+        }
 
         return redirect()->route('app.charging');
     }
@@ -320,7 +316,11 @@ class ActionController extends Controller
             return redirect()->route('app.charging')->withErrors(['charging' => 'جلسه فعالی برای توقف وجود ندارد.']);
         }
 
-        $charging->stop($session, $this->user());
+        $session = $charging->requestStop($session, $this->user());
+
+        if ($session->status === 'active') {
+            return redirect()->route('app.charging')->with('success', 'دستور توقف برای شارژر ارسال شد؛ صورتحساب نهایی پس از توقف شارژر ثبت می‌شود.');
+        }
 
         return redirect()->route('app.history')->with('success', 'شارژ متوقف شد.');
     }

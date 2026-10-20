@@ -55,4 +55,9 @@ class ChargingSession extends Model
     {
         return $this->belongsTo(Tariff::class);
     }
+
+    public function vehicle(): BelongsTo
+    {
+        return $this->belongsTo(Vehicle::class);
+    }
 }

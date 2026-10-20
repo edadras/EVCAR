@@ -89,6 +89,46 @@ services:
     depends_on:
       - cloud-app
 
+  cloud-scheduler:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    container_name: sc_cloud_scheduler
+    restart: unless-stopped
+    working_dir: /var/www/html
+    volumes:
+      - ./cloud:/var/www/html
+    environment: *cloud-app-env
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        cd /var/www/html
+        if [ ! -d vendor ]; then composer install --no-interaction --prefer-dist; fi
+        php artisan schedule:work
+    depends_on:
+      - cloud-app
+
+  cloud-ocpp:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    container_name: sc_cloud_ocpp
+    restart: unless-stopped
+    working_dir: /var/www/html
+    volumes:
+      - ./cloud:/var/www/html
+    environment: *cloud-app-env
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        cd /var/www/html
+        if [ ! -d vendor ]; then composer install --no-interaction --prefer-dist; fi
+        php artisan ocpp:serve
+    ports:
+      - "${CLOUD_OCPP_PORT:-9100}:9100"
+    depends_on:
+      - cloud-app
+
   cloud-nginx:
     image: nginx:alpine
     container_name: sc_cloud_nginx
@@ -100,6 +140,7 @@ services:
       - ./docker/nginx/cloud.conf:/etc/nginx/conf.d/default.conf:ro
     depends_on:
       - cloud-app
+      - cloud-ocpp
 
   # ─── Edge Station ────────────────────────────────────────────
   edge-mysql:
@@ -170,6 +211,8 @@ services:
       GSM_DRIVER: log
       ANPR_PLPR_URL: ${ANPR_PLPR_URL:-http://host.docker.internal:8502}
       SC_TEST_OTP_CODES: ${SC_TEST_OTP_CODES:-111111,222222,333333}
+      OCPP_DRIVER: ${OCPP_DRIVER:-builtin}
+      OCPP_LISTEN_PORT: 9000
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:
@@ -218,6 +261,27 @@ services:
     depends_on:
       - edge-app
 
+  edge-ocpp:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    container_name: sc_edge_ocpp
+    restart: unless-stopped
+    working_dir: /var/www/html
+    volumes:
+      - ./edge:/var/www/html
+    environment: *edge-app-env
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        cd /var/www/html
+        if [ ! -d vendor ]; then composer install --no-interaction --prefer-dist; fi
+        php artisan ocpp:serve
+    ports:
+      - "${EDGE_OCPP_PORT:-9000}:9000"
+    depends_on:
+      - edge-app
+
   edge-nginx:
     image: nginx:alpine
     container_name: sc_edge_nginx
@@ -229,6 +293,7 @@ services:
       - ./docker/nginx/edge.conf:/etc/nginx/conf.d/default.conf:ro
     depends_on:
       - edge-app
+      - edge-ocpp
 
   # ─── Edge Station 2 (برج میلاد — تست چند لبه) ───────────────
   edge2-mysql:
@@ -271,7 +336,7 @@ services:
     working_dir: /var/www/html
     volumes:
       - ./edge:/var/www/html
-    environment:
+    environment: &edge2-app-env
       APP_NAME: "SafirCharge Edge Milad"
       APP_ENV: local
       APP_DEBUG: "true"
@@ -297,6 +362,12 @@ services:
       EDGE_WIFI_SSID: SafirCharge-Milad
       EDGE_LOCAL_HOSTNAME: station-2.local
       GSM_DRIVER: log
+      ANPR_PLPR_URL: ${ANPR_PLPR_URL:-http://host.docker.internal:8502}
+      SC_TEST_OTP_CODES: ${SC_TEST_OTP_CODES:-111111,222222,333333}
+      OCPP_DRIVER: ${OCPP_DRIVER:-builtin}
+      OCPP_LISTEN_PORT: 9000
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       edge2-mysql:
         condition: service_healthy
@@ -387,6 +458,27 @@ services:
     depends_on:
       - edge2-app
 
+  edge2-ocpp:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    container_name: sc_edge2_ocpp
+    restart: unless-stopped
+    working_dir: /var/www/html
+    volumes:
+      - ./edge:/var/www/html
+    environment: *edge2-app-env
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        cd /var/www/html
+        if [ ! -d vendor ]; then composer install --no-interaction --prefer-dist; fi
+        php artisan ocpp:serve
+    ports:
+      - "${EDGE2_OCPP_PORT:-9001}:9000"
+    depends_on:
+      - edge2-app
+
   edge2-nginx:
     image: nginx:alpine
     container_name: sc_edge2_nginx
@@ -398,6 +490,7 @@ services:
       - ./docker/nginx/edge2.conf:/etc/nginx/conf.d/default.conf:ro
     depends_on:
       - edge2-app
+      - edge2-ocpp
 
 volumes:
   cloud_mysql_data:
