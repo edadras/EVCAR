@@ -14,6 +14,8 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->trustProxies(at: env('TRUSTED_PROXIES', '127.0.0.1,172.16.0.0/12,10.0.0.0/8,192.168.0.0/16'));
+
         $middleware->alias([
             'staff' => EnsureStaffUser::class,
             'partner' => \App\Http\Middleware\EnsurePartnerUser::class,

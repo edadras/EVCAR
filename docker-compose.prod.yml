@@ -1,0 +1,117 @@
+# Production (Cloud only) — behind the host web server (Apache/Nginx reverse proxy).
+#   cp .env.prod.example .env   # fill secrets
+#   docker compose -f docker-compose.prod.yml up -d --build
+name: safircharge
+
+x-cloud-env: &cloud-env
+  APP_NAME: "SafirCharge Cloud"
+  APP_ENV: ${APP_ENV:-production}
+  APP_DEBUG: ${APP_DEBUG:-false}
+  APP_KEY: ${APP_KEY:?APP_KEY is required}
+  APP_URL: ${APP_URL:?APP_URL is required}
+  LOG_CHANNEL: daily
+  LOG_LEVEL: ${LOG_LEVEL:-warning}
+  DB_CONNECTION: mysql
+  DB_HOST: cloud-mysql
+  DB_PORT: 3306
+  DB_DATABASE: ${CLOUD_DB_DATABASE:-safircharge_cloud}
+  DB_USERNAME: ${CLOUD_DB_USERNAME:-safir_cloud}
+  DB_PASSWORD: ${CLOUD_DB_PASSWORD:?CLOUD_DB_PASSWORD is required}
+  REDIS_HOST: cloud-redis
+  REDIS_PORT: 6379
+  CACHE_STORE: redis
+  SESSION_DRIVER: redis
+  SESSION_SECURE_COOKIE: ${SESSION_SECURE_COOKIE:-true}
+  QUEUE_CONNECTION: redis
+  SC_APP_ROLE: cloud
+  SC_EDGE_PROBE_URLS: ${SC_EDGE_PROBE_URLS:-}
+  SC_CONNECTIVITY_ASK_MULTIPLE: ${SC_CONNECTIVITY_ASK_MULTIPLE:-false}
+  SC_TEST_OTP_CODES: ${SC_TEST_OTP_CODES:-}
+  PAYMENT_DRIVER: ${PAYMENT_DRIVER:-simulated}
+  ZARINPAL_MERCHANT_ID: ${ZARINPAL_MERCHANT_ID:-}
+  ZARINPAL_SANDBOX: ${ZARINPAL_SANDBOX:-false}
+  FCM_CREDENTIALS: ${FCM_CREDENTIALS:-}
+  EV_NAVIGATOR_API_URL: ${EV_NAVIGATOR_API_URL:-}
+
+x-cloud-php: &cloud-php
+  build:
+    context: .
+    dockerfile: docker/php/Dockerfile
+  image: safircharge-php:latest
+  restart: unless-stopped
+  working_dir: /var/www/html
+  volumes:
+    - ./cloud:/var/www/html
+  environment: *cloud-env
+
+services:
+  cloud-mysql:
+    image: mariadb:10.11
+    container_name: sc_cloud_mysql
+    restart: unless-stopped
+    environment:
+      MARIADB_ROOT_PASSWORD: ${CLOUD_DB_ROOT_PASSWORD:?CLOUD_DB_ROOT_PASSWORD is required}
+      MARIADB_DATABASE: ${CLOUD_DB_DATABASE:-safircharge_cloud}
+      MARIADB_USER: ${CLOUD_DB_USERNAME:-safir_cloud}
+      MARIADB_PASSWORD: ${CLOUD_DB_PASSWORD}
+    volumes:
+      - cloud_mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  cloud-redis:
+    image: redis:7-alpine
+    container_name: sc_cloud_redis
+    restart: unless-stopped
+    volumes:
+      - cloud_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  cloud-app:
+    <<: *cloud-php
+    container_name: sc_cloud_app
+    depends_on:
+      cloud-mysql:
+        condition: service_healthy
+      cloud-redis:
+        condition: service_healthy
+
+  cloud-queue:
+    <<: *cloud-php
+    container_name: sc_cloud_queue
+    entrypoint: ["php", "artisan", "queue:work", "redis", "--sleep=3", "--tries=3", "--max-time=3600"]
+    depends_on: [cloud-app]
+
+  cloud-scheduler:
+    <<: *cloud-php
+    container_name: sc_cloud_scheduler
+    entrypoint: ["php", "artisan", "schedule:work"]
+    depends_on: [cloud-app]
+
+  cloud-ocpp:
+    <<: *cloud-php
+    container_name: sc_cloud_ocpp
+    entrypoint: ["php", "artisan", "ocpp:serve"]
+    depends_on: [cloud-app]
+
+  cloud-nginx:
+    image: nginx:alpine
+    container_name: sc_cloud_nginx
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${CLOUD_HTTP_PORT:-8180}:80"
+    volumes:
+      - ./cloud:/var/www/html:ro
+      - ./docker/nginx/cloud.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on: [cloud-app, cloud-ocpp]
+
+volumes:
+  cloud_mysql_data:
+  cloud_redis_data:
