@@ -122,6 +122,16 @@ class ConnectorAuthService
         return $this->grant($user, $connector, 'anpr', $detectionUuid);
     }
 
+    public function connectorUuidForQr(string $qrToken): string
+    {
+        $qr = CachedQrToken::query()->where('token', $qrToken)->where('status', 'active')->first();
+        if (! $qr?->cloud_connector_uuid) {
+            throw new \RuntimeException('بارکد QR نامعتبر یا منقضی است.');
+        }
+
+        return $qr->cloud_connector_uuid;
+    }
+
     public function resolveConnector(string $connectorUuid): EdgeConnector
     {
         return EdgeConnector::with('charger')

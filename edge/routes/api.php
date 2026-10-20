@@ -23,6 +23,7 @@ Route::prefix('v1')->group(function () {
         Route::get('arrival', [AppController::class, 'arrival']);
         Route::post('arrival/confirm', [AppController::class, 'confirmArrival']);
         Route::post('arrival/cancel', [AppController::class, 'cancelArrival']);
+        Route::get('connectors', [AppController::class, 'connectors']);
         Route::get('authorize/status', [AppController::class, 'authorizeStatus']);
         Route::post('authorize', [AppController::class, 'authorize']);
         Route::get('charging/status', [AppController::class, 'chargingStatus']);

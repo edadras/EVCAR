@@ -6,6 +6,7 @@ import '../core/fmt.dart';
 import '../core/state.dart';
 import '../widgets/common.dart';
 import 'charger_screen.dart';
+import 'edge_screens.dart';
 
 /// محتوای QR روی کانکتور را به پارامترهای صفحهٔ شارژر تبدیل می‌کند.
 /// QR می‌تواند آدرس کامل صفحهٔ شارژر وب‌اپ (`/app/charger?station=..&connector=..&qr=..`) یا فقط توکن باشد.
@@ -27,7 +28,10 @@ Map<String, String>? parseChargerQr(String raw) {
 }
 
 class ScanScreen extends StatefulWidget {
-  const ScanScreen({super.key});
+  const ScanScreen({super.key, this.pickOnly = false});
+
+  /// فقط محتوای QR را برمی‌گرداند (برای صفحهٔ شارژ محلی).
+  final bool pickOnly;
 
   @override
   State<ScanScreen> createState() => _ScanScreenState();
@@ -59,9 +63,18 @@ class _ScanScreenState extends State<ScanScreen> {
     if (handled) return;
     handled = true;
     controller.stop();
-    // صفحهٔ اسکن با صفحهٔ شارژر جایگزین می‌شود.
+    if (widget.pickOnly) {
+      Navigator.of(context).pop(params);
+      return;
+    }
+    // روی WiFi ایستگاه (لبهٔ محلی در دسترس) مانند وب‌اپ شارژ مستقیم از لبه انجام می‌شود؛
+    // در غیر این صورت صفحهٔ شارژر ابری باز می‌شود.
+    final edge = context.app.edge;
+    final local = edge.active != null && params['qr'] != null && (edge.hasCredentials || !context.app.loggedIn);
     Navigator.of(context).pushReplacement(MaterialPageRoute(
-      builder: (_) => ChargerScreen(station: params['station'], connector: int.tryParse(params['connector'] ?? ''), qr: params['qr']),
+      builder: (_) => local
+          ? EdgeStationScreen(qr: params['qr'], fallback: params)
+          : ChargerScreen(station: params['station'], connector: int.tryParse(params['connector'] ?? ''), qr: params['qr']),
     ));
   }
 

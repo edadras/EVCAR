@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../core/api.dart';
+import '../core/edge.dart';
 import '../core/fmt.dart';
 import '../core/nav.dart';
 import '../core/state.dart';
@@ -13,7 +14,10 @@ import '../widgets/gauge.dart';
 /// شارژ در حال انجام: درصد باتری، انرژی، توان، مدت، هزینه و زمان باقی‌مانده.
 /// هر ۵ ثانیه از `charging/status` (داده‌های واقعی MeterValues شارژر) به‌روز می‌شود.
 class ChargingScreen extends StatefulWidget {
-  const ChargingScreen({super.key});
+  const ChargingScreen({super.key, this.edge});
+
+  /// در حالت محلی، وضعیت و توقف مستقیم از لبهٔ ایستگاه خوانده/ارسال می‌شود.
+  final EdgeLink? edge;
 
   @override
   State<ChargingScreen> createState() => _ChargingScreenState();
@@ -28,6 +32,38 @@ class _ChargingScreenState extends State<ChargingScreen> {
   bool stopping = false;
   Timer? _poll;
   Timer? _tick;
+  EdgeLink? edge;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    edge ??= widget.edge;
+  }
+
+  /// پاسخ `app/charging/status` لبه به شکل جلسهٔ ابری.
+  Map<String, dynamic>? _edgeSession(Map<String, dynamic> d) => d['active'] == true
+      ? {
+          'station': d['station'],
+          'charge_point': d['charge_point'],
+          'connector_number': d['connector_number'],
+          'pct': d['pct'],
+          'energy_kwh': d['energy'],
+          'cost': d['cost'],
+        }
+      : null;
+
+  Future<void> _loadEdge(EdgeLink link) async {
+    final d = await link.api.get('app/charging/status');
+    if (!mounted) return;
+    setState(() {
+      edge = link;
+      session = _edgeSession(d);
+      live = d;
+      balance = asInt(d['wallet_balance']);
+      loading = false;
+      error = null;
+    });
+  }
 
   @override
   void initState() {
@@ -48,6 +84,20 @@ class _ChargingScreenState extends State<ChargingScreen> {
   }
 
   Future<void> _load() async {
+    if (edge != null) {
+      try {
+        return await _loadEdge(edge!);
+      } on ApiException catch (e) {
+        if (mounted) {
+          setState(() {
+            loading = false;
+            error = e.message;
+          });
+        }
+        return;
+      }
+    }
+    final edgeManager = context.app.edge;
     try {
       final d = await context.api.get('charging');
       if (!mounted) return;
@@ -59,6 +109,15 @@ class _ChargingScreenState extends State<ChargingScreen> {
         error = null;
       });
     } on ApiException catch (e) {
+      // بدون اینترنت: اگر به WiFi ایستگاه وصلیم، جلسه از لبهٔ محلی خوانده می‌شود.
+      final link = await edgeManager.discover();
+      if (link != null && edgeManager.hasCredentials) {
+        try {
+          return await _loadEdge(link);
+        } on ApiException {
+          // ادامه با پیام خطای ابری
+        }
+      }
       if (mounted) {
         setState(() {
           loading = false;
@@ -71,14 +130,16 @@ class _ChargingScreenState extends State<ChargingScreen> {
   Future<void> _refresh() async {
     if (session == null) return;
     try {
-      final d = await context.api.get('charging/status');
+      final d = edge != null ? await edge!.api.get('app/charging/status') : await context.api.get('charging/status');
       if (!mounted) return;
       if (d['active'] == true) {
-        setState(() => live = d);
+        setState(() {
+          live = d;
+          if (edge != null) balance = asInt(d['wallet_balance'], balance);
+        });
       } else {
         _poll?.cancel();
-        toast(context, 'جلسهٔ شارژ پایان یافت؛ صورتحساب در سوابق ثبت شد.');
-        await openScreen(context, 'history');
+        await _finished();
       }
     } on ApiException {
       // قطعی لحظه‌ای شبکه؛ نمونهٔ بعدی دوباره تلاش می‌کند.
@@ -99,15 +160,42 @@ class _ChargingScreenState extends State<ChargingScreen> {
     );
     if (ok != true || !mounted) return;
     setState(() => stopping = true);
-    final res = await runAction(context, () => context.api.post('charging/stop'));
+    final res = await runAction(context, () => edge != null ? edge!.api.post('app/charging/stop') : context.api.post('charging/stop'), showSuccess: edge == null);
     if (!mounted) return;
     setState(() => stopping = false);
     if (res == null) return;
-    if (res['redirect'] == 'history') {
+    if (edge != null) {
+      _poll?.cancel();
+      await _finished(energy: asDouble(res['energy_kwh'], asDouble(live['energy'])), cost: (asDouble(res['cost_amount']) / 10).round());
+    } else if (res['redirect'] == 'history') {
       await openScreen(context, 'history');
     } else {
       setState(() => live['state'] = 'stop_requested');
     }
+  }
+
+  /// پایان جلسه: در حالت ابری سوابق باز می‌شود؛ در حالت محلی خلاصهٔ جلسه نمایش داده می‌شود
+  /// (صورتحساب پس از اتصال ایستگاه به اینترنت با سرور همگام می‌شود).
+  Future<void> _finished({double? energy, int? cost}) async {
+    if (edge == null) {
+      toast(context, 'جلسهٔ شارژ پایان یافت؛ صورتحساب در سوابق ثبت شد.');
+      await openScreen(context, 'history');
+      return;
+    }
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        icon: const CircleAvatar(radius: 30, backgroundColor: Palette.green, child: Icon(Icons.check_rounded, color: Colors.white, size: 36)),
+        title: const Text('شارژ پایان یافت', style: TextStyle(fontWeight: FontWeight.w800)),
+        content: Text(
+          'انرژی: ${kwh(energy ?? asDouble(live['energy']), 2)} kWh\nهزینه: ${money(cost ?? asInt(live['cost']))} تومان\n\nصورتحساب پس از اتصال ایستگاه به اینترنت در سوابق شما ثبت می‌شود.',
+          textAlign: TextAlign.center,
+          style: const TextStyle(height: 1.9),
+        ),
+        actions: [FilledButton(onPressed: () => Navigator.pop(ctx), child: const Text('باشه'))],
+      ),
+    );
+    if (mounted) Navigator.of(context).popUntil((r) => r.isFirst);
   }
 
   @override
@@ -194,7 +282,7 @@ class _ChargingScreenState extends State<ChargingScreen> {
         );
 
     return Column(children: [
-      _header(top, '${s['station'] ?? ''} · $connector', sub: 'در حال شارژ'),
+      _header(top, '${s['station'] ?? ''} · $connector', sub: edge != null ? 'در حال شارژ · اتصال محلی ایستگاه' : 'در حال شارژ'),
       Expanded(
         child: ListView(padding: const EdgeInsets.fromLTRB(13, 20, 13, 20), children: [
           Center(

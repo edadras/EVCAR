@@ -4,12 +4,15 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Models\CachedUser;
+use App\Models\CachedWallet;
 use App\Models\EdgeChargingSession;
+use App\Models\EdgeConnector;
 use App\Models\StationIdentity;
 use App\Services\Anpr\AnprAutoStartService;
 use App\Services\Anpr\ArrivalService;
 use App\Services\Charging\ConnectorAuthService;
 use App\Services\Charging\EdgeChargingService;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -84,6 +87,47 @@ class AppController extends Controller
         return response()->json($result);
     }
 
+    /** فهرست کانکتورهای ایستگاه برای اپ موبایل در حالت محلی (بدون اینترنت). */
+    public function connectors(Request $request): JsonResponse
+    {
+        /** @var CachedUser $user */
+        $user = $request->attributes->get('cached_user');
+        $station = StationIdentity::firstOrFail();
+        $granted = collect($this->auth->grantsForUser($user))->keyBy('connector_uuid');
+        $wallet = CachedWallet::where('cached_user_id', $user->id)->first();
+
+        $rows = EdgeConnector::with('charger')
+            ->orderBy('charger_id')->orderBy('connector_number')
+            ->get()
+            ->map(function (EdgeConnector $c) use ($granted) {
+                $charger = $c->charger;
+                $online = (bool) $charger?->is_online;
+                $free = $online && $c->operational_status === 'active'
+                    && in_array($c->ocpp_status, ['Available', 'Preparing', 'Finishing'], true);
+
+                return [
+                    'uuid' => $c->uuid,
+                    'cloud_connector_uuid' => $c->cloud_connector_uuid,
+                    'charge_point_id' => $charger?->charge_point_id,
+                    'number' => $c->connector_number,
+                    'power_kw' => (int) ($c->max_power_kw ?: $charger?->max_power_kw),
+                    'ocpp_status' => $c->ocpp_status,
+                    'online' => $online,
+                    'free' => $free,
+                    'authorized' => $granted->has($c->uuid),
+                    'grant_type' => $granted->get($c->uuid)['grant_type'] ?? null,
+                ];
+            })
+            ->values();
+
+        return response()->json([
+            'station' => ['name' => $station->name, 'edge_code' => $station->edge_code, 'wifi_ssid' => $station->wifi_ssid],
+            'user' => ['name' => $user->name, 'uuid' => $user->cloud_user_uuid],
+            'wallet_balance' => (int) round((float) ($wallet?->balance ?? 0) / 10),
+            'connectors' => $rows,
+        ]);
+    }
+
     public function authorizeStatus(Request $request): JsonResponse
     {
         /** @var CachedUser $user */
@@ -119,22 +163,28 @@ class AppController extends Controller
 
         $data = $request->validate([
             'method' => ['required', 'in:qr,rfid'],
-            'connector_uuid' => ['required', 'string', 'max:64'],
+            'connector_uuid' => ['required_without:qr_token', 'nullable', 'string', 'max:64'],
             'qr_token' => ['nullable', 'string', 'max:120'],
             'id_tag' => ['nullable', 'string', 'max:64'],
         ]);
 
         try {
+            // QR فیزیکی ممکن است فقط توکن را داشته باشد؛ کانکتور از روی توکن همگام‌شده پیدا می‌شود.
+            $connectorUuid = $data['connector_uuid'] ?? $this->auth->connectorUuidForQr((string) $data['qr_token']);
             $grant = match ($data['method']) {
-                'qr' => $this->auth->grantFromQr($user, $data['connector_uuid'], $data['qr_token'] ?? null),
-                'rfid' => $this->auth->grantFromRfid($user, $data['connector_uuid'], (string) ($data['id_tag'] ?? '')),
+                'qr' => $this->auth->grantFromQr($user, $connectorUuid, $data['qr_token'] ?? null),
+                'rfid' => $this->auth->grantFromRfid($user, $connectorUuid, (string) ($data['id_tag'] ?? '')),
             };
         } catch (\RuntimeException $e) {
             return response()->json(['ok' => false, 'message' => $e->getMessage()], 422);
+        } catch (ModelNotFoundException) {
+            return response()->json(['ok' => false, 'message' => 'این کانکتور در این ایستگاه نیست.'], 422);
         }
 
         return response()->json([
             'ok' => true,
+            'connector_uuid' => $grant->connector?->uuid,
+            'cloud_connector_uuid' => $grant->connector?->cloud_connector_uuid,
             'grant_type' => $grant->grant_type,
             'expires_at' => $grant->expires_at?->toIso8601String(),
             'message' => 'مجوز شروع شارژ برای این کانکتور ثبت شد.',
@@ -157,10 +207,16 @@ class AppController extends Controller
         }
 
         $live = $this->charging->liveMetrics($session);
+        $wallet = CachedWallet::where('cached_user_id', $user->id)->first();
 
         return response()->json(array_merge([
             'active' => true,
             'source' => 'edge',
+            'session_uuid' => $session->uuid,
+            'station' => StationIdentity::first()?->name,
+            'charge_point' => $session->charger?->charge_point_id,
+            'connector_number' => $session->connector?->connector_number,
+            'wallet_balance' => (int) round((float) ($wallet?->balance ?? 0) / 10),
         ], $live));
     }
 

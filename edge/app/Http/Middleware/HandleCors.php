@@ -20,7 +20,7 @@ class HandleCors
             return response('', 204)
                 ->header('Access-Control-Allow-Origin', $allowOrigin)
                 ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
-                ->header('Access-Control-Allow-Headers', 'Content-Type, Accept, X-Requested-With, X-SC-User-UUID, X-SC-Edge-Token, X-SC-Cloud-Sync, Authorization')
+                ->header('Access-Control-Allow-Headers', 'Content-Type, Accept, X-Requested-With, X-SC-User-UUID, X-SC-Edge-Token, X-SC-Cloud-Sync, X-Client, Authorization')
                 ->header('Access-Control-Max-Age', '86400');
         }
 

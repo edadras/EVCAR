@@ -363,9 +363,27 @@ class ServerSettingsScreen extends StatefulWidget {
 
 class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
   late final ctl = TextEditingController(text: context.app.baseUrl);
+  late final edgeCtl = TextEditingController(text: context.app.edge.manualUrl ?? '');
   String? status;
+  String? edgeStatus;
   bool ok = false;
   bool testing = false;
+  bool probing = false;
+
+  Future<void> _probeEdge() async {
+    setState(() {
+      probing = true;
+      edgeStatus = null;
+    });
+    final edge = context.app.edge;
+    await edge.setManualUrl(edgeCtl.text);
+    final link = edge.active;
+    if (!mounted) return;
+    setState(() {
+      probing = false;
+      edgeStatus = link != null ? 'متصل به ${link.label}' : 'لبهٔ ایستگاهی در این شبکه پیدا نشد.';
+    });
+  }
 
   Future<void> _test() async {
     setState(() {
@@ -400,6 +418,15 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
               if (status != null) Text(status!, style: TextStyle(color: ok ? Palette.green : Palette.red, fontWeight: FontWeight.w600)),
               const SizedBox(height: 10),
               Text('اپ با این آدرس به API اپ موبایل (/api/v1/mobile) وصل می‌شود. پس از تغییر سرور، دوباره وارد حساب شوید.',
+                  style: TextStyle(fontSize: 12.5, color: c.muted, height: 1.7)),
+              const SecTitle('لبهٔ محلی ایستگاه (اختیاری)'),
+              LabeledField(label: 'آدرس کنترلر ایستگاه روی WiFi', controller: edgeCtl, hint: 'http://station.local', ltr: true, keyboard: TextInputType.url),
+              if (edgeStatus != null)
+                Text(edgeStatus!, style: TextStyle(color: context.app.edge.active != null ? Palette.green : Palette.red, fontWeight: FontWeight.w600)),
+              const SizedBox(height: 10),
+              AppButton('جست‌وجوی ایستگاه', icon: Icons.wifi_find_rounded, kind: BtnKind.soft, loading: probing, onPressed: _probeEdge),
+              const SizedBox(height: 10),
+              Text('ایستگاه‌های ثبت‌شده در سرور به‌صورت خودکار جست‌وجو می‌شوند؛ این آدرس فقط برای ایستگاه‌هایی است که خودکار پیدا نمی‌شوند.',
                   style: TextStyle(fontSize: 12.5, color: c.muted, height: 1.7)),
             ]),
           ),

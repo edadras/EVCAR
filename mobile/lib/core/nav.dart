@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../screens/account_screens.dart';
 import '../screens/charger_screen.dart';
 import '../screens/charging_screen.dart';
+import '../screens/edge_screens.dart';
 import '../screens/history_screen.dart';
 import '../screens/misc_screens.dart';
 import '../screens/navigator_screen.dart';
@@ -52,6 +53,7 @@ Future<void> openScreen(BuildContext context, String? name, [Map<String, dynamic
     'navigator' => const NavigatorScreen(),
     'arrival' => const ArrivalScreen(),
     'server' => const ServerSettingsScreen(),
+    'edge' => const EdgeStationScreen(),
     _ => null,
   };
   if (page == null) return;

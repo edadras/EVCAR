@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'api.dart';
+import 'edge.dart';
 
 /// آدرس پیش‌فرض سرور ابری؛ در زمان build با `--dart-define=API_BASE_URL=https://...` تنظیم می‌شود.
 const String kDefaultBaseUrl = String.fromEnvironment('API_BASE_URL', defaultValue: 'http://localhost:8000');
@@ -17,7 +18,8 @@ class AppState extends ChangeNotifier {
           baseUrl: _prefs.getString('base_url') ?? kDefaultBaseUrl,
           token: _prefs.getString('token'),
           client: client,
-        ) {
+        ),
+        edge = EdgeManager(_prefs, client: client) {
     api.onUnauthorized = () {
       if (api.token != null) logoutLocal();
     };
@@ -29,6 +31,9 @@ class AppState extends ChangeNotifier {
 
   final SharedPreferences _prefs;
   final ApiClient api;
+
+  /// لبهٔ محلی ایستگاه (شارژ روی WiFi ایستگاه، حتی بدون اینترنت).
+  final EdgeManager edge;
 
   Map<String, dynamic>? user;
   Map<String, dynamic> prefs = {};
@@ -62,6 +67,17 @@ class AppState extends ChangeNotifier {
     if (api.token != null) await _prefs.setString('token', api.token!);
     _applyUser(response['user'] as Map<String, dynamic>?);
     notifyListeners();
+    refreshConnectivity();
+  }
+
+  /// گرفتن امضای روزانهٔ لبه و فهرست لبه‌ها از سرور برای استفادهٔ آفلاین.
+  Future<void> refreshConnectivity() async {
+    if (!loggedIn) return;
+    try {
+      final res = await api.get('context');
+      if (res['connectivity'] is Map) await edge.storeConnectivity(Map<String, dynamic>.from(res['connectivity'] as Map));
+    } catch (_) {}
+    edge.discover(force: true);
   }
 
   void _applyUser(Map<String, dynamic>? u) {
@@ -80,8 +96,11 @@ class AppState extends ChangeNotifier {
       final res = await api.get('me');
       _applyUser(res['user'] as Map<String, dynamic>?);
       notifyListeners();
+      await refreshConnectivity();
     } on ApiException catch (e) {
       if (e.unauthorized) await logoutLocal();
+      // بدون اینترنت: اگر لبهٔ محلی در دسترس باشد، شارژ محلی ممکن است.
+      edge.discover(force: true);
     }
   }
 
@@ -118,6 +137,7 @@ class AppState extends ChangeNotifier {
     api.token = null;
     user = null;
     await _prefs.remove('token');
+    await edge.clear();
     notifyListeners();
   }
 }

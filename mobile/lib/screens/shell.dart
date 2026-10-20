@@ -1,8 +1,13 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../core/nav.dart';
+import '../core/state.dart';
 import '../core/theme.dart';
+import '../widgets/common.dart';
 import 'account_screens.dart';
+import 'edge_screens.dart';
 import 'home_screen.dart';
 import 'map_screen.dart';
 import 'scan_screen.dart';
@@ -37,21 +42,78 @@ class ShellRefreshObserver extends NavigatorObserver {
   }
 }
 
-class Shell extends StatelessWidget {
+class Shell extends StatefulWidget {
   const Shell({super.key});
+
+  @override
+  State<Shell> createState() => _ShellState();
+}
+
+class _ShellState extends State<Shell> {
+  Timer? _discover;
+
+  @override
+  void initState() {
+    super.initState();
+    // مانند edge-router وب‌اپ: لبهٔ محلی ایستگاه به‌طور دوره‌ای جست‌وجو می‌شود.
+    WidgetsBinding.instance.addPostFrameCallback((_) => context.app.edge.discover());
+    _discover = Timer.periodic(const Duration(seconds: 30), (_) {
+      if (mounted) context.app.edge.discover(force: true);
+    });
+  }
+
+  @override
+  void dispose() {
+    _discover?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final ctl = ShellController.instance;
+    final edge = context.app.edge;
     return ListenableBuilder(
-      listenable: ctl,
+      listenable: Listenable.merge([ctl, edge]),
       builder: (context, _) {
         final tabs = <Widget>[const HomeTab(), const MapTab(), const WalletTab(), const AccountTab()];
         return Scaffold(
-          body: SafeArea(bottom: false, child: KeyedSubtree(key: ValueKey('${ctl.index}-${ctl.tick}'), child: tabs[ctl.index])),
+          body: SafeArea(
+            bottom: false,
+            child: Column(children: [
+              if (edge.active != null) _EdgeBanner(label: edge.active!.label),
+              Expanded(child: KeyedSubtree(key: ValueKey('${ctl.index}-${ctl.tick}'), child: tabs[ctl.index])),
+            ]),
+          ),
           bottomNavigationBar: _TabBar(index: ctl.index, onTap: ctl.go),
         );
       },
+    );
+  }
+}
+
+/// نوار «اتصال محلی» وقتی گوشی روی WiFi ایستگاه است (badge «محلی» وب‌اپ).
+class _EdgeBanner extends StatelessWidget {
+  const _EdgeBanner({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Palette.green,
+      child: InkWell(
+        onTap: () => push(context, const EdgeStationScreen()),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+          child: Row(children: [
+            const Icon(Icons.wifi_rounded, color: Colors.white, size: 18),
+            const SizedBox(width: 8),
+            Expanded(child: Text('$label · شارژ بدون اینترنت', overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontSize: 12.5, fontWeight: FontWeight.w700))),
+            const Text('ورود', style: TextStyle(color: Colors.white, fontSize: 12.5, fontWeight: FontWeight.w800)),
+            const LtrIcon(Icons.chevron_left_rounded, color: Colors.white, size: 18),
+          ]),
+        ),
+      ),
     );
   }
 }

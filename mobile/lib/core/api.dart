@@ -26,22 +26,30 @@ class ApiException implements Exception {
 
 /// کلاینت API اپ موبایل: `/api/v1/mobile/*` روی سرور ابری SafirCharge.
 class ApiClient {
-  ApiClient({required this.baseUrl, this.token, http.Client? client}) : _http = client ?? http.Client();
+  ApiClient({required this.baseUrl, this.token, http.Client? client, this.prefix = 'api/v1/mobile', this.extraHeaders, Duration? timeout})
+      : _http = client ?? http.Client(),
+        _timeout = timeout ?? const Duration(seconds: 25);
 
   String baseUrl;
   String? token;
   final http.Client _http;
 
+  /// پیشوند مسیرها؛ برای لبهٔ محلی ایستگاه `api/v1` است.
+  final String prefix;
+
+  /// هدرهای اضافه (مثلاً هویت کاربر ابری برای لبهٔ محلی).
+  final Map<String, String> Function()? extraHeaders;
+
   /// وقتی توکن منقضی یا باطل شود صدا زده می‌شود تا اپ به صفحهٔ ورود برگردد.
   void Function()? onUnauthorized;
 
-  static const _timeout = Duration(seconds: 25);
+  final Duration _timeout;
 
   Uri _uri(String path, [Map<String, dynamic>? query]) {
     final base = baseUrl.endsWith('/') ? baseUrl.substring(0, baseUrl.length - 1) : baseUrl;
     final clean = path.startsWith('/') ? path.substring(1) : path;
     final q = query?.map((k, v) => MapEntry(k, v?.toString() ?? ''))?..removeWhere((k, v) => v.isEmpty);
-    return Uri.parse('$base/api/v1/mobile/$clean').replace(queryParameters: (q == null || q.isEmpty) ? null : q);
+    return Uri.parse('$base/$prefix/$clean').replace(queryParameters: (q == null || q.isEmpty) ? null : q);
   }
 
   Map<String, String> get _headers => {
@@ -49,6 +57,7 @@ class ApiClient {
         'Content-Type': 'application/json',
         'X-Client': 'safircharge-flutter',
         if (token != null) 'Authorization': 'Bearer $token',
+        ...?extraHeaders?.call(),
       };
 
   Future<Map<String, dynamic>> get(String path, [Map<String, dynamic>? query]) =>

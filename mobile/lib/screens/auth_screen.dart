@@ -37,6 +37,12 @@ class _AuthScreenState extends State<AuthScreen> {
   Timer? _timer;
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => context.app.edge.discover(force: true));
+  }
+
+  @override
   void dispose() {
     _timer?.cancel();
     for (final c in [phone, password, otp, newPass, newPass2]) {
@@ -260,8 +266,18 @@ class _AuthScreenState extends State<AuthScreen> {
         ],
     };
 
+    final edge = AppScope.of(context).edge;
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, mainAxisSize: MainAxisSize.min, children: [
       ...body,
+      ListenableBuilder(
+        listenable: edge,
+        builder: (context, _) => edge.active == null || step != _Step.phone
+            ? const SizedBox.shrink()
+            : Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: AppButton('شارژ محلی ایستگاه (بدون اینترنت)', icon: Icons.wifi_rounded, kind: BtnKind.soft, onPressed: () => openScreen(context, 'edge')),
+              ),
+      ),
       const SizedBox(height: 16),
       Center(
         child: GestureDetector(
