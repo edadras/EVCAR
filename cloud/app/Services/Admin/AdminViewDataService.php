@@ -236,8 +236,14 @@ class AdminViewDataService
                 $total = max(1, $conns->count());
                 $load = (int) min(100, round(($charging / $total) * 100));
                 $fault = $conns->where('ocpp_status', 'Faulted')->count();
-                $status = $fault > 0 ? 'error' : ($load > 85 ? 'busy' : 'online');
-                $pill = $fault > 0 ? ['pill-red', 'خطا'] : ($load > 85 ? ['pill-amber', 'پرتراکم'] : ['pill-green', 'آنلاین']);
+                $connected = $st->edgeStation?->sync_status === 'online'
+                    || $st->chargers->contains(fn ($ch) => $ch->is_online === true);
+                [$status, $pill] = match (true) {
+                    $fault > 0 => ['error', ['pill-red', 'خطا']],
+                    ! $connected => ['offline', ['pill', 'آفلاین']],
+                    $load > 85 => ['busy', ['pill-amber', 'پرتراکم']],
+                    default => ['online', ['pill-green', 'آنلاین']],
+                };
 
                 $todayQuery = ChargingSession::where('station_id', $st->id)
                     ->whereDate('started_at', today());
@@ -264,10 +270,13 @@ class AdminViewDataService
                     'lng' => (float) $st->longitude,
                     'remoteUrl' => route('admin.remote', ['station' => $st->id]),
                     'anpr' => $anpr->summaryForList($st),
-                    'connectors' => $conns->values()->map(function ($c, $i) {
-                        $stKey = match ($c->ocpp_status) {
-                            'Charging' => 'busy',
-                            'Faulted', 'Unavailable' => 'fault',
+                    'connected' => $connected,
+                    'connectors' => $conns->values()->map(function ($c, $i) use ($st) {
+                        $chargerOnline = $c->charger?->is_online === true || $st->edgeStation?->sync_status === 'online';
+                        $stKey = match (true) {
+                            ! $chargerOnline => 'offline',
+                            $c->ocpp_status === 'Charging' => 'busy',
+                            in_array($c->ocpp_status, ['Faulted', 'Unavailable'], true) => 'fault',
                             default => 'free',
                         };
 
@@ -275,7 +284,12 @@ class AdminViewDataService
                             'id' => chr(65 + intdiv($i, 3)).(($i % 3) + 1),
                             'type' => ($c->charger?->connector_type ?? 'Type2').' · '.($c->charger?->max_power_kw ?? 22).'kW',
                             'st' => $stKey,
-                            'pw' => $stKey === 'busy' ? (($c->charger?->max_power_kw ?? 22).' kW') : ($stKey === 'fault' ? 'خطا' : 'آماده'),
+                            'pw' => match ($stKey) {
+                                'busy' => ($c->charger?->max_power_kw ?? 22).' kW',
+                                'fault' => 'خطا',
+                                'offline' => 'آفلاین',
+                                default => 'آماده',
+                            },
                             'u' => '',
                         ];
                     })->all(),

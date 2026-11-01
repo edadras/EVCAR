@@ -64,7 +64,7 @@
       <div class="card-head">
         <div><h3 id="detName">ایستگاه میدان آزادی</h3><div class="ch-sub" id="detAddr">تهران، میدان آزادی، ابتدای بزرگراه لشکری · کد ایستگاه ST‑۱۰۰۱</div></div>
         <div class="head-actions">
-          <span class="pill pill-green"><span class="pdot"></span>آنلاین</span>
+          <span class="pill" id="detPill">—</span>
           <a href="/admin/remote" class="btn btn-sm">کنترل از راه دور</a>
           <button class="btn btn-sm btn-primary">گزارش ایستگاه</button>
         </div>
@@ -131,13 +131,16 @@ window.__STATIONS_DATA = {!! json_encode($stationsJs, JSON_UNESCAPED_UNICODE) !!
 (function () {
   document.querySelectorAll('[data-ic]').forEach(function (el) { el.innerHTML = window.icon(el.getAttribute('data-ic')); });
 
-  var stMap={busy:{c:'green',p:'pill-green',l:'در حال شارژ'},free:{c:'blue',p:'pill-accent',l:'آماده'},fault:{c:'red',p:'pill-red',l:'خطا'}};
+  var stMap={busy:{c:'green',p:'pill-green',l:'در حال شارژ'},free:{c:'blue',p:'pill-accent',l:'آماده'},fault:{c:'red',p:'pill-red',l:'خطا'},offline:{c:'gray',p:'pill',l:'آفلاین'}};
   function renderConns(idx){
     var st=(window.__STATIONS_DATA||[])[idx]; if(!st)return;
     document.getElementById('connectors').innerHTML=(st.connectors||[]).map(function(c){
       var s=stMap[c.st]||stMap.free;
       return '<div class="conn"><div class="conn-top"><div class="conn-ic ic-'+s.c+'">'+window.icon('plug')+'</div><div><div class="conn-id">کانکتور '+c.id+'</div><div class="conn-type">'+c.type+'</div></div><div class="conn-pw"><b class="tnum">'+c.pw+'</b></div></div><div class="flex between items-center mt-12"><span class="pill '+s.p+'"><span class="pdot"></span>'+s.l+'</span><span class="muted fs12">'+(c.u||'—')+'</span></div></div>';
     }).join('');
+    var pill=document.getElementById('detPill'), sp=st.pill||['pill','—'];
+    pill.className='pill '+sp[0];
+    pill.innerHTML=(sp[0]==='pill-green'?'<span class="pdot"></span>':'')+sp[1];
     document.getElementById('detName').textContent='ایستگاه '+st.name;
     document.getElementById('detAddr').textContent=(st.city||'')+'، '+(st.address||'')+' · کد '+st.code;
     document.getElementById('detEnergy').innerHTML=(st.today_energy||'۰')+' <small>kWh</small>';

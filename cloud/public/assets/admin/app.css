@@ -308,6 +308,7 @@ h1,h2,h3,h4 { margin: 0; font-weight: 700; letter-spacing: -.01em; }
 .ic-blue { background: var(--accent-soft); color: var(--accent-strong); }
 .ic-orange { background: var(--orange-soft); color: var(--orange); }
 .ic-green { background: var(--green-soft); color: var(--green); }
+.ic-gray { background: color-mix(in srgb, currentColor 8%, transparent); color: var(--muted, #8a97a6); }
 .ic-violet { background: color-mix(in srgb, var(--violet) 12%, white); color: var(--violet); }
 html[data-theme="dark"] .ic-violet { background: color-mix(in srgb, var(--violet) 26%, #0e1a26); color: #b794f4; }
 
