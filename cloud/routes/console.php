@@ -40,6 +40,12 @@ Artisan::command('alerts:check-edges', function (AlertService $alerts) {
 
 Schedule::command('alerts:check-edges')->everyFiveMinutes()->withoutOverlapping();
 
+Artisan::command('devices:refresh-status', function (AlertService $alerts) {
+    $this->info($alerts->markStaleEdgesOffline().' edge(s) marked offline.');
+})->purpose('Mark edge controllers (and their chargers) offline when they stop polling');
+
+Schedule::command('devices:refresh-status')->everyMinute()->withoutOverlapping();
+
 // تسویهٔ خودکار ماهانهٔ شرکا (روز اول هر ماه)
 Artisan::command('settlements:generate {--month= : YYYY-MM}', function (SettlementService $settlements) {
     $this->info($settlements->generateMonthly($this->option('month')).' settlement(s) created.');

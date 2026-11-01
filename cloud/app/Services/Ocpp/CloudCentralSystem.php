@@ -156,6 +156,25 @@ class CloudCentralSystem implements WebSocketHandler
         $this->sendRaw($connection, $chargePointId, [self::CALL_ERROR, $messageId, 'ProtocolError', 'Unknown message type', (object) []], null);
     }
 
+    /** The live socket list is the source of truth for directly connected chargers. */
+    private function reconcileOnlineState(): void
+    {
+        $live = array_keys($this->connections);
+
+        Charger::whereNotNull('connected_at')
+            ->whereNotIn('charge_point_id', $live)
+            ->pluck('charge_point_id')
+            ->each(fn ($id) => $this->handler->chargerDisconnected((string) $id));
+
+        Charger::with('station.edgeStation')
+            ->where('is_online', true)
+            ->whereNull('connected_at')
+            ->whereNotIn('charge_point_id', $live)
+            ->get()
+            ->filter(fn (Charger $c) => $c->connectsDirectly())
+            ->each(fn (Charger $c) => $c->update(['is_online' => false]));
+    }
+
     public function tick(): void
     {
         $this->expireOutstanding();
@@ -164,6 +183,7 @@ class CloudCentralSystem implements WebSocketHandler
         if (microtime(true) - $this->lastHousekeeping >= 30) {
             $this->lastHousekeeping = microtime(true);
             try {
+                $this->reconcileOnlineState();
                 $this->handler->housekeeping();
             } catch (\Throwable $e) {
                 Log::error('ocpp.housekeeping_failed', ['error' => $e->getMessage()]);

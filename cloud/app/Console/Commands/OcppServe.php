@@ -26,7 +26,7 @@ class OcppServe extends Command
         CloudOcppCommander::markInsideServer();
         $centralSystem->boot();
 
-        $server = new WebSocketServer($host, $port, $centralSystem, Log::channel());
+        $server = new WebSocketServer($host, $port, $centralSystem, Log::channel(), pingIntervalSeconds: 30, idleTimeoutSeconds: 120);
         $server->listen();
 
         if (function_exists('pcntl_signal')) {

@@ -126,16 +126,13 @@ class AdminViewDataService
 
                 $connRows = $conns->values()->map(function ($c, $i) use ($activeSessions, &$onlineKw) {
                     $session = $activeSessions->get($c->id);
-                    $chargerOnline = $c->charger?->is_online ?? true;
-                    $state = match ($c->ocpp_status) {
+                    $chargerOnline = $c->charger?->is_online === true;
+                    $state = $chargerOnline ? match ($c->ocpp_status) {
                         'Charging' => 'charging',
                         'Faulted', 'Unavailable' => 'fault',
                         'Reserved' => 'reserved',
-                        default => $chargerOnline ? 'free' : 'offline',
-                    };
-                    if (! $chargerOnline && $state === 'free') {
-                        $state = 'offline';
-                    }
+                        default => 'free',
+                    } : 'offline';
                     $maxKw = (int) ($c->max_power_kw ?? $c->charger?->max_power_kw ?? 22);
                     $pw = $state === 'charging' ? $maxKw : 0;
                     if ($state === 'charging') {

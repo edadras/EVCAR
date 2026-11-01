@@ -340,7 +340,9 @@ final class WebSocketServer
             }
 
             if ($now - $connection->lastActivity > $this->idleTimeoutSeconds) {
+                // A silent peer (e.g. a dropped 4G link) never drains the close frame, so drop it now.
                 $connection->close(1001, 'Idle timeout');
+                $this->drop($connection, 'idle timeout');
 
                 continue;
             }

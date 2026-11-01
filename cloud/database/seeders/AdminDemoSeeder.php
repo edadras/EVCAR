@@ -187,7 +187,8 @@ class AdminDemoSeeder extends Seeder
             $chargerCount = rand(2, 4);
             for ($c = 0; $c < $chargerCount; $c++) {
                 $cpId = 'CP-'.$chargerIndex++;
-                $online = $station->status === 'active' && rand(0, 10) > 1;
+                // وضعیت آنلاین فقط از اتصال واقعی (OCPP / Edge) می‌آید، نه از دادهٔ نمونه.
+                $online = false;
                 $charger = Charger::updateOrCreate(
                     ['charge_point_id' => $cpId],
                     [
@@ -198,14 +199,13 @@ class AdminDemoSeeder extends Seeder
                         'max_power_kw' => $c % 2 ? 120 : 22,
                         'connector_type' => $c % 2 ? 'CCS2' : 'Type2',
                         'is_online' => $online,
-                        'last_heartbeat_at' => $online ? now()->subSeconds(rand(5, 120)) : now()->subHours(rand(1, 8)),
+                        'last_heartbeat_at' => null,
                         'status' => 'active',
                     ]
                 );
 
-                $statuses = ['Available', 'Charging', 'Preparing', 'Finishing', 'Faulted'];
                 foreach ([1, 2] as $num) {
-                    $ocpp = $online ? ($num === 1 && rand(0, 2) ? 'Charging' : 'Available') : 'Unavailable';
+                    $ocpp = 'Unavailable';
                     Connector::updateOrCreate(
                         ['charger_id' => $charger->id, 'connector_number' => $num],
                         [
@@ -245,9 +245,9 @@ class AdminDemoSeeder extends Seeder
                     },
                     'api_token_hash' => hash('sha256', $edgeToken),
                     'hostname' => $station->local_hostname,
-                    'sync_status' => $station->status === 'active' ? 'online' : 'offline',
-                    'last_heartbeat_at' => now()->subSeconds(rand(5, 180)),
-                    'last_sync_at' => now()->subMinutes(rand(1, 30)),
+                    'sync_status' => 'offline',
+                    'last_heartbeat_at' => null,
+                    'last_sync_at' => null,
                     'capabilities' => ['gsm', 'anpr', 'ocpp'],
                     'meta' => [
                         'anpr_cameras' => [
@@ -375,7 +375,7 @@ class AdminDemoSeeder extends Seeder
                 $cost = round($energy * 8500 + 15000, 2);
                 $started = now()->subDays($day)->subHours(rand(0, 23))->subMinutes(rand(0, 59));
                 $duration = rand(600, 7200);
-                $isActive = $day === 0 && $s < 6;
+                $isActive = false;
 
                 ChargingSession::create([
                     'uuid' => (string) Str::uuid(),

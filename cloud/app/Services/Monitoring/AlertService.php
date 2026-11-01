@@ -3,6 +3,7 @@
 namespace App\Services\Monitoring;
 
 use App\Enums\UserRole;
+use App\Models\Charger;
 use App\Models\EdgeStation;
 use App\Models\OperationalAlert;
 use App\Models\User;
@@ -43,6 +44,30 @@ class AlertService
     {
         OperationalAlert::where('type', $type)->where('subject_key', $key)->where('status', 'open')
             ->update(['status' => 'resolved', 'resolved_at' => now()]);
+    }
+
+    /**
+     * Edgeهایی که بیش از N دقیقه هیچ تماسی نداشته‌اند آفلاین می‌شوند و شارژرهای پشت آن‌ها
+     * (که مستقیم به ابر وصل نیستند) هم آفلاین علامت می‌خورند. Edge هر ۵ ثانیه فرمان می‌کشد.
+     */
+    public function markStaleEdgesOffline(int $minutes = 2): int
+    {
+        $count = 0;
+        foreach (EdgeStation::where('sync_status', '!=', 'offline')->get() as $edge) {
+            $last = collect([$edge->last_sync_at, $edge->last_heartbeat_at])->filter()->max();
+            if ($last && $last->gte(now()->subMinutes($minutes))) {
+                continue;
+            }
+
+            $edge->forceFill(['sync_status' => 'offline'])->save();
+            Charger::where('station_id', $edge->station_id)
+                ->whereNull('connected_at')
+                ->where('is_online', true)
+                ->update(['is_online' => false]);
+            $count++;
+        }
+
+        return $count;
     }
 
     /** Edgeهایی که بیش از N دقیقه سینک نکرده‌اند. */
