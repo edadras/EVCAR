@@ -104,6 +104,9 @@ services:
     <<: *cloud-php
     container_name: sc_cloud_ocpp
     entrypoint: ["php", "artisan", "ocpp:serve"]
+    # Plain ws:// for chargers that cannot go through the web server: ws://<host>:9000/ocpp/<ChargePointId>
+    ports:
+      - "${CLOUD_OCPP_PUBLIC_PORT:-9000}:9100"
     depends_on: [cloud-app]
 
   cloud-nginx:
