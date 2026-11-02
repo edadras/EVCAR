@@ -168,6 +168,14 @@
     </form>
 </div>
 
+@if($errors->has('charging'))
+<div class="start-error" id="startError">
+    <span>{{ $errors->first('charging') }}</span>
+    @if(str_contains($errors->first('charging'), 'کیف پول'))
+    <a href="{{ route('app.wallet') }}" class="btn btn-sm" style="width:auto;padding:0 14px;text-decoration:none">شارژ کیف پول</a>
+    @endif
+</div>
+@endif
 <div class="startbar">
     <div>
         <div class="muted fs12">کانکتور انتخاب‌شده</div>
@@ -258,6 +266,7 @@
 .pill-muted{background:var(--surface-3);color:var(--muted)}
 .amen{display:inline-flex;align-items:center;gap:6px}
 .amen svg{width:18px;height:18px;color:var(--accent)}
+.start-error{position:absolute;left:14px;right:14px;bottom:calc(96px + env(safe-area-inset-bottom,0));z-index:21;display:flex;align-items:center;gap:10px;justify-content:space-between;background:var(--red-soft,#fdecec);color:var(--red,#c62828);border:1px solid var(--red,#c62828);border-radius:14px;padding:11px 14px;font-size:13px;font-weight:700;line-height:1.6;box-shadow:var(--shadow-md)}
 .startbar{position:absolute;bottom:0;left:0;right:0;background:color-mix(in srgb,var(--surface) 94%,transparent);backdrop-filter:blur(14px);border-top:1px solid var(--border);box-shadow:var(--shadow-up);display:flex;align-items:center;gap:12px;padding:14px 20px calc(18px + env(safe-area-inset-bottom,0));z-index:20}
 .startbar .btn svg{width:18px;height:18px}
 </style>
