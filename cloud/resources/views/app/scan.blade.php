@@ -69,7 +69,7 @@
 @endpush
 
 @push('scripts')
-<script src="/assets/vendor/jsQR.js"></script>
+<script src="/assets/lib/jsQR.js"></script>
 <script>
 (function(){
   var video=document.getElementById('scanVideo');

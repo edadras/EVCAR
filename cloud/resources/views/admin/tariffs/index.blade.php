@@ -250,7 +250,7 @@ html[dir=rtl] .switch.on i{transform:translateX(-18px)}
 @endpush
 
 @push('scripts')
-<script src="/assets/vendor/qrcode-generator.js"></script>
+<script src="/assets/lib/qrcode-generator.js"></script>
 <script src="/assets/admin/qr-render.js"></script>
 <script>
 (function(){
