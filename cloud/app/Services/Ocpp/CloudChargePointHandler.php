@@ -46,7 +46,7 @@ class CloudChargePointHandler
             'StartTransaction' => $this->startTransaction($charger, $payload),
             'MeterValues' => $this->meterValues($charger, $payload),
             'StopTransaction' => $this->stopTransaction($charger, $payload),
-            'DataTransfer' => ['status' => 'UnknownVendorId'],
+            'DataTransfer' => $this->dataTransfer($charger, $payload),
             'DiagnosticsStatusNotification', 'FirmwareStatusNotification' => $this->deviceNotification($charger, $action, $payload),
             default => throw new OcppError('NotImplemented', "Action {$action} is not supported"),
         };
@@ -350,6 +350,26 @@ class CloudChargePointHandler
         ])]);
 
         return [];
+    }
+
+    /** @return array<string, mixed> */
+    private function dataTransfer(Charger $charger, array $payload): array
+    {
+        $vendor = strtolower((string) ($payload['vendorId'] ?? ''));
+        if ($vendor === '' || $vendor !== strtolower((string) $charger->vendor)) {
+            return ['status' => 'UnknownVendorId'];
+        }
+
+        $data = is_array($payload['data'] ?? null) ? $payload['data'] : ['raw' => $payload['data'] ?? null];
+        $charger->update(['meta' => array_merge($charger->meta ?? [], [
+            'data_transfer' => [
+                'message_id' => (string) ($payload['messageId'] ?? ''),
+                'data' => $data,
+                'at' => now()->toIso8601String(),
+            ],
+        ])]);
+
+        return ['status' => 'Accepted'];
     }
 
     private function pendingSession(Connector $connector, string $idTag): ?ChargingSession
