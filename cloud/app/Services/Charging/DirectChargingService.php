@@ -203,7 +203,7 @@ class DirectChargingService
             $meta = $locked->meta ?? [];
             $idle = $this->idleSeconds($meta, $stoppedAt);
             $cost = $energyKwh > 0 || $duration > 0 ? $this->costFor($locked, $energyKwh, $duration, $idle) : 0.0;
-            if ($energyKwh <= 0 && in_array($reason, ['Cancelled', 'RemoteStartFailed', 'RemoteStartRejected', 'NoCableConnected'], true)) {
+            if ($energyKwh <= 0 && in_array($reason, ['Cancelled', 'RemoteStartFailed', 'RemoteStartRejected', 'NoCableConnected', 'StartAborted'], true)) {
                 $cost = 0.0;
             }
 

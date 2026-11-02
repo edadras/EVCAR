@@ -164,7 +164,10 @@ class CloudChargePointHandler
         ]);
 
         $active = ChargingSession::where('connector_id', $connector->id)->where('status', 'active')->first();
-        if ($active) {
+        if ($active && ! $active->ocpp_transaction_id && $status === 'Finishing') {
+            // شروع از راه دور پذیرفته شد ولی خودرو/شارژر بدون StartTransaction کار را تمام کرد.
+            $this->charging->cancel($active, 'StartAborted');
+        } elseif ($active) {
             $this->charging->markIdle($active, in_array($status, ['SuspendedEV', 'Finishing'], true));
         }
 
