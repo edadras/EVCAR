@@ -3,7 +3,6 @@
 @section('title', 'SafirCharge — اسکن QR')
 
 @section('phone')
-@php $firstTarget = $scanTargets[0] ?? null; @endphp
 <div class="appbar" style="padding-top:2px">
     <a href="{{ route('app.home') }}" class="ab-btn scan-btn"><span data-ic="back"></span></a>
     <div style="flex:1;text-align:center;color:#fff"><div class="fw8" style="font-size:17px">اسکن کد QR</div></div>
@@ -12,7 +11,8 @@
 
 <div class="scan-area">
     <div class="viewfinder">
-        <video id="scanVideo" playsinline muted></video>
+        <video id="scanVideo" playsinline muted autoplay></video>
+        <button type="button" class="vf-start" id="scanStart" hidden>شروع دوربین</button>
         <span class="corner tl"></span><span class="corner tr"></span>
         <span class="corner bl"></span><span class="corner br"></span>
         <div class="scanline"></div>
@@ -22,17 +22,11 @@
 </div>
 
 <div class="scan-sheet">
-    @if($firstTarget)
-    <a href="{{ $firstTarget['url'] }}" class="btn" id="scanPrimary" style="text-decoration:none"><span data-ic="bolt"></span> رفتن به {{ $firstTarget['label'] }}</a>
-    @else
-    <button class="btn" id="scanPrimary" type="button" disabled style="opacity:.55"><span data-ic="qr"></span> کانکتوری برای اسکن در دسترس نیست</button>
-    @endif
-    @foreach(array_slice($scanTargets, 1) as $target)
-    <a href="{{ $target['url'] }}" class="btn btn-ghost mt8" style="width:100%;text-decoration:none"><span data-ic="bolt"></span> {{ $target['label'] }}</a>
-    @endforeach
+    <label class="btn" id="scanPhotoBtn" style="cursor:pointer"><span data-ic="qr"></span> اسکن با عکس دوربین
+        <input type="file" id="scanPhoto" accept="image/*" capture="environment" hidden>
+    </label>
     <div class="row mt12" style="gap:11px">
-        <a href="{{ route('app.map') }}" class="btn btn-ghost" style="flex:1;text-decoration:none"><span data-ic="qr"></span> ورود دستی کد</a>
-        <button class="btn btn-ghost" style="flex:none;width:56px" type="button" aria-label="چراغ قوه">⚡</button>
+        <a href="{{ route('app.map') }}" class="btn btn-ghost" style="flex:1;text-decoration:none"><span data-ic="bolt"></span> انتخاب از نقشه</a>
     </div>
     <div class="offline-note mt16">
         <span data-ic="shield"></span>
@@ -57,6 +51,7 @@
 @keyframes scan{0%,100%{top:26px}50%{top:220px}}
 #scanVideo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:28px;opacity:0;transition:opacity .3s}
 .viewfinder.live #scanVideo{opacity:1}
+.vf-start{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:3;border:none;border-radius:14px;padding:12px 20px;background:var(--accent);color:#fff;font-family:inherit;font-size:14px;font-weight:800}
 .viewfinder.live .vf-qr{display:none}
 .vf-qr{position:absolute;inset:50px;opacity:.18;display:grid;place-items:center}
 .vf-qr svg{width:100%;height:100%}
@@ -74,59 +69,112 @@
 (function(){
   var video=document.getElementById('scanVideo');
   var hint=document.getElementById('scanHint');
+  var startBtn=document.getElementById('scanStart');
+  var photo=document.getElementById('scanPhoto');
   var vf=video.parentNode;
-  var origin=location.origin;
-  var done=false,detector=null,canvas=document.createElement('canvas'),ctx=canvas.getContext('2d',{willReadFrequently:true});
+  var done=false,running=false,detector=null,canvas=document.createElement('canvas'),ctx=canvas.getContext('2d',{willReadFrequently:true});
+  video.muted=true;
+  video.setAttribute('playsinline','');
 
   function setHint(t){hint.textContent=t;}
+
+  /** لینک QR سامانه (/q/TOKEN یا /app/charger?...) را روی همین دامنه باز می‌کند، مستقل از دامنهٔ چاپ‌شده. */
   function handle(text){
-    if(done||!text)return;
-    var url;
-    try{url=new URL(text,origin);}catch(e){url=null;}
-    if(url&&url.origin===origin&&(/^\/q\/[A-Za-z0-9]+$/.test(url.pathname)||url.pathname==='/app/charger')){
-      done=true;
-      setHint('کد شناسایی شد، در حال باز کردن شارژر…');
-      if(navigator.vibrate)navigator.vibrate(60);
-      stop();
-      location.href=url.href;
-    }else{
-      setHint('این کد QR متعلق به شارژرهای سامانه نیست.');
-    }
+    if(done||!text)return false;
+    text=String(text).trim();
+    var url=null;
+    try{url=new URL(text,location.origin);}catch(e){}
+    var target=null;
+    if(url&&/^\/q\/[A-Za-z0-9]+\/?$/.test(url.pathname))target=url.pathname.replace(/\/$/,'');
+    else if(url&&url.pathname==='/app/charger'&&url.searchParams.get('qr'))target=url.pathname+url.search;
+    else if(/^[A-Z0-9]{16,40}$/.test(text))target='/q/'+text;
+    if(!target){setHint('این کد QR متعلق به شارژرهای سامانه نیست.');return false;}
+    done=true;
+    setHint('کد شناسایی شد، در حال باز کردن شارژر…');
+    if(navigator.vibrate)navigator.vibrate(60);
+    stop();
+    location.href=target;
+    return true;
   }
-  function stop(){var s=video.srcObject;if(s)s.getTracks().forEach(function(t){t.stop();});}
+
+  function decode(source,w,h,maxSide){
+    var scale=Math.min(1,maxSide/Math.max(w,h));
+    canvas.width=Math.max(1,Math.round(w*scale));canvas.height=Math.max(1,Math.round(h*scale));
+    ctx.drawImage(source,0,0,canvas.width,canvas.height);
+    var img=ctx.getImageData(0,0,canvas.width,canvas.height);
+    var code=jsQR(img.data,img.width,img.height,{inversionAttempts:'attemptBoth'});
+    return code?code.data:null;
+  }
+
+  function stop(){running=false;var s=video.srcObject;if(s)s.getTracks().forEach(function(t){t.stop();});}
+
   function tick(){
-    if(done)return;
-    if(video.readyState>=2){
+    if(done||!running)return;
+    if(video.readyState>=2&&video.videoWidth){
       if(detector){
-        detector.detect(video).then(function(codes){if(codes.length)handle(codes[0].rawValue);}).catch(function(){});
+        detector.detect(video).then(function(codes){if(codes.length)handle(codes[0].rawValue);}).catch(function(){detector=null;});
       }else if(window.jsQR){
-        var w=video.videoWidth,h=video.videoHeight,scale=Math.min(1,640/Math.max(w,h));
-        canvas.width=Math.round(w*scale);canvas.height=Math.round(h*scale);
-        ctx.drawImage(video,0,0,canvas.width,canvas.height);
-        var img=ctx.getImageData(0,0,canvas.width,canvas.height);
-        var code=jsQR(img.data,img.width,img.height,{inversionAttempts:'dontInvert'});
-        if(code)handle(code.data);
+        var txt=decode(video,video.videoWidth,video.videoHeight,800);
+        if(txt)handle(txt);
       }
     }
-    setTimeout(tick,250);
+    setTimeout(tick,200);
   }
-  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
-    setHint('مرورگر شما دسترسی به دوربین را پشتیبانی نمی‌کند؛ با دوربین گوشی کد را اسکن کنید.');
-    return;
-  }
-  navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false}).then(function(stream){
-    video.srcObject=stream;
-    return video.play();
-  }).then(function(){
-    vf.classList.add('live');
-    if('BarcodeDetector' in window){
-      try{detector=new BarcodeDetector({formats:['qr_code']});}catch(e){detector=null;}
+
+  function startCamera(){
+    if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
+      setHint('این مرورگر دوربین زنده را پشتیبانی نمی‌کند؛ دکمهٔ «اسکن با عکس دوربین» را بزنید.');
+      return;
     }
-    tick();
-  }).catch(function(){
-    setHint('دسترسی به دوربین داده نشد. اجازهٔ دوربین را فعال کنید یا با دوربین گوشی کد را اسکن کنید.');
+    startBtn.hidden=true;
+    setHint('در حال باز کردن دوربین…');
+    navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}},audio:false}).then(function(stream){
+      video.srcObject=stream;
+      return video.play();
+    }).then(function(){
+      vf.classList.add('live');
+      running=true;
+      setHint('کد QR روی شارژر یا کانکتور را داخل کادر قرار دهید');
+      if('BarcodeDetector' in window){
+        try{detector=new BarcodeDetector({formats:['qr_code']});}catch(e){detector=null;}
+      }
+      tick();
+    }).catch(function(err){
+      var name=err&&err.name;
+      if(name==='NotAllowedError'){
+        setHint('اجازهٔ دوربین داده نشد. در آیفون: Settings ‹ Safari ‹ Camera را روی Allow بگذارید، یا «اسکن با عکس دوربین» را بزنید.');
+        startBtn.hidden=false;
+      }else if(name==='NotFoundError'||name==='OverconstrainedError'){
+        setHint('دوربینی پیدا نشد؛ «اسکن با عکس دوربین» را بزنید.');
+      }else{
+        setHint('برای فعال شدن دوربین روی «شروع دوربین» بزنید.');
+        startBtn.hidden=false;
+      }
+    });
+  }
+
+  startBtn.addEventListener('click',startCamera);
+
+  photo.addEventListener('change',function(){
+    var file=photo.files&&photo.files[0];
+    if(!file)return;
+    setHint('در حال خواندن کد از عکس…');
+    var img=new Image();
+    var url=URL.createObjectURL(file);
+    img.onload=function(){
+      var txt=null;
+      [1600,1000,600].some(function(side){txt=decode(img,img.naturalWidth,img.naturalHeight,side);return !!txt;});
+      URL.revokeObjectURL(url);
+      photo.value='';
+      if(!txt){setHint('کدی در عکس پیدا نشد. از نزدیک‌تر و بدون لرزش عکس بگیرید.');return;}
+      handle(txt);
+    };
+    img.onerror=function(){setHint('عکس قابل خواندن نیست.');URL.revokeObjectURL(url);};
+    img.src=url;
   });
+
   window.addEventListener('pagehide',stop);
+  startCamera();
 })();
 </script>
 @endpush
