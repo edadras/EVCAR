@@ -20,11 +20,16 @@
 
     <div class="card" style="margin-bottom:16px;border-color:var(--accent);background:var(--accent-softer)">
       <div class="card-pad" style="font-size:13px;line-height:1.7">
+        @if(!empty($remoteJs['direct']))
+        <strong>اتصال مستقیم:</strong> شارژرهای این ایستگاه مستقیم به سرور OCPP مرکزی وصل‌اند؛ دستورها بی‌واسطه روی دستگاه اجرا می‌شوند
+        و نتیجه همان لحظه در کنسول نمایش داده می‌شود. مقادیر زنده همان اعدادی است که خود شارژر گزارش می‌دهد.
+        @else
         <strong>معماری Edge-first:</strong> کنترل شارژر فقط در ایستگاه انجام می‌شود. پنل ادمین دستور را در ابر صف می‌کند؛
         <strong>Edge</strong> آن را دریافت کرده و از طریق <strong>OCPP Gateway محلی</strong> (WebSocket همان ایستگاه) روی دستگاه اعمال می‌کند.
         مرکز ابری مستقیماً به WebSocket شارژر وصل نمی‌شود — فقط وضعیت و نتیجه از طریق سینک برمی‌گردد.
         @if(empty($remoteJs['hasEdge']))
           <span class="pill pill-amber" style="margin-inline-start:8px">این ایستگاه Edge ثبت نشده</span>
+        @endif
         @endif
       </div>
     </div>
@@ -52,6 +57,9 @@
               <div class="live-stat"><div class="ls-l">دمای کانکتور</div><div class="ls-v tnum" id="mTemp">—</div></div>
               <div class="live-stat"><div class="ls-l">انرژی جلسه</div><div class="ls-v tnum" id="mEnergy">—</div></div>
               <div class="live-stat"><div class="ls-l">مدت جلسه</div><div class="ls-v tnum" id="mDuration">—</div></div>
+              <div class="live-stat"><div class="ls-l">شارژ باتری (SoC)</div><div class="ls-v tnum" id="mSoc">—</div></div>
+              <div class="live-stat"><div class="ls-l">وضعیت OCPP</div><div class="ls-v" id="mOcpp" style="font-size:15px">—</div></div>
+              <div class="live-stat"><div class="ls-l">آخرین گزارش کنتور</div><div class="ls-v tnum" id="mAt" style="font-size:15px">—</div></div>
             </div>
             <!-- اقدامات کنترلی -->
             <div class="section-title" style="margin-bottom:10px">دستورهای کنترلی</div>
@@ -60,6 +68,11 @@
               <button class="ctl-btn" data-cmd="unlock"><span class="cb-ic ic-green" data-ic="plug"></span><div><div class="fw7 fs13">باز کردن قفل کانکتور</div><div class="fhint">UnlockConnector</div></div></button>
               <button class="ctl-btn" data-cmd="stop"><span class="cb-ic ic-orange" data-ic="bolt"></span><div><div class="fw7 fs13">توقف شارژ</div><div class="fhint">RemoteStopTransaction</div></div></button>
               <button class="ctl-btn" data-cmd="disable"><span class="cb-ic ic-red" data-ic="alert"></span><div><div class="fw7 fs13">غیرفعال‌سازی</div><div class="fhint">ChangeAvailability</div></div></button>
+              <button class="ctl-btn" data-cmd="enable"><span class="cb-ic ic-green" data-ic="bolt"></span><div><div class="fw7 fs13">فعال‌سازی</div><div class="fhint">ChangeAvailability (Operative)</div></div></button>
+              @if(!empty($remoteJs['direct']))
+              <button class="ctl-btn" data-cmd="meter"><span class="cb-ic ic-blue" data-ic="activity"></span><div><div class="fw7 fs13">به‌روزرسانی مقادیر زنده</div><div class="fhint">TriggerMessage (MeterValues)</div></div></button>
+              <button class="ctl-btn" data-cmd="status"><span class="cb-ic ic-blue" data-ic="refresh"></span><div><div class="fw7 fs13">استعلام وضعیت</div><div class="fhint">TriggerMessage (StatusNotification)</div></div></button>
+              @endif
               <button class="ctl-btn" data-cmd="firmware"><span class="cb-ic ic-violet" data-ic="download"></span><div><div class="fw7 fs13">به‌روزرسانی میان‌افزار</div><div class="fhint">UpdateFirmware</div></div></button>
               <button class="ctl-btn" data-cmd="diag"><span class="cb-ic ic-blue" data-ic="activity"></span><div><div class="fw7 fs13">دریافت گزارش تشخیصی</div><div class="fhint">GetDiagnostics</div></div></button>
             </div>
@@ -116,24 +129,29 @@ window.__REMOTE_STATION=@json($remoteJs ?? ['devs'=>[]]);
 
   var devs=window.__REMOTE_STATION.devs||[];
   var activeIdx=0;
+  function canControl(){return !!(window.__REMOTE_STATION.hasEdge||window.__REMOTE_STATION.direct);}
   function fmtNum(n,unit){if(n===null||n===undefined||n===0&&!unit)return '—';return (+n).toLocaleString('fa-IR')+(unit?' <small>'+unit+'</small>':'');}
   function applyDev(d){
     if(!d)return;
     document.getElementById('curName').textContent=d.id;
     document.getElementById('curMeta').textContent=d.t;
     var cs=document.getElementById('curStatus');cs.className='pill '+d.st[1];cs.innerHTML=(d.st[1]==='pill-green'?'<span class="pdot"></span>':'')+d.st[0];
-    document.getElementById('mPower').innerHTML=d.power>0?fmtNum(d.power,'kW'):'—';
-    document.getElementById('mVolt').innerHTML=d.voltage>0?fmtNum(d.voltage,'V'):'—';
-    document.getElementById('mAmp').innerHTML=d.current>0?fmtNum(d.current,'A'):'—';
-    document.getElementById('mTemp').innerHTML=d.temp?fmtNum(d.temp,'°C'):'—';
-    document.getElementById('mEnergy').innerHTML=d.energy>0?fmtNum(d.energy,'kWh'):'—';
-    document.getElementById('mDuration').innerHTML=d.duration_min>0?fmtNum(d.duration_min,'دق'):'—';
+    function real(v,unit){return v===null||v===undefined?'—':fmtNum(v,unit);}
+    document.getElementById('mPower').innerHTML=real(d.power,'kW');
+    document.getElementById('mVolt').innerHTML=real(d.voltage,'V');
+    document.getElementById('mAmp').innerHTML=real(d.current,'A');
+    document.getElementById('mTemp').innerHTML=real(d.temp,'°C');
+    document.getElementById('mEnergy').innerHTML=real(d.energy,'kWh');
+    document.getElementById('mDuration').innerHTML=real(d.duration_min,'دق');
+    document.getElementById('mSoc').innerHTML=real(d.soc,'%');
+    document.getElementById('mOcpp').textContent=d.chargerOnline?(d.ocppStatus||'—'):'آفلاین';
+    document.getElementById('mAt').textContent=d.readingAt?new Date(d.readingAt).toLocaleTimeString('fa-IR'):'—';
     var pr=document.getElementById('pwRange');
     var maxKw=d.maxKw||180;
     pr.min=Math.max(1,Math.round(maxKw*0.1));
     pr.max=maxKw;
     pr.value=maxKw;
-    pr.disabled=!window.__REMOTE_STATION.hasEdge;
+    pr.disabled=!canControl();
     document.getElementById('pwVal').textContent=maxKw.toLocaleString('fa-IR')+' kW';
   }
   function renderList(){
@@ -180,7 +198,8 @@ window.__REMOTE_STATION=@json($remoteJs ?? ['devs'=>[]]);
   if(devs.length){
     applyDev(devs[0]);
     log('ok','کانکتور '+devs[0].id+' انتخاب شد'+(devs[0].user?' · '+devs[0].user:''));
-    if(window.__REMOTE_STATION.hasEdge)log('ok','دستورات از ابر به Edge صف می‌شوند و محلی اجرا می‌گردند');
+    if(window.__REMOTE_STATION.direct)log('ok','اتصال مستقیم: دستورها بی‌واسطه از سرور مرکزی روی شارژر اجرا می‌شوند');
+    else if(window.__REMOTE_STATION.hasEdge)log('ok','دستورات از ابر به Edge صف می‌شوند و محلی اجرا می‌گردند');
   } else {
     document.getElementById('console').innerHTML='<div class="cline warn"><span class="ct">—</span>کانکتوری برای این ایستگاه ثبت نشده است</div>';
   }
@@ -190,14 +209,20 @@ window.__REMOTE_STATION=@json($remoteJs ?? ['devs'=>[]]);
     unlock:{type:'unlock',label:'UnlockConnector'},
     stop:{type:'remote_stop',label:'RemoteStopTransaction'},
     disable:{type:'change_availability',label:'ChangeAvailability',payload:{type:'Inoperative'}},
+    enable:{type:'change_availability',label:'ChangeAvailability (Operative)',payload:{type:'Operative'}},
+    meter:{type:'trigger_meter',label:'TriggerMessage MeterValues'},
+    status:{type:'trigger_status',label:'TriggerMessage StatusNotification'},
     firmware:{type:'update_firmware',label:'UpdateFirmware'},
     diag:{type:'get_diagnostics',label:'GetDiagnostics'}
   };
+  var seenCmds={};
   function queueCommand(spec,extra){
-    if(!window.__REMOTE_STATION.hasEdge){log('warn','این ایستگاه Edge ندارد — کنترل فقط از طریق ایستگاه محلی ممکن است.');return;}
+    if(!canControl()){log('warn','این ایستگاه Edge ندارد و شارژر مستقیم هم به سرور وصل نیست.');return;}
     var d=selectedDev();
     if(!d||!d.connectorId){log('warn','کانکتور انتخاب نشده است.');return;}
-    log('cmd','» صف‌بندی '+spec.label+' برای '+d.id+' …');
+    var direct=!!window.__REMOTE_STATION.direct;
+    if(direct&&!d.chargerOnline){log('warn','شارژر '+(d.chargePointId||'')+' الان به سرور وصل نیست.');return;}
+    log('cmd','» '+(direct?'ارسال ':'صف‌بندی ')+spec.label+' برای '+d.id+' …');
     fetch(window.__REMOTE_STATION.commandUrl,{
       method:'POST',
       headers:{'Content-Type':'application/json','Accept':'application/json','X-CSRF-TOKEN':csrf()},
@@ -209,8 +234,11 @@ window.__REMOTE_STATION=@json($remoteJs ?? ['devs'=>[]]);
     }).then(function(r){return r.json().then(function(j){return {ok:r.ok,body:j};});})
       .then(function(res){
         if(res.ok&&res.body.ok){
+          if(res.body.uuid)seenCmds[res.body.uuid]=1;
           log('ok','✓ '+ (res.body.message||'دستور در صف Edge قرار گرفت')+' · '+res.body.uuid);
+          if(direct)setTimeout(refreshLive,2500);
         }else{
+          if(res.body.uuid)seenCmds[res.body.uuid]=1;
           log('warn','✗ '+(res.body.error||res.body.message||'خطا در صف‌بندی'));
         }
       }).catch(function(){log('warn','✗ خطای شبکه در ارسال دستور');});
@@ -218,7 +246,14 @@ window.__REMOTE_STATION=@json($remoteJs ?? ['devs'=>[]]);
   document.querySelectorAll('.ctl-btn').forEach(function(b){
     b.addEventListener('click',function(){
       var spec=CMD_MAP[b.getAttribute('data-cmd')];
-      if(spec)queueCommand(spec);
+      if(!spec)return;
+      if(spec.type==='update_firmware'){
+        var url=prompt('آدرس فایل میان‌افزار (http/ftp):');
+        if(!url)return;
+        queueCommand(spec,{location:url});
+        return;
+      }
+      queueCommand(spec);
     });
   });
 
@@ -228,19 +263,20 @@ window.__REMOTE_STATION=@json($remoteJs ?? ['devs'=>[]]);
     queueCommand({type:'set_charging_profile',label:'SetChargingProfile'},{max_kw:+pr.value});
   });
 
+  function refreshLive(){
+    if(!window.__REMOTE_STATION.liveUrl)return;
+    fetch(window.__REMOTE_STATION.liveUrl,{headers:{'Accept':'application/json'}})
+      .then(function(r){return r.json();})
+      .then(function(data){
+        window.__REMOTE_STATION._liveOnline=!!data.online;
+        mergeLive(data.connectors||[]);
+      }).catch(function(){});
+  }
   if(window.__REMOTE_STATION.liveUrl){
-    setInterval(function(){
-      fetch(window.__REMOTE_STATION.liveUrl,{headers:{'Accept':'application/json'}})
-        .then(function(r){return r.json();})
-        .then(function(data){
-          window.__REMOTE_STATION._liveOnline=!!data.online;
-          mergeLive(data.connectors||[]);
-        }).catch(function(){});
-    },10000);
+    setInterval(refreshLive,10000);
   }
 
   if(window.__REMOTE_STATION.commandsUrl){
-    var seenCmds={};
     setInterval(function(){
       fetch(window.__REMOTE_STATION.commandsUrl,{headers:{'Accept':'application/json'}})
         .then(function(r){return r.json();})
@@ -250,7 +286,7 @@ window.__REMOTE_STATION=@json($remoteJs ?? ['devs'=>[]]);
             if(c.status==='pending'||c.status==='dispatched')return;
             seenCmds[c.uuid]=1;
             var st=c.status==='completed'?'ok':'warn';
-            log(st,'نتیجه Edge: '+c.type+' · '+c.status+(c.error?' · '+c.error:''));
+            log(st,'نتیجه: '+c.type+' · '+c.status+(c.error?' · '+c.error:''));
           });
         }).catch(function(){});
     },12000);

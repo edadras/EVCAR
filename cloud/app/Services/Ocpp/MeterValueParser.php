@@ -10,7 +10,7 @@ final class MeterValueParser
 {
     /**
      * @param  array<string, mixed>  $meterValue
-     * @return array{energy_wh?:int,power_w?:float,voltage_v?:float,current_a?:float,soc?:int}|null
+     * @return array{energy_wh?:int,power_w?:float,voltage_v?:float,current_a?:float,soc?:int,temp_c?:float}|null
      */
     public static function parse(array $meterValue): ?array
     {
@@ -26,6 +26,7 @@ final class MeterValueParser
         $voltages = [];
         $currents = [];
         $soc = null;
+        $temps = [];
 
         foreach ($samples as $sample) {
             if (! is_array($sample) || ! isset($sample['value'])) {
@@ -73,6 +74,9 @@ final class MeterValueParser
                 case 'SoC':
                     $soc = (int) round($value);
                     break;
+                case 'Temperature':
+                    $temps[] = strtolower($unit) === 'fahrenheit' ? ($value - 32) * 5 / 9 : $value;
+                    break;
             }
         }
 
@@ -96,6 +100,9 @@ final class MeterValueParser
         }
         if ($soc !== null) {
             $result['soc'] = $soc;
+        }
+        if ($temps !== []) {
+            $result['temp_c'] = max($temps);
         }
 
         return $result === [] ? null : $result;

@@ -121,7 +121,7 @@ class CloudChargePointHandler
         $this->commander->dispatch($charger->charge_point_id, 'ChangeConfiguration', ['key' => 'MeterValueSampleInterval', 'value' => '30']);
         $this->commander->dispatch($charger->charge_point_id, 'ChangeConfiguration', [
             'key' => 'MeterValuesSampledData',
-            'value' => 'Energy.Active.Import.Register,Power.Active.Import,Current.Import,Voltage,SoC',
+            'value' => 'Energy.Active.Import.Register,Power.Active.Import,Current.Import,Voltage,SoC,Temperature',
         ]);
 
         return [
@@ -248,8 +248,14 @@ class CloudChargePointHandler
     private function meterValues(Charger $charger, array $payload): array
     {
         $this->require($payload, ['connectorId', 'meterValue']);
-        $session = $this->sessionFor($charger, $payload['transactionId'] ?? null, (int) $payload['connectorId']);
-        if (! $session || ! is_array($payload['meterValue'])) {
+        if (! is_array($payload['meterValue'])) {
+            return [];
+        }
+        $this->storeLiveReading($charger, (int) $payload['connectorId'], $payload['meterValue']);
+
+        $transactionId = $payload['transactionId'] ?? null;
+        $session = $this->sessionFor($charger, ((int) $transactionId) > 0 ? $transactionId : null, (int) $payload['connectorId']);
+        if (! $session) {
             return [];
         }
 
@@ -269,6 +275,37 @@ class CloudChargePointHandler
         }
 
         return [];
+    }
+
+    /** آخرین مقادیر کنتور هر کانکتور، حتی بیرون از جلسهٔ شارژ، برای پنل کنترل. @param array<int, mixed> $meterValues */
+    private function storeLiveReading(Charger $charger, int $number, array $meterValues): void
+    {
+        if ($number < 1) {
+            return;
+        }
+        $reading = null;
+        foreach ($meterValues as $mv) {
+            if (is_array($mv) && ($parsed = MeterValueParser::parse($mv)) !== null) {
+                $reading = array_merge($reading ?? [], $parsed);
+            }
+        }
+        if ($reading === null) {
+            return;
+        }
+        $connector = Connector::where('charger_id', $charger->id)->where('connector_number', $number)->first();
+        if (! $connector) {
+            return;
+        }
+        $live = array_filter([
+            'power_kw' => isset($reading['power_w']) ? round(max(0, (float) $reading['power_w']) / 1000, 2) : null,
+            'voltage_v' => isset($reading['voltage_v']) ? round((float) $reading['voltage_v'], 1) : null,
+            'current_a' => isset($reading['current_a']) ? round((float) $reading['current_a'], 1) : null,
+            'temp_c' => isset($reading['temp_c']) ? round((float) $reading['temp_c'], 1) : null,
+            'soc' => $reading['soc'] ?? null,
+            'energy_wh' => $reading['energy_wh'] ?? null,
+        ], fn ($v) => $v !== null);
+        $live['at'] = now()->toIso8601String();
+        $connector->update(['meta' => array_merge($connector->meta ?? [], ['live' => $live])]);
     }
 
     /** @return array<string, mixed> */

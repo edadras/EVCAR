@@ -28,6 +28,7 @@ final class OcppCommandMap
                 'retrieveDate' => (string) ($payload['retrieveDate'] ?? now()->utc()->format('Y-m-d\TH:i:s\Z')),
             ]],
             'trigger_status' => ['TriggerMessage', ['requestedMessage' => 'StatusNotification', 'connectorId' => $connectorNumber]],
+            'trigger_meter' => ['TriggerMessage', ['requestedMessage' => 'MeterValues', 'connectorId' => $connectorNumber]],
             'get_configuration' => ['GetConfiguration', isset($payload['key']) ? ['key' => array_values((array) $payload['key'])] : []],
             'change_configuration' => ['ChangeConfiguration', [
                 'key' => self::required($payload, 'key', 'کلید تنظیمات الزامی است.'),

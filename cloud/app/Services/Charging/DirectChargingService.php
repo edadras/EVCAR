@@ -269,7 +269,10 @@ class DirectChargingService
         if (isset($reading['current_a'])) {
             $meta['current_a'] = round((float) $reading['current_a'], 1);
         }
-        if (isset($reading['soc'])) {
+        if (isset($reading['temp_c'])) {
+            $meta['temp_c'] = round((float) $reading['temp_c'], 1);
+        }
+        if (isset($reading['soc']) && $reading['soc'] > 0) {
             $meta['soc'] = max(0, min(100, (int) $reading['soc']));
             $meta['soc_source'] = 'charger';
         }

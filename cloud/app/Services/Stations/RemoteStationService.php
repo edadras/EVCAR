@@ -6,6 +6,7 @@ use App\Models\ChargingSession;
 use App\Models\Connector;
 use App\Models\Station;
 use App\Support\Persian;
+use Illuminate\Support\Carbon;
 
 class RemoteStationService
 {
@@ -23,6 +24,7 @@ class RemoteStationService
             'stationCode' => $station->code,
             'stationId' => $station->id,
             'hasEdge' => (bool) $station->edgeStation,
+            'direct' => ! $station->edgeStation && $station->chargers->contains(fn ($ch) => $ch->connectsDirectly()),
             'edgeOnline' => $live['edge_online'],
             'commandUrl' => route('admin.api.remote-command.store', $station),
             'commandsUrl' => route('admin.api.remote-command.recent', $station),
@@ -57,7 +59,7 @@ class RemoteStationService
         $devs = [];
         foreach ($station->chargers as $charger) {
             foreach ($charger->connectors as $connector) {
-                $devs[] = $this->connectorRow($charger, $connector, $activeSessions->get($connector->id));
+                $devs[] = $this->connectorRow($charger, $connector, $activeSessions->get($connector->id), ! $edge && $charger->connectsDirectly());
             }
         }
 
@@ -71,7 +73,7 @@ class RemoteStationService
     }
 
     /** @return array<string, mixed> */
-    private function connectorRow($charger, Connector $connector, ?ChargingSession $session): array
+    private function connectorRow($charger, Connector $connector, ?ChargingSession $session, bool $direct): array
     {
         $sessionActive = $session !== null;
         $ocpp = $sessionActive ? 'Charging' : ($connector->ocpp_status ?? 'Available');
@@ -86,7 +88,7 @@ class RemoteStationService
         };
 
         $maxKw = (int) ($connector->max_power_kw ?? $charger->max_power_kw ?? 22);
-        $metrics = $this->metrics($session, $maxKw, $ocpp === 'Charging');
+        $metrics = $this->metrics($session, $connector, $chargerOnline);
         $typeLabel = $charger->connector_type ?? 'Type2';
         if ($typeLabel === 'CCS2') {
             $typeLabel = 'DC CCS2';
@@ -103,7 +105,10 @@ class RemoteStationService
             'st' => $st,
             'ocppStatus' => $ocpp,
             'chargerOnline' => $chargerOnline,
+            'direct' => $direct,
             'maxKw' => $maxKw,
+            'soc' => $metrics['soc'],
+            'readingAt' => $metrics['reading_at'],
             'pw' => $metrics['power'] > 0 ? Persian::num($metrics['power']).' kW' : '—',
             'power' => $metrics['power'],
             'voltage' => $metrics['voltage'],
@@ -116,39 +121,29 @@ class RemoteStationService
         ];
     }
 
-    /** @return array{power:int,voltage:int,current:int,temp:?int,energy:float,duration_min:int} */
-    private function metrics(?ChargingSession $session, int $maxKw, bool $isCharging): array
+    /**
+     * فقط مقادیر واقعی گزارش‌شده توسط شارژر؛ مقدار ناموجود null است.
+     *
+     * @return array{power:?float,voltage:?float,current:?float,temp:?float,soc:?int,energy:?float,duration_min:?int,reading_at:?string}
+     */
+    private function metrics(?ChargingSession $session, Connector $connector, bool $chargerOnline): array
     {
-        if (! $isCharging) {
-            return [
-                'power' => 0,
-                'voltage' => 0,
-                'current' => 0,
-                'temp' => null,
-                'energy' => 0,
-                'duration_min' => 0,
-            ];
+        $live = $connector->meta['live'] ?? [];
+        $at = isset($live['at']) ? Carbon::parse($live['at']) : null;
+        if (! $chargerOnline || ! $at || $at->lt(now()->subMinutes(10))) {
+            $live = [];
         }
-
         $meta = $session?->meta ?? [];
-        $power = (int) ($meta['power_kw'] ?? $maxKw);
-        $durationMin = $session?->started_at ? (int) $session->started_at->diffInMinutes(now()) : 0;
-        $energy = $session
-            ? (float) (($session->energy_kwh > 0)
-                ? $session->energy_kwh
-                : round($power * ($durationMin / 60) * 0.85, 2))
-            : 0;
-        $voltage = (int) ($meta['voltage'] ?? ($power > 50 ? 400 : 230));
-        $current = $voltage > 0 ? (int) round(($power * 1000) / $voltage) : 0;
-        $temp = isset($meta['temp_c']) ? (int) $meta['temp_c'] : null;
 
         return [
-            'power' => $power,
-            'voltage' => $voltage,
-            'current' => $current,
-            'temp' => $temp,
-            'energy' => $energy,
-            'duration_min' => $durationMin,
+            'power' => $meta['power_kw'] ?? $live['power_kw'] ?? null,
+            'voltage' => $meta['voltage_v'] ?? $live['voltage_v'] ?? null,
+            'current' => $meta['current_a'] ?? $live['current_a'] ?? null,
+            'temp' => $meta['temp_c'] ?? $live['temp_c'] ?? null,
+            'soc' => isset($meta['soc']) && ($meta['soc_source'] ?? null) === 'charger' ? (int) $meta['soc'] : (! empty($live['soc']) ? (int) $live['soc'] : null),
+            'energy' => $session ? round((float) $session->energy_kwh, 2) : null,
+            'duration_min' => $session?->started_at ? (int) $session->started_at->diffInMinutes(now()) : null,
+            'reading_at' => $live !== [] ? $at?->toIso8601String() : null,
         ];
     }
 }
