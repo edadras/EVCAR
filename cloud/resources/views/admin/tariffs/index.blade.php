@@ -191,7 +191,7 @@
                     $scans = (int) ($qrScanCounts[$token->connector_id] ?? 0);
                     $statusPill = $token->status === 'active' ? ['pill-green', 'فعال'] : ['pill-amber', 'غیرفعال'];
                   @endphp
-                  <tr class="qr-row" data-link="{{ $token->deep_link }}" data-meta="{{ $token->station?->name }} · کانکتور {{ $token->connectorLabel() }}" style="cursor:pointer">
+                  <tr class="qr-row" data-link="{{ $token->scanUrl() }}" data-title="{{ $token->charger?->charge_point_id ?? $token->station?->name }} · کانکتور {{ $token->connector?->connector_number ?? '—' }}" data-meta="{{ $token->station?->name }} · کانکتور {{ $token->connectorLabel() }}" style="cursor:pointer">
                     <td class="mono">{{ $token->displayCode() }}</td>
                     <td class="cell-strong">{{ $token->station?->name ?? '—' }}</td>
                     <td><span class="tag">{{ $token->connectorLabel() }}</span></td>
@@ -250,6 +250,8 @@ html[dir=rtl] .switch.on i{transform:translateX(-18px)}
 @endpush
 
 @push('scripts')
+<script src="/assets/vendor/qrcode-generator.js"></script>
+<script src="/assets/admin/qr-render.js"></script>
 <script>
 (function(){
   document.querySelectorAll('[data-ic]').forEach(function(el){el.innerHTML=window.icon(el.getAttribute('data-ic'));});
@@ -267,41 +269,22 @@ html[dir=rtl] .switch.on i{transform:translateX(-18px)}
     var ax=document.getElementById('peakAxis');['۰۰','۰۶','۱۲','۱۸','۲۴'].forEach(function(t){var s=document.createElement('span');s.textContent=t;ax.appendChild(s);});
   })();
 
-  function renderQrSvg(seed,box){
-    if(!box)return;
-    var n=21,cell=172/n,svg='<svg width="172" height="172" viewBox="0 0 172 172" xmlns="http://www.w3.org/2000/svg">';
-    function blk(x,y,s){return '<rect x="'+(x*cell)+'" y="'+(y*cell)+'" width="'+(s*cell)+'" height="'+(s*cell)+'" fill="#0F1E2E"/>';}
-    var h=0;for(var i=0;i<seed.length;i++)h=((h<<5)-h)+seed.charCodeAt(i)|0;
-    for(var y=0;y<n;y++)for(var x=0;x<n;x++){
-      var corner=(x<7&&y<7)||(x>=n-7&&y<7)||(x<7&&y>=n-7);
-      if(corner)continue;
-      h=(h*1103515245+12345)|0;
-      if((h>>8)%100<46)svg+=blk(x,y,1);
-    }
-    function finder(ox,oy){
-      return blk(ox,oy,7)+
-        '<rect x="'+((ox+1)*cell)+'" y="'+((oy+1)*cell)+'" width="'+(5*cell)+'" height="'+(5*cell)+'" fill="#fff"/>'+
-        '<rect x="'+((ox+2)*cell)+'" y="'+((oy+2)*cell)+'" width="'+(3*cell)+'" height="'+(3*cell)+'" fill="#2563eb"/>';
-    }
-    svg+=finder(0,0)+finder(n-7,0)+finder(0,n-7)+'</svg>';
-    box.innerHTML=svg;
-    return box.querySelector('svg');
-  }
-
   var qrBox=document.getElementById('qrBox');
   var qrPreviewLink=document.getElementById('qrPreviewLink');
   var qrPreviewMeta=document.getElementById('qrPreviewMeta');
   var qrDownloadBtn=document.getElementById('qrDownloadBtn');
-  var selectedQrLink='';
+  var selectedQrLink='',selectedQrTitle='',selectedQrMeta='';
 
   function selectQrRow(row){
     document.querySelectorAll('.qr-row').forEach(function(r){r.style.background='';});
     if(!row)return;
     row.style.background='var(--accent-softer)';
     selectedQrLink=row.getAttribute('data-link')||'';
+    selectedQrTitle=row.getAttribute('data-title')||'';
+    selectedQrMeta=row.getAttribute('data-meta')||'';
     if(qrPreviewLink)qrPreviewLink.textContent=selectedQrLink||'—';
-    if(qrPreviewMeta)qrPreviewMeta.textContent=row.getAttribute('data-meta')||'';
-    renderQrSvg(selectedQrLink,qrBox);
+    if(qrPreviewMeta)qrPreviewMeta.textContent=selectedQrMeta;
+    window.renderQr(selectedQrLink,qrBox);
     if(qrDownloadBtn)qrDownloadBtn.disabled=!selectedQrLink;
   }
 
@@ -314,14 +297,7 @@ html[dir=rtl] .switch.on i{transform:translateX(-18px)}
   if(qrDownloadBtn){
     qrDownloadBtn.addEventListener('click',function(){
       if(!selectedQrLink)return;
-      var svg=qrBox.querySelector('svg');
-      if(!svg)return;
-      var blob=new Blob(['<'+'?xml version="1.0" encoding="UTF-8"?'+'>\n'+svg.outerHTML],{type:'image/svg+xml'});
-      var a=document.createElement('a');
-      a.href=URL.createObjectURL(blob);
-      a.download='qr-'+selectedQrLink.replace(/[^a-zA-Z0-9]/g,'-')+'.svg';
-      a.click();
-      URL.revokeObjectURL(a.href);
+      window.downloadQrLabel(selectedQrLink,selectedQrTitle,selectedQrMeta,'qr-'+selectedQrTitle.replace(/[^a-zA-Z0-9]+/g,'-')+'.png');
     });
   }
 

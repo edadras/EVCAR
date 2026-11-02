@@ -63,6 +63,12 @@ class QrToken extends Model
         return $this->belongsTo(Connector::class);
     }
 
+    /** محتوای چاپ‌شده در QR؛ لینک https تا دوربین هر گوشی هم بتواند بازش کند. */
+    public function scanUrl(): string
+    {
+        return route('qr.open', $this->token);
+    }
+
     public function displayCode(): string
     {
         return 'QR-'.str_pad((string) $this->id, 4, '0', STR_PAD_LEFT);

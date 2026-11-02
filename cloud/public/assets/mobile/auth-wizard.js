@@ -208,7 +208,7 @@
     cloudFetch(api.loginCloud, { phone: state.phone, password: password })
       .then(function (res) {
         if (!res.ok) throw new Error(res.d.message || 'ورود ناموفق');
-        window.location.href = api.homeUrl || '/app';
+        window.location.href = res.d.redirect || api.homeUrl || '/app';
       })
       .catch(function (err) {
         setMsg('pwdMsg', err.message, true);
@@ -235,7 +235,7 @@
       registration_proof: state.registrationProof,
     }).then(function (res) {
       if (!res.ok) throw new Error(res.d.message || 'ثبت‌نام ناموفق');
-      window.location.href = api.homeUrl || '/app';
+      window.location.href = res.d.redirect || api.homeUrl || '/app';
     }).catch(function (err) {
       setMsg('regMsg', err.message, true);
     });

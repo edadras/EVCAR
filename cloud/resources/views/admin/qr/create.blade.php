@@ -60,9 +60,8 @@
   <div class="card" style="align-self:start">
     <div class="card-head"><h3>پیش‌نمایش</h3></div>
     <div class="card-pad" style="text-align:center">
-      <div class="qr-box" id="qrPreview" style="margin:0 auto"></div>
-      <div class="mono mt-16" id="qrPreviewLink" style="font-size:12px;color:var(--text-2)">—</div>
-      <div class="muted fs12 mt-8" id="qrPreviewMeta">ایستگاه و کانکتور را انتخاب کنید</div>
+      <div class="fw7 fs13" id="qrPreviewMeta">ایستگاه و کانکتور را انتخاب کنید</div>
+      <div class="muted fs12 mt-8" style="line-height:1.8">کد QR بعد از ایجاد ساخته می‌شود و در فهرست «کدهای QR» قابل مشاهده و دانلود به‌صورت برچسب قابل چاپ است.</div>
     </div>
   </div>
 </div>
@@ -85,30 +84,9 @@ html[dir=rtl] .switch.on i{transform:translateX(-19px)}
 (function(){
   document.querySelectorAll('[data-ic]').forEach(function(el){el.innerHTML=window.icon(el.getAttribute('data-ic'));});
 
-  function renderQrSvg(seed,box){
-    if(!box)return;
-    var n=21,cell=172/n,svg='<svg width="172" height="172" viewBox="0 0 172 172">';
-    function blk(x,y,s){return '<rect x="'+(x*cell)+'" y="'+(y*cell)+'" width="'+(s*cell)+'" height="'+(s*cell)+'" fill="#0F1E2E"/>';}
-    var h=0;for(var i=0;i<seed.length;i++)h=((h<<5)-h)+seed.charCodeAt(i)|0;
-    for(var y=0;y<n;y++)for(var x=0;x<n;x++){
-      var corner=(x<7&&y<7)||(x>=n-7&&y<7)||(x<7&&y>=n-7);
-      if(corner)continue;
-      h=(h*1103515245+12345)|0;
-      if((h>>8)%100<46)svg+=blk(x,y,1);
-    }
-    function finder(ox,oy){
-      return blk(ox,oy,7)+
-        '<rect x="'+((ox+1)*cell)+'" y="'+((oy+1)*cell)+'" width="'+(5*cell)+'" height="'+(5*cell)+'" fill="#fff"/>'+
-        '<rect x="'+((ox+2)*cell)+'" y="'+((oy+2)*cell)+'" width="'+(3*cell)+'" height="'+(3*cell)+'" fill="var(--accent)"/>';
-    }
-    svg+=finder(0,0)+finder(n-7,0)+finder(0,n-7)+'</svg>';
-    box.innerHTML=svg;
-  }
-
   var stationSel=document.getElementById('station_id');
   var chargerSel=document.getElementById('charger_id');
   var connectorSel=document.getElementById('connector_id');
-  var previewLink=document.getElementById('qrPreviewLink');
   var previewMeta=document.getElementById('qrPreviewMeta');
 
   function filterOptions(select,matchFn){
@@ -127,17 +105,11 @@ html[dir=rtl] .switch.on i{transform:translateX(-19px)}
     var charger=chargerSel.selectedOptions[0];
     var connector=connectorSel.selectedOptions[0];
     if(!charger||!charger.value||!connector||!connector.value){
-      previewLink.textContent='—';
       previewMeta.textContent='ایستگاه و کانکتور را انتخاب کنید';
-      document.getElementById('qrPreview').innerHTML='';
       return;
     }
-    var cpId=charger.textContent.trim();
     var num=connector.textContent.split('کانکتور').pop().trim();
-    var link='charger://'+cpId+'/connector/'+num;
-    previewLink.textContent=link;
-    previewMeta.textContent=(station?station.textContent.trim():'')+' · کانکتور '+num;
-    renderQrSvg(link,document.getElementById('qrPreview'));
+    previewMeta.textContent=(station?station.textContent.trim():'')+' · '+charger.textContent.trim()+' · کانکتور '+num;
   }
 
   if(stationSel&&chargerSel&&connectorSel){

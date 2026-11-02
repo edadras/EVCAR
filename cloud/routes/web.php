@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Payment\PaymentCallbackController;
+use App\Models\QrToken;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -8,6 +9,13 @@ Route::get('/', function () {
 })->name('welcome');
 
 Route::get('payment/callback/{payment:uuid}', PaymentCallbackController::class)->name('payment.callback');
+
+Route::get('q/{token}', function (string $token) {
+    $qr = QrToken::with('station')->where('token', $token)->where('status', 'active')->first();
+    abort_unless($qr && $qr->station, 404, 'کد QR نامعتبر یا غیرفعال است.');
+
+    return redirect()->route('app.charger', ['station' => $qr->station->code, 'connector' => $qr->connector_id, 'qr' => $qr->token]);
+})->where('token', '[A-Za-z0-9]+')->name('qr.open');
 
 Route::prefix('admin')->name('admin.')->group(base_path('routes/admin.php'));
 Route::prefix('partner')->name('partner.')->group(base_path('routes/partner.php'));

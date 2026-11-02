@@ -71,10 +71,18 @@ class AuthApiController extends Controller
             );
             $request->session()->regenerate();
 
-            return response()->json($result);
+            return response()->json($result + ['redirect' => $this->intendedAppUrl($request)]);
         } catch (\RuntimeException $e) {
             return response()->json(['message' => $e->getMessage()], 422);
         }
+    }
+
+    /** مقصد قبل از ورود (مثلاً صفحهٔ شارژر بعد از اسکن QR)، فقط اگر داخل اپ کاربر باشد. */
+    private function intendedAppUrl(Request $request): ?string
+    {
+        $url = (string) $request->session()->pull('url.intended', '');
+
+        return str_starts_with($url, url('/app/')) ? $url : null;
     }
 
     public function login(Request $request): JsonResponse
@@ -88,7 +96,7 @@ class AuthApiController extends Controller
             $result = $this->auth->login($data['phone'], $data['password']);
             $request->session()->regenerate();
 
-            return response()->json($result);
+            return response()->json($result + ['redirect' => $this->intendedAppUrl($request)]);
         } catch (\RuntimeException $e) {
             return response()->json(['message' => $e->getMessage()], 422);
         }
