@@ -116,8 +116,8 @@ class ReportsBundleService
                 $energyRows[] = [
                     $label,
                     Persian::digits($stats['sessions']),
-                    Persian::kwh($stats['energy']),
-                    Persian::kwh($stats['sessions'] > 0 ? $stats['energy'] / $stats['sessions'] : 0),
+                    Persian::kwh($stats['energy'], 2),
+                    Persian::kwh($stats['sessions'] > 0 ? $stats['energy'] / $stats['sessions'] : 0, 2),
                     $stats['peak_kw'] > 0 ? Persian::digits((int) round($stats['peak_kw'])).' kW' : '—',
                 ];
                 $revenueRows[] = [
@@ -214,9 +214,9 @@ class ReportsBundleService
                 'rows' => $energyRows,
                 'donut' => [['DC سریع', $dcPct, 'var(--accent)'], ['AC', $acPct, 'var(--green)'], ['سایر', $otherPct, 'var(--orange)']],
                 'kpis' => [
-                    ['انرژی کل', Persian::kwh($totalEnergySum), 'ic-blue', 'bolt', $rangeLabel],
-                    ['میانگین دوره', Persian::kwh($totalEnergySum / max(1, count($energyVals))), 'ic-green', 'leaf', ''],
-                    ['اوج روزانه', Persian::kwh(max($energyVals ?: [0])), 'ic-orange', 'activity', ''],
+                    ['انرژی کل', Persian::kwh($totalEnergySum, 2), 'ic-blue', 'bolt', $rangeLabel],
+                    ['میانگین دوره', Persian::kwh($totalEnergySum / max(1, count($energyVals)), 2), 'ic-green', 'leaf', ''],
+                    ['اوج روزانه', Persian::kwh(max($energyVals ?: [0]), 2), 'ic-orange', 'activity', ''],
                     ['سهم DC', Persian::digits($dcPct).'٪', 'ic-violet', 'plug', 'از کل'],
                 ],
             ],
@@ -429,7 +429,7 @@ class ReportsBundleService
                     'row' => [
                         $st->name.($st->city ? ' · '.$st->city : ''),
                         Persian::digits($sessionCount),
-                        Persian::kwh($energy),
+                        Persian::kwh($energy, 2),
                         Persian::digits($util).'٪',
                         Persian::money((int) round($revenue / 10)).' ت',
                     ],
