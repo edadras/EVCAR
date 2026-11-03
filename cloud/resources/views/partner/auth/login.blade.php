@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>SafirCharge — ورود شرکا</title>
     <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/assets/admin/app.css">
-    <link rel="stylesheet" href="/assets/partner/login.css">
+    <link rel="stylesheet" href="@v('/assets/admin/app.css')">
+    <link rel="stylesheet" href="@v('/assets/partner/login.css')">
 </head>
 <body>
 <div class="login-wrap">

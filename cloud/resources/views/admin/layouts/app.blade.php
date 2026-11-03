@@ -7,7 +7,7 @@
     <title>@yield('title', 'پنل مدیریت') — SafirCharge</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/assets/admin/app.css">
+    <link rel="stylesheet" href="@v('/assets/admin/app.css')">
     @stack('styles')
 </head>
 <body data-page="{{ $page ?? 'dashboard' }}" data-title="{{ $title ?? '' }}" data-crumb="{{ $crumb ?? 'مدیریت شبکه' }}" data-admin-base="{{ rtrim(route('admin.dashboard'), '/') }}" data-nav='@json($navStats ?? [])' data-me='@json($adminMe ?? [])'>
@@ -27,8 +27,8 @@
 </div>
 </div>
 @stack('modals')
-<script src="/assets/admin/admin-interactive.js"></script>
-<script src="/assets/admin/app.js"></script>
+<script src="@v('/assets/admin/admin-interactive.js')"></script>
+<script src="@v('/assets/admin/app.js')"></script>
 @stack('scripts')
 </body>
 </html>

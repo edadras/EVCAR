@@ -262,5 +262,5 @@ window.SC_NAV = {
     csrf: @json(csrf_token()),
 };
 </script>
-<script src="/assets/mobile/ev-navigator.js"></script>
+<script src="@v('/assets/mobile/ev-navigator.js')"></script>
 @endpush

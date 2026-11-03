@@ -246,8 +246,8 @@ html[dir=rtl] .switch.on i{transform:translateX(-18px)}
 @endpush
 
 @push('scripts')
-<script src="/assets/lib/qrcode-generator.js"></script>
-<script src="/assets/admin/qr-render.js"></script>
+<script src="@v('/assets/lib/qrcode-generator.js')"></script>
+<script src="@v('/assets/admin/qr-render.js')"></script>
 <script>
 (function(){
   document.querySelectorAll('[data-ic]').forEach(function(el){el.innerHTML=window.icon(el.getAttribute('data-ic'));});

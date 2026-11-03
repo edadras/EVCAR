@@ -7,7 +7,7 @@
     <title>SafirCharge — ورود</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/assets/mobile/app-mobile.css">
+    <link rel="stylesheet" href="@v('/assets/mobile/app-mobile.css')">
 </head>
 <body data-no-tab>
 <div class="phone login-phone">
@@ -127,8 +127,8 @@ window.SC_AUTH_API = {
     homeUrl: @json(route('app.home')),
 };
 </script>
-<script src="/assets/mobile/app-mobile.js"></script>
-<script src="/assets/mobile/edge-router.js"></script>
-<script src="/assets/mobile/auth-wizard.js"></script>
+<script src="@v('/assets/mobile/app-mobile.js')"></script>
+<script src="@v('/assets/mobile/edge-router.js')"></script>
+<script src="@v('/assets/mobile/auth-wizard.js')"></script>
 </body>
 </html>

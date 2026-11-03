@@ -13,7 +13,7 @@
     <title>@yield('title', 'پنل شرکا') — SafirCharge</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/assets/admin/app.css">
+    <link rel="stylesheet" href="@v('/assets/admin/app.css')">
     @stack('styles')
 </head>
 <body
@@ -38,7 +38,7 @@
 </div>
 </div>
 @stack('modals')
-<script src="/assets/partner/app.js"></script>
+<script src="@v('/assets/partner/app.js')"></script>
 @stack('scripts')
 </body>
 </html>

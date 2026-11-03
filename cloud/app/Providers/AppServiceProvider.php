@@ -11,6 +11,7 @@ use App\Observers\PaymentObserver;
 use App\Services\Admin\AdminLiveService;
 use App\Services\App\ConnectivityService;
 use App\Services\App\CustomerEngagementService;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
@@ -35,6 +36,9 @@ class AppServiceProvider extends ServiceProvider
                 }
             }
         });
+
+        // @v('/assets/x.js') → /assets/x.js?v=<mtime>؛ بعد از هر دیپلوی کش مرورگر نسخه قدیمی JS/CSS را اجرا نکند
+        Blade::directive('v', fn ($path) => "<?php echo e({$path}).'?v='.(@filemtime(public_path(ltrim({$path}, '/'))) ?: 0); ?>");
 
         // Docker / پورت غیراستاندارد: asset() همیشه همان origin مرورگر را بگیرد
         if (! $this->app->runningInConsole() && request()->hasHeader('Host')) {
