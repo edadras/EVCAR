@@ -28,7 +28,7 @@
     <div class="hero-bg"><span data-ic="plug"></span></div>
     <a href="{{ route('app.map') }}" class="hero-back"><span data-ic="back"></span></a>
     <button class="hero-share" type="button" onclick="if(navigator.share){navigator.share({title:@json($station->name),url:location.href})}"><span data-ic="share"></span></button>
-    <span class="hero-pill pill pill-green"><span class="pdot"></span>{{ Persian::digits($freeCount) }} کانکتور آزاد</span>
+    <span class="hero-pill pill pill-green"><span class="pdot"></span><span id="freeCountTxt">{{ Persian::digits($freeCount) }}</span> کانکتور آزاد</span>
 </div>
 
 <div class="screen" style="padding-top:16px;padding-bottom:100px">
@@ -376,7 +376,7 @@
       return '<div class="conn-card '+(sel?'sel':'')+(busy?' busy':'')+(locked?' locked':'')+(allowed?' auth-ok':'')+'" data-idx="'+i+'" data-name="'+c.name+'" data-id="'+c.db_id+'" data-uuid="'+(c.uuid||'')+'">'+
         '<div class="ci '+c.ic+'">'+window.icon('plug')+'</div>'+
         '<div style="flex:1"><div class="fw7">کانکتور '+c.id+' · '+c.t+'</div>'+
-        '<div class="fs12 muted mt4">حداکثر توان '+c.pw+(busy&&c.reason?' · '+c.reason:'')+'</div></div>'+
+        '<div class="fs12 muted mt4">حداکثر توان '+c.pw+(c.reason&&(busy||c.state!=='free')?' · '+c.reason:'')+'</div></div>'+
         (busy?'<span class="pill '+((stateLabels[c.state]||['مشغول','pill-orange'])[1])+'">'+((stateLabels[c.state]||['مشغول'])[0])+'</span>':(allowed?'<span class="pill pill-green">مجاز</span>':'<span class="pill pill-muted">قفل</span>'))+
       '</div>';
     }).join('');
@@ -478,6 +478,18 @@
   });
 
   setInterval(loadEdgeGrants,15000);
+
+  var stationCode=@json($station->code);
+  window.scLive('charger',10000,function(d){
+    if(!d.found||!d.connectors)return;
+    var selUuid=selIdx>=0&&conns[selIdx]?conns[selIdx].uuid:null;
+    conns=d.connectors;
+    selIdx=-1;
+    if(selUuid)conns.forEach(function(c,i){if(c.uuid===selUuid)selIdx=i;});
+    if(selIdx>=0&&conns[selIdx].st==='busy')selIdx=-1;
+    document.getElementById('freeCountTxt').textContent=Number(d.free).toLocaleString('fa-IR');
+    renderConnectors();
+  },{station:stationCode});
 })();
 </script>
 @endpush

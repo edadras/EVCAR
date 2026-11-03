@@ -11,7 +11,10 @@ use Carbon\Carbon;
 class ConnectorAvailabilityService
 {
     /** @var list<string> */
-    private const RESERVABLE_OCPP = ['Available', 'Preparing', 'Finishing'];
+    private const RESERVABLE_OCPP = ['Available', 'Preparing'];
+
+    /** @var list<string> */
+    private const IN_USE_OCPP = ['Charging', 'SuspendedEV', 'SuspendedEVSE', 'Finishing'];
 
     /** @var list<string> */
     private const CHARGER_READY = ['active', 'deployed'];
@@ -42,22 +45,22 @@ class ConnectorAvailabilityService
             $state = 'inactive';
             $reservable = false;
             $reason = 'کانکتور غیرفعال است.';
-        } elseif (in_array($connector->ocpp_status, ['Faulted', 'Unavailable'], true)) {
-            $state = 'fault';
-            $reservable = false;
-            $reason = $this->ocppBlockReason($connector->ocpp_status);
-        } elseif ($connector->ocpp_status === 'Charging') {
-            $state = 'charging';
-            $reservable = false;
-            $reason = 'این کانکتور در حال شارژ است.';
-        } elseif ($connector->ocpp_status === 'Reserved') {
-            $state = 'reserved';
-            $reservable = false;
-            $reason = 'این کانکتور رزرو شده است.';
         } elseif (! $charger->is_online) {
             $state = 'offline';
             $reservable = false;
             $reason = 'شارژر آفلاین است.';
+        } elseif (in_array($connector->ocpp_status, ['Faulted', 'Unavailable'], true)) {
+            $state = 'fault';
+            $reservable = false;
+            $reason = $this->ocppBlockReason($connector->ocpp_status);
+        } elseif (in_array($connector->ocpp_status, self::IN_USE_OCPP, true)) {
+            $state = 'charging';
+            $reservable = false;
+            $reason = $this->ocppBlockReason($connector->ocpp_status) ?? 'این کانکتور در حال استفاده است.';
+        } elseif ($connector->ocpp_status === 'Reserved') {
+            $state = 'reserved';
+            $reservable = false;
+            $reason = 'این کانکتور رزرو شده است.';
         }
 
         return [
@@ -196,7 +199,8 @@ class ConnectorAvailabilityService
         return match ($ocppStatus) {
             'Faulted' => 'این کانکتور در وضعیت خطا است.',
             'Unavailable' => 'این کانکتور در دسترس نیست.',
-            'Charging' => 'این کانکتور در حال شارژ است.',
+            'Charging', 'SuspendedEV', 'SuspendedEVSE' => 'این کانکتور در حال شارژ است.',
+            'Finishing' => 'شارژ قبلی تمام شده ولی کابل هنوز به خودرو وصل است.',
             'Reserved' => 'این کانکتور رزرو شده است.',
             default => null,
         };

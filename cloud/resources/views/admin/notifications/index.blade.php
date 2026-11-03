@@ -15,9 +15,14 @@
         'v' => (int) round($ch->c / $todayTotal * 100),
         'c' => $channelColors[$ch->channel] ?? 'var(--orange)',
       ])->values()->all();
+  $channelNames = ['push' => 'پوش', 'in_app' => 'درون‌برنامه‌ای', 'sms' => 'پیامک', 'email' => 'ایمیل', 'whatsapp' => 'واتس‌اپ'];
+  $typeStats = \App\Models\UserNotification::where('sent_at', '>=', now()->subDays(30))
+    ->selectRaw('type, COUNT(*) as c, SUM(read_at IS NOT NULL) as r, GROUP_CONCAT(DISTINCT channel) as chs, MAX(title) as title')
+    ->groupBy('type')->orderByDesc('c')->get();
+  $typeCount = \App\Models\UserNotification::distinct()->count('type');
 @endphp
 <div class="flex between items-center mt-8" style="margin-bottom:18px">
-      <div class="seg" id="rangeSeg"><button class="active">امروز</button><button>هفته</button><button>ماه</button></div>
+      <div class="muted fs12">آمار کانال‌ها مربوط به امروز و قالب‌ها مربوط به ۳۰ روز اخیر است.</div>
       <a href="/admin/notifications/create" class="btn btn-sm btn-primary"><span class="bic" data-ic="plus"></span> ارسال اعلان جدید</a>
     </div>
 
@@ -25,7 +30,7 @@
       <div class="mini-stat"><div class="ms-ic ic-blue" data-ic="bell"></div><div><div class="ms-v tnum">{{ Persian::num($stats['today'] ?? 0) }}</div><div class="ms-l">ارسال امروز</div></div></div>
       <div class="mini-stat"><div class="ms-ic ic-green" data-ic="activity"></div><div><div class="ms-v tnum">{{ Persian::num($notifications->total()) }}</div><div class="ms-l">کل اعلان‌ها</div></div></div>
       <div class="mini-stat"><div class="ms-ic ic-orange" data-ic="bolt"></div><div><div class="ms-v tnum">{{ Persian::num($stats['unread'] ?? 0) }}</div><div class="ms-l">خوانده‌نشده</div></div></div>
-      <div class="mini-stat"><div class="ms-ic ic-violet" data-ic="sliders"></div><div><div class="ms-v tnum">{{ Persian::num($notifications->unique('type')->count()) }}</div><div class="ms-l">نوع رویداد</div></div></div>
+      <div class="mini-stat"><div class="ms-ic ic-violet" data-ic="sliders"></div><div><div class="ms-v tnum">{{ Persian::num($typeCount) }}</div><div class="ms-l">نوع رویداد</div></div></div>
     </div>
 
     <div class="grid col-2-1 mt-16">
@@ -65,10 +70,11 @@
           <div class="flex items-center gap-16">
             <svg width="128" height="128" viewBox="0 0 128 128" id="donut"></svg>
             <div class="legend">
-              <div class="li"><span class="sw" style="background:var(--accent)"></span><span>پوش</span><b class="tnum" style="margin-inline-start:auto">۵۲٪</b></div>
-              <div class="li"><span class="sw" style="background:var(--green)"></span><span>پیامک</span><b class="tnum" style="margin-inline-start:auto">۲۸٪</b></div>
-              <div class="li"><span class="sw" style="background:var(--orange)"></span><span>واتس‌اپ</span><b class="tnum" style="margin-inline-start:auto">۱۴٪</b></div>
-              <div class="li"><span class="sw" style="background:var(--violet)"></span><span>ایمیل</span><b class="tnum" style="margin-inline-start:auto">۶٪</b></div>
+              @forelse($channelStats as $ch)
+                <div class="li"><span class="sw" style="background:{{ $channelColors[$ch->channel] ?? 'var(--orange)' }}"></span><span>{{ $channelNames[$ch->channel] ?? $ch->channel }}</span><b class="tnum" style="margin-inline-start:auto">{{ Persian::digits((int) round($ch->c / $todayTotal * 100)) }}٪</b></div>
+              @empty
+                <div class="li cell-muted">امروز ارسالی نبوده است.</div>
+              @endforelse
             </div>
           </div>
         </div>
@@ -80,7 +86,7 @@
       <div class="card-head"><div><h3>قالب‌های رویداد</h3><div class="ch-sub">اعلان‌های خودکار بر اساس رویدادهای سامانه</div></div></div>
       <div class="table-wrap">
         <table class="tbl">
-          <thead><tr><th>رویداد</th><th>عنوان اعلان</th><th>کانال‌ها</th><th>ارسال (۳۰ روز)</th><th>نرخ تحویل</th><th>وضعیت</th></tr></thead>
+          <thead><tr><th>رویداد</th><th>نمونهٔ عنوان</th><th>کانال‌ها</th><th>ارسال (۳۰ روز)</th><th>نرخ خوانده‌شدن</th></tr></thead>
           <tbody id="tplBody"></tbody>
         </table>
       </div>
@@ -144,25 +150,23 @@ html[dir=rtl] .switch.on i{transform:translateX(-18px)}
     document.getElementById('donut').innerHTML=rings+'<text x="64" y="60" text-anchor="middle" font-size="20" font-weight="800" fill="var(--text)" font-family="Vazirmatn">{{ Persian::digits($stats['today'] ?? 0) }}</text><text x="64" y="78" text-anchor="middle" font-size="10" fill="var(--muted)" font-family="Vazirmatn">ارسال امروز</text>';
   })();
 
-  var tpls=[
-    ['شروع شارژ','شارژ خودروی شما آغاز شد ⚡',['پوش','پیامک'],'۹٬۸۴۰','۹۹٫۲٪',true],
-    ['پایان شارژ','شارژ کامل شد — هزینه کسر گردید',['پوش','پیامک','واتس‌اپ'],'۹٬۶۲۰','۹۸٫۸٪',true],
-    ['قطع ارتباط','اتصال شارژر قطع شد',['پوش'],'۴۲۰','۹۹٫۰٪',true],
-    ['خطای شارژر','خطایی در جلسهٔ شارژ رخ داد',['پوش','پیامک'],'۱۸۶','۹۷٫۵٪',true],
-    ['کمبود موجودی','موجودی کیف پول کم است',['پوش','واتس‌اپ'],'۱٬۲۴۰','۹۸٫۱٪',true],
-    ['پاداش و تخفیف','اعتبار پاداش جدید دریافت کردید 🎁',['پوش','ایمیل'],'۳٬۱۰۰','۹۴٫۸٪',false],
-  ];
-  document.getElementById('tplBody').innerHTML=tpls.map(function(t){
-    var chips=t[2].map(function(c){return '<span class="tag">'+c+'</span>';}).join(' ');
-    return '<tr><td class="cell-strong">'+t[0]+'</td><td class="cell-muted">'+t[1]+'</td>'+
-      '<td><div class="flex gap-8">'+chips+'</div></td><td class="tnum">'+t[3]+'</td><td class="tnum">'+t[4]+'</td>'+
-      '<td>'+(t[5]?'<span class="pill pill-green"><span class="pdot"></span>فعال</span>':'<span class="pill">غیرفعال</span>')+'</td></tr>';
-  }).join('');
+  var tpls=@json($typeStats->map(fn ($t) => [
+    (string) ($t->type ?: '—'),
+    (string) ($t->title ?? ''),
+    collect(explode(',', (string) $t->chs))->filter()->map(fn ($c) => $channelNames[$c] ?? $c)->values()->all(),
+    (int) $t->c,
+    $t->c > 0 ? round($t->r / $t->c * 100, 1) : 0,
+  ])->values());
+  var esc=AdminUI.esc;
+  document.getElementById('tplBody').innerHTML=tpls.length?tpls.map(function(t){
+    var chips=t[2].map(function(c){return '<span class="tag">'+esc(c)+'</span>';}).join(' ');
+    return '<tr><td class="cell-strong">'+esc(t[0])+'</td><td class="cell-muted">'+esc(t[1])+'</td>'+
+      '<td><div class="flex gap-8">'+chips+'</div></td><td class="tnum">'+AdminUI.fa(t[3])+'</td><td class="tnum">'+AdminUI.fa(t[4],1)+'٪</td></tr>';
+  }).join(''):'<tr><td colspan="5" class="cell-muted">در ۳۰ روز اخیر اعلانی ارسال نشده است.</td></tr>';
 
   document.querySelectorAll('#log .ni').forEach(function(el){el.innerHTML=window.icon('bell');});
 
   document.querySelectorAll('.switch').forEach(function(s){s.addEventListener('click',function(){s.classList.toggle('on');});});
-  ['rangeSeg'].forEach(function(id){document.querySelectorAll('#'+id+' button').forEach(function(b){b.addEventListener('click',function(){document.querySelectorAll('#'+id+' button').forEach(function(x){x.classList.remove('active');});b.classList.add('active');});});});
   document.querySelectorAll('#logSeg button').forEach(function(b,idx){
     b.addEventListener('click',function(){document.querySelectorAll('#logSeg button').forEach(function(x){x.classList.remove('active');});b.classList.add('active');
       document.querySelectorAll('.nrow').forEach(function(r){var ch=r.getAttribute('data-ch');var show=idx===0||(idx===1&&ch==='push')||(idx===2&&ch==='sms');r.style.display=show?'':'none';});});

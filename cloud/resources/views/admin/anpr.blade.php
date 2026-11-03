@@ -21,7 +21,7 @@
       <div class="mini-stat"><div class="ms-ic ic-blue" data-ic="camera"></div><div><div class="ms-v tnum" id="kpiCameras2">{{ Persian::digits($kpis['cameras']) }}</div><div class="ms-l">دوربین فعال</div></div></div>
       <div class="mini-stat"><div class="ms-ic ic-green" data-ic="car"></div><div><div class="ms-v tnum" id="kpiPlates">{{ Persian::digits(number_format($kpis['registered_plates'])) }}</div><div class="ms-l">پلاک ثبت‌شده</div></div></div>
       <div class="mini-stat"><div class="ms-ic ic-orange" data-ic="bolt"></div><div><div class="ms-v tnum" id="kpiAuto">{{ Persian::digits($kpis['auto_today']) }}</div><div class="ms-l">شارژ خودکار امروز</div></div></div>
-      <div class="mini-stat"><div class="ms-ic ic-violet" data-ic="check"></div><div><div class="ms-v tnum" id="kpiAcc">{{ Persian::digits($kpis['accuracy_pct']) }}٪</div><div class="ms-l">دقت تشخیص</div></div></div>
+      <div class="mini-stat"><div class="ms-ic ic-violet" data-ic="check"></div><div><div class="ms-v tnum" id="kpiAcc">{{ $kpis['accuracy_pct'] !== null ? Persian::digits($kpis['accuracy_pct']).'٪' : '—' }}</div><div class="ms-l">دقت تشخیص</div></div></div>
     </div>
 
     <div class="grid col-2-1 mt-16">
@@ -188,7 +188,7 @@ window.__ANPR = {!! json_encode($anprJs, JSON_UNESCAPED_UNICODE) !!};
     document.getElementById('kpiCameras2').textContent=k.cameras;
     document.getElementById('kpiPlates').textContent=Number(k.registered_plates).toLocaleString('fa-IR');
     document.getElementById('kpiAuto').textContent=k.auto_today;
-    document.getElementById('kpiAcc').textContent=k.accuracy_pct+'٪';
+    document.getElementById('kpiAcc').textContent=k.accuracy_pct==null?'—':Number(k.accuracy_pct).toLocaleString('fa-IR')+'٪';
   }
 
   function applyBundle(data){

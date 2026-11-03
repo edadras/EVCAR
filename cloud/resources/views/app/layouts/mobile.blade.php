@@ -54,6 +54,28 @@ window.SC_API = {
     otpRequestEdge: '/api/v1/auth/otp/request',
     otpVerifyEdge: '/api/v1/auth/otp/verify',
     authLookupEdge: '/api/v1/auth/lookup',
+    live: @json(\Illuminate\Support\Str::beforeLast(route('app.api.live', ['section' => 'home']), '/')),
+};
+window.scLive = function (section, intervalMs, onData, params) {
+    var timer = null, busy = false;
+    function tick() {
+        if (busy || document.hidden) return;
+        busy = true;
+        var qs = params ? '?' + new URLSearchParams(params).toString() : '';
+        fetch(window.SC_API.live + '/' + section + qs, { headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin', cache: 'no-store' })
+            .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+            .then(function (d) {
+                if (d.nav) {
+                    document.querySelectorAll('[data-unread-dot]').forEach(function (el) { el.hidden = !(d.nav.unread > 0); });
+                }
+                onData(d);
+            })
+            .catch(function () {})
+            .then(function () { busy = false; });
+    }
+    timer = setInterval(tick, intervalMs);
+    document.addEventListener('visibilitychange', function () { if (!document.hidden) tick(); });
+    return { refresh: tick, stop: function () { clearInterval(timer); } };
 };
 </script>
 <script src="/assets/mobile/app-mobile.js"></script>
@@ -68,6 +90,7 @@ if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.
 }
 </script>
 <style>
+[hidden]{display:none!important}
 .sc-backend-badge{position:fixed;bottom:calc(92px + env(safe-area-inset-bottom,0));left:max(12px,calc(50% - var(--phone-w,430px)/2 + 12px));z-index:300;opacity:.92;border:none;border-radius:20px;padding:4px 12px;font-family:inherit;font-size:11px;font-weight:800;letter-spacing:.02em;cursor:pointer;box-shadow:var(--shadow-md)}
 body[data-no-tab] .sc-backend-badge{bottom:calc(120px + env(safe-area-inset-bottom,0))}
 .sc-backend-badge.cloud{background:var(--accent-soft);color:var(--accent-strong)}

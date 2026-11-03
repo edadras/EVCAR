@@ -247,7 +247,8 @@ class ActionController extends Controller
             return back()->withErrors(['charging' => $chargeAuth->denyMessage()]);
         }
         $snap = $availability->snapshot($connector);
-        if (! $snap['reservable']) {
+        $replugPending = $snap['ocpp_status'] === 'Finishing' && $snap['charger_online'];
+        if (! $snap['reservable'] && ! $replugPending) {
             return back()->withErrors(['charging' => $snap['reason'] ?? 'کانکتور در دسترس نیست.']);
         }
 

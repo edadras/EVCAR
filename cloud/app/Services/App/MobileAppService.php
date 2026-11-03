@@ -56,6 +56,7 @@ class MobileAppService
         return [
             'user' => $user,
             'activeSession' => $active,
+            'activeCard' => $this->presenter->homeActiveCard($active),
             'gaugePct' => $this->presenter->activeSessionGauge($active),
             'campaigns' => Campaign::where('status', 'active')->limit(3)->get(),
             'featuredOffer' => $featured,
@@ -298,7 +299,7 @@ class MobileAppService
             $snap = $this->availability->snapshot($cn);
             if ($snap['reservable']) {
                 $free++;
-            } elseif ($cn->ocpp_status === 'Charging') {
+            } elseif (in_array($snap['state'], ['charging', 'reserved'], true)) {
                 $busy++;
             } else {
                 $soon++;
@@ -323,7 +324,7 @@ class MobileAppService
                 $snap = $this->availability->snapshot($cn);
                 $label = ($letters[$ci] ?? 'C').$cn->connector_number;
                 $session = $activeSessions->get($cn->id);
-                $charging = $cn->ocpp_status === 'Charging' || $session !== null;
+                $charging = $snap['state'] === 'charging' || ($session !== null && $snap['state'] !== 'offline');
                 $live = $session ? $this->charging->liveMetrics($session) : null;
                 $rows[] = [
                     'id' => $label,

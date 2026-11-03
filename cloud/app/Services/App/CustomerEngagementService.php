@@ -60,19 +60,37 @@ class CustomerEngagementService
 
         $cost = (float) $session->cost_amount;
         $secs = (int) ($session->duration_seconds ?: ($session->started_at && $session->stopped_at ? $session->started_at->diffInSeconds($session->stopped_at) : 0));
-        $b = $this->tariffs->breakdown($session->tariff, (float) $session->energy_kwh, $secs, $session->started_at, (int) ($session->meta['idle_seconds'] ?? 0));
+        $charging = app(\App\Services\Charging\CloudChargingSessionService::class);
+        $tariff = $session->tariff ?? $charging->tariffFor($session);
+        $idle = (int) ($session->meta['idle_seconds'] ?? 0);
+        $b = $this->tariffs->breakdown($tariff, (float) $session->energy_kwh, $secs, $session->started_at, $idle);
         $lines = [];
         foreach (['energy' => 'هزینهٔ انرژی', 'time' => 'هزینهٔ زمانی', 'idle' => 'هزینهٔ توقف پس از شارژ', 'fee' => 'هزینهٔ ثابت جلسه'] as $k => $label) {
             if ($b[$k] > 0) {
                 $lines[] = ['label' => $label, 'amount' => $this->toman($b[$k])];
             }
         }
-        // اختلاف محاسبه با مبلغ کسرشده (تخفیف سازمانی، کمپین یا گردکردن) شفاف نمایش داده می‌شود
+        // فقط وقتی تخفیف نشان داده می‌شود که با محاسبهٔ تخفیف اعضا دقیقاً به مبلغ کسرشده برسیم
         $diff = $this->toman($b['total']) - $this->toman($cost);
-        if ($lines && $diff > 0) {
-            $lines[] = ['label' => 'تخفیف', 'amount' => -$diff];
-        } elseif (! $lines || $diff < 0) {
+        if ($lines && abs($diff) > 1) {
+            $memberTotal = $charging->isMember($session)
+                ? $this->toman($this->tariffs->breakdown($tariff, (float) $session->energy_kwh, $secs, $session->started_at, $idle, true)['total'])
+                : null;
+            if ($memberTotal !== null && abs($memberTotal - $this->toman($cost)) <= 1) {
+                $lines[] = ['label' => 'تخفیف اعضای سازمانی', 'amount' => -$diff];
+            } else {
+                $lines = [];
+            }
+        }
+        if (! $lines) {
             $lines = [['label' => 'هزینهٔ جلسه', 'amount' => $this->toman($cost)]];
+        }
+        $unpaid = (float) (\App\Models\WalletTransaction::where('reference_type', ChargingSession::class)
+            ->where('reference_id', $session->id)
+            ->whereIn('type', \App\Models\WalletTransaction::DEBIT_TYPES)
+            ->latest('id')->value('meta')['unpaid'] ?? 0);
+        if ($unpaid > 0) {
+            $lines[] = ['label' => 'پرداخت‌نشده (کسری موجودی)', 'amount' => $this->toman($unpaid)];
         }
 
         $review = StationReview::where('charging_session_id', $session->id)->first();
@@ -87,8 +105,8 @@ class CustomerEngagementService
             'connector' => $session->connector?->connector_number,
             'vehicle' => $session->vehicle ? trim($session->vehicle->brand.' '.$session->vehicle->model) : null,
             'started_at' => $session->started_at?->toIso8601String(),
-            'started_label' => $session->started_at ? Persian::digits($session->started_at->format('Y/m/d H:i')) : '—',
-            'stopped_label' => $session->stopped_at ? Persian::digits($session->stopped_at->format('H:i')) : '—',
+            'started_label' => $session->started_at ? Persian::dateTime($session->started_at) : '—',
+            'stopped_label' => $session->stopped_at ? Persian::time($session->stopped_at) : '—',
             'duration_min' => (int) ceil($secs / 60),
             'energy_kwh' => round((float) $session->energy_kwh, 2),
             'avg_power_kw' => $secs > 0 ? round((float) $session->energy_kwh / ($secs / 3600), 1) : null,
@@ -311,18 +329,32 @@ class CustomerEngagementService
     /** @return array<string, mixed> */
     public function insights(User $user, int $months = 6): array
     {
-        $from = now()->startOfMonth()->subMonths($months - 1);
+        $jMonths = ['', 'فروردین', 'اردیبهشت', 'خرداد', 'تیر', 'مرداد', 'شهریور', 'مهر', 'آبان', 'آذر', 'دی', 'بهمن', 'اسفند'];
+        $jKey = fn (CarbonInterface $d) => Persian::toAsciiDigits(Persian::dateTime($d, 'yyyy-MM'));
+        [$jy, $jm] = array_map('intval', explode('-', $jKey(now())));
+        $keys = [];
+        for ($i = $months - 1; $i >= 0; $i--) {
+            $y = $jy;
+            $m = $jm - $i;
+            while ($m < 1) {
+                $m += 12;
+                $y--;
+            }
+            $keys[] = [sprintf('%04d-%02d', $y, $m), $m];
+        }
+        $from = now()->subMonths($months)->startOfMonth();
         $sessions = ChargingSession::with('station')->where('user_id', $user->id)->where('started_at', '>=', $from)
-            ->whereIn('status', ['completed', 'stopped'])->get(['id', 'station_id', 'started_at', 'energy_kwh', 'cost_amount', 'duration_seconds']);
-        $faMonths = ['', 'ژانویه', 'فوریه', 'مارس', 'آوریل', 'مه', 'ژوئن', 'ژوئیه', 'اوت', 'سپتامبر', 'اکتبر', 'نوامبر', 'دسامبر'];
+            ->successful()->get(['id', 'station_id', 'started_at', 'energy_kwh', 'cost_amount', 'duration_seconds'])
+            ->each(fn ($s) => $s->setAttribute('jkey', $jKey($s->started_at)))
+            ->filter(fn ($s) => $s->jkey >= $keys[0][0])
+            ->values();
 
         $series = [];
-        for ($i = 0; $i < $months; $i++) {
-            $m = $from->copy()->addMonths($i);
-            $rows = $sessions->filter(fn ($s) => $s->started_at->format('Y-m') === $m->format('Y-m'));
+        foreach ($keys as [$key, $mNum]) {
+            $rows = $sessions->where('jkey', $key);
             $series[] = [
-                'key' => $m->format('Y-m'),
-                'label' => $this->jalaliMonth($m) ?? $faMonths[(int) $m->format('n')],
+                'key' => $key,
+                'label' => $jMonths[$mNum],
                 'sessions' => $rows->count(),
                 'energy' => round((float) $rows->sum('energy_kwh'), 1),
                 'cost' => $this->toman($rows->sum('cost_amount')),
@@ -360,17 +392,6 @@ class CustomerEngagementService
                 ? 'بیشتر شارژهای شما در ساعات اوج است؛ شارژ شبانه (۲۲ تا ۶) در بسیاری از ایستگاه‌ها ارزان‌تر است.'
                 : 'عالی! الگوی شارژ شما بهینه است. برای صرفه‌جویی بیشتر پیشنهادهای ویژه را دنبال کنید.',
         ];
-    }
-
-    private function jalaliMonth(CarbonInterface $date): ?string
-    {
-        if (! class_exists(\IntlDateFormatter::class)) {
-            return null;
-        }
-        $fmt = new \IntlDateFormatter('fa_IR@calendar=persian', \IntlDateFormatter::NONE, \IntlDateFormatter::NONE, 'Asia/Tehran', \IntlDateFormatter::TRADITIONAL, 'MMMM');
-        $out = $fmt->format($date->copy()->day(15)->getTimestamp());
-
-        return $out === false ? null : $out;
     }
 
     private function toman(mixed $rial): int

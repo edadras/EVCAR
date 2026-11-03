@@ -9,7 +9,6 @@
         <span class="muted fs12">مدیریت کیف پول و تراکنش‌های همهٔ کاربران سامانه</span>
       </div>
       <div class="flex gap-8">
-        <button class="btn btn-sm" type="button"><span class="bic" data-ic="download"></span> خروجی</button>
         <button class="btn btn-sm btn-primary" type="button" id="topupBtn"><span class="bic" data-ic="plus"></span> شارژ دستی کیف پول</button>
       </div>
     </div>
@@ -19,33 +18,33 @@
       <div class="kpi">
         <div class="kpi-ic ic-blue" data-ic="wallet"></div>
         <div class="kpi-label">مجموع موجودی کیف پول کاربران</div>
-        <div class="kpi-val tnum" id="kpiTotalBal">{{ Persian::digits($kpis['total_balance_billion']) }} <small>میلیارد تومان</small></div>
+        <div class="kpi-val tnum" id="kpiTotalBal">{{ Persian::money($kpis['total_balance_toman']) }} <small>تومان</small></div>
         <div class="kpi-foot"><span class="muted">بدهی سامانه به <span id="kpiWalletCount">{{ Persian::digits(number_format($kpis['wallet_count'])) }}</span> کاربر</span></div>
       </div>
       <div class="kpi">
         <div class="kpi-ic ic-green" data-ic="plus"></div>
         <div class="kpi-label">شارژ کیف پول <span id="kpiRangeLabel">(امروز)</span></div>
-        <div class="kpi-val tnum"><span id="kpiTopup">{{ Persian::digits($kpis['today_topup_million']) }}</span> <small>میلیون</small></div>
+        <div class="kpi-val tnum"><span id="kpiTopup">{{ Persian::money($kpis['today_topup_toman']) }}</span> <small>تومان</small></div>
         <div class="kpi-foot"><span id="kpiTrend" class="{{ ($kpis['topup_trend'] ?? 0) >= 0 ? 'trend-up' : 'trend-down' }}" @if(($kpis['topup_trend'] ?? 0) == 0) style="display:none" @endif>{{ ($kpis['topup_trend'] ?? 0) >= 0 ? '▲' : '▼' }} <span id="kpiTrendVal">{{ Persian::digits(abs($kpis['topup_trend'] ?? 0)) }}</span>٪</span><span class="muted"><span id="kpiTopupCount">{{ Persian::digits(number_format($kpis['today_topup_count'])) }}</span> تراکنش</span></div>
       </div>
       <div class="kpi">
         <div class="kpi-ic ic-orange" data-ic="bolt"></div>
         <div class="kpi-label">مصرف از کیف پول <span id="kpiSpendLabel">(امروز)</span></div>
-        <div class="kpi-val tnum"><span id="kpiSpend">{{ Persian::digits($kpis['today_spend_million']) }}</span> <small>میلیون</small></div>
+        <div class="kpi-val tnum"><span id="kpiSpend">{{ Persian::money($kpis['today_spend_toman']) }}</span> <small>تومان</small></div>
         <div class="kpi-foot"><span class="muted">هزینهٔ شارژ خودرو</span></div>
       </div>
       <div class="kpi">
         <div class="kpi-ic ic-violet" data-ic="refresh"></div>
         <div class="kpi-label">استرداد در انتظار</div>
         <div class="kpi-val tnum" id="kpiPendingRefunds">{{ Persian::digits($kpis['pending_refunds']) }} <small>درخواست</small></div>
-        <div class="kpi-foot"><span class="muted"><span id="kpiPendingAmount">{{ Persian::digits($kpis['pending_refund_million']) }}</span> میلیون تومان</span></div>
+        <div class="kpi-foot"><span class="muted">تیکت‌های پرداخت باز</span></div>
       </div>
     </div>
 
     <div class="grid col-2-1 mt-16">
       <div class="card">
         <div class="card-head">
-          <div><h3>جریان کیف پول</h3><div class="ch-sub">شارژ در برابر مصرف · ۱۴ روز</div></div>
+          <div><h3>جریان کیف پول</h3><div class="ch-sub">شارژ در برابر مصرف · ۱۴ روز · بیشینه <b class="tnum" id="flowMax">—</b></div></div>
           <div class="head-actions">
             <span class="legend-inline"><i style="background:var(--green)"></i>شارژ کیف پول</span>
             <span class="legend-inline"><i style="background:var(--orange)"></i>مصرف</span>
@@ -189,7 +188,8 @@ window.__WALLET = {!! json_encode($walletJs, JSON_UNESCAPED_UNICODE) !!};
       '<path d="'+path(topup)+'" fill="none" stroke="var(--green)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>'+
       '<path d="'+path(spend)+'" fill="none" stroke="var(--orange)" stroke-width="2.2" stroke-dasharray="2 4" stroke-linecap="round" stroke-linejoin="round"/>';
     var ax=document.getElementById('flowAxis');ax.innerHTML='';
-    ['۱','۳','۵','۷','۹','۱۱','۱۴'].forEach(function(t){var s=document.createElement('span');s.textContent=t;ax.appendChild(s);});
+    (DB.days||[]).forEach(function(t,i,a){if(i%2===0||i===a.length-1){var s=document.createElement('span');s.textContent=t;ax.appendChild(s);}});
+    var mx=document.getElementById('flowMax');if(mx)mx.textContent=Math.max.apply(null,topup.concat(spend)).toLocaleString('fa-IR')+' تومان';
   }
   drawChart(DB.topup,DB.spend);
 
@@ -272,7 +272,15 @@ window.__WALLET = {!! json_encode($walletJs, JSON_UNESCAPED_UNICODE) !!};
     var path=approve?'/api/wallet/refunds/'+tid+'/approve':'/api/wallet/refunds/'+tid+'/reject';
     var msg=approve?'استرداد این درخواست تأیید و به کیف پول واریز شود؟':'درخواست استرداد رد شود؟';
     if(!confirm(msg))return;
-    UI.postJson(UI.apiBase()+path,{}).then(function(res){
+    var body={};
+    if(approve){
+      var row=(DB.refunds||[]).filter(function(x){return String(x.tid)===String(tid);})[0]||{};
+      var amt=prompt('مبلغ استرداد (تومان):',row.amount_raw?String(row.amount_raw):'');
+      if(amt===null)return;
+      body.amount=+UI.parseDigits(amt)||0;
+      if(body.amount<1000){alert('مبلغ نامعتبر است.');return;}
+    }
+    UI.postJson(UI.apiBase()+path,body).then(function(res){
       alert(res.message||'انجام شد');
       location.reload();
     }).catch(function(err){alert((err&&err.message)||'خطا');});
@@ -288,15 +296,15 @@ window.__WALLET = {!! json_encode($walletJs, JSON_UNESCAPED_UNICODE) !!};
       var r=ranges[key]||{};
       document.getElementById('kpiRangeLabel').textContent=rangeLabels[key]||'';
       document.getElementById('kpiSpendLabel').textContent=rangeLabels[key]||'';
-      document.getElementById('kpiTopup').textContent=r.topup_million!=null?r.topup_million:'۰';
-      document.getElementById('kpiTopupCount').textContent=r.topup_count!=null?Number(r.topup_count).toLocaleString('fa-IR'):'۰';
-      document.getElementById('kpiSpend').textContent=r.spend_million!=null?r.spend_million:'۰';
+      document.getElementById('kpiTopup').textContent=Number(r.topup_toman||0).toLocaleString('fa-IR');
+      document.getElementById('kpiTopupCount').textContent=Number(r.topup_count||0).toLocaleString('fa-IR');
+      document.getElementById('kpiSpend').textContent=Number(r.spend_toman||0).toLocaleString('fa-IR');
       var trend=document.getElementById('kpiTrend');
       var tv=document.getElementById('kpiTrendVal');
       if(r.topup_trend!=null&&r.topup_trend!==0){
         trend.style.display='';
         trend.className=r.topup_trend>=0?'trend-up':'trend-down';
-        trend.innerHTML=(r.topup_trend>=0?'▲ ':'▼ ')+'<span id="kpiTrendVal">'+Math.abs(r.topup_trend)+'</span>٪';
+        trend.innerHTML=(r.topup_trend>=0?'▲ ':'▼ ')+'<span id="kpiTrendVal">'+Math.abs(r.topup_trend).toLocaleString('fa-IR')+'</span>٪';
       }else{
         trend.style.display='none';
       }

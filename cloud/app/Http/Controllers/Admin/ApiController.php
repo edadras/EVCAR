@@ -19,6 +19,7 @@ use App\Models\User;
 use App\Models\Wallet;
 use App\Models\WalletTransaction;
 use App\Services\Admin\AdminViewDataService;
+use App\Services\Charging\DirectChargingService;
 use App\Services\Edge\EdgeCommandService;
 use App\Services\ReservationService;
 use App\Support\Persian;
@@ -441,7 +442,11 @@ class ApiController extends Controller
             return response()->json(['message' => 'این درخواست قبلاً رسیدگی شده است.'], 422);
         }
 
-        $amountToman = $this->viewData->refundAmountToman($ticket);
+        $data = $request->validate(['amount' => ['nullable', 'integer', 'min:1000', 'max:50000000']]);
+        $amountToman = (int) ($data['amount'] ?? $this->viewData->refundAmountToman($ticket));
+        if ($amountToman <= 0) {
+            return response()->json(['message' => 'مبلغ استرداد مشخص نیست؛ مبلغ را وارد کنید.'], 422);
+        }
         $amountRials = (float) $amountToman * 10;
 
         $wallet = Wallet::firstOrCreate(
@@ -511,12 +516,22 @@ class ApiController extends Controller
         return response()->json($this->viewData->anprBundle($stationId));
     }
 
-    public function stopSession(ChargingSession $session, EdgeCommandService $commands): JsonResponse
+    public function stopSession(Request $request, ChargingSession $session, EdgeCommandService $commands, DirectChargingService $direct): JsonResponse
     {
         $session->load(['connector.charger', 'station.edgeStation']);
 
         if ($session->status !== 'active') {
             return response()->json(['ok' => false, 'error' => 'این جلسه فعال نیست.'], 422);
+        }
+
+        if ($session->meta['direct_ocpp'] ?? false) {
+            try {
+                $direct->stop($session);
+            } catch (\Throwable $e) {
+                return response()->json(['ok' => false, 'error' => $e->getMessage()], 422);
+            }
+
+            return response()->json(['ok' => true, 'message' => 'دستور توقف مستقیم به شارژر ارسال شد.']);
         }
 
         $station = $session->station;

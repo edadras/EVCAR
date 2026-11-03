@@ -42,12 +42,6 @@ class AdminViewDataService
         private ConnectorAvailabilityService $availability,
     ) {}
 
-    /** @return array<int, array<string, mixed>> */
-    public function dashboardChart(): array
-    {
-        return $this->metrics->hourlyChart();
-    }
-
     /** @return array<string, mixed> */
     public function sessionsJs(): array
     {
@@ -57,56 +51,98 @@ class AdminViewDataService
             ->limit(25)
             ->get();
 
-        $history = ChargingSession::with(['station', 'charger', 'user'])
+        $history = ChargingSession::with(['station', 'charger', 'user', 'connector'])
             ->where('status', '!=', 'active')
             ->latest('started_at')
-            ->limit(25)
+            ->limit(300)
             ->get();
 
         return [
             'live' => $active->map(fn ($s) => $this->sessionRow($s, true))->values()->all(),
             'history' => $history->map(fn ($s) => $this->sessionRow($s, false))->values()->all(),
             'stats' => $this->metrics->sessionsIndex()['stats'],
+            'at' => now()->toIso8601String(),
         ];
     }
 
     /** @return array<string, mixed> */
-    private function sessionRow(ChargingSession $s, bool $live): array
+    public function sessionRow(ChargingSession $s, bool $live): array
     {
-        $prog = min(99, max(5, (int) ($s->soc_end ?? $s->soc_start ?? 50)));
-        $mins = (int) floor(($s->duration_seconds ?? 0) / 60);
-
+        $r = $s->liveReadings();
         $meta = $s->meta ?? [];
+        $direct = (bool) ($meta['direct_ocpp'] ?? false);
+        $state = (string) ($meta['edge_state'] ?? 'charging');
+        if ($live && ! empty($meta['idle_since'])) {
+            $state = 'idle';
+        }
 
         return [
-            'id' => $s->session_code ?? ('SX-'.$s->id),
+            'id' => '#'.$s->id,
             'session_id' => $s->id,
             'station_id' => $s->station_id,
             'connector_id' => $s->connector_id,
-            'can_stop' => (bool) $s->station?->edgeStation,
+            'can_stop' => $live && ($direct || (bool) $s->station?->edgeStation),
             'user' => $s->user?->name ?? 'مهمان',
+            'phone' => $s->user?->phone,
             'initials' => mb_substr($s->user?->name ?? 'م', 0, 1),
             'station' => $s->station?->name ?? '—',
             'charger' => $s->charger?->charge_point_id ?? '—',
-            'connector' => $s->connector?->connector_number
-                ? 'C'.$s->connector->connector_number
-                : ($s->charger?->connector_type ?? 'DC CCS2'),
-            'prog' => (int) ($meta['soc'] ?? $prog),
-            'energy' => round((float) $s->energy_kwh, 1),
-            'power' => (int) ($s->charger?->max_power_kw ?? 22),
-            'duration' => $mins,
-            'cost' => (int) ($s->cost_amount / 10),
-            'status' => $live ? ($prog > 85 ? 'ending' : ($prog < 15 ? 'started' : 'charging')) : $s->status,
-            'auth' => $s->auth_method ?? 'wallet',
-            'started' => $s->started_at?->format('Y/m/d H:i'),
+            'connector' => $s->connector?->connector_number ? 'C'.$s->connector->connector_number : '—',
+            'type' => $s->charger?->connector_type,
+            'prog' => $r['soc'],
+            'energy' => round($r['energy_kwh'], 2),
+            'energy_raw' => $r['energy_kwh'],
+            'power' => $r['power_kw'] !== null ? round($r['power_kw'], 1) : null,
+            'voltage' => $r['voltage_v'] !== null ? round($r['voltage_v']) : null,
+            'current' => $r['current_a'] !== null ? round($r['current_a'], 1) : null,
+            'duration' => intdiv($r['elapsed_seconds'], 60),
+            'elapsed' => $r['elapsed_seconds'],
+            'cost' => (int) round($r['cost'] / 10),
+            'status' => $live ? $state : ($s->isSuccessful() ? 'completed' : 'failed'),
+            'stop_reason' => $s->stop_reason,
+            'auth' => $this->authLabel($s->auth_method),
+            'started' => Persian::dateTime($s->started_at),
+            'started_ts' => $s->started_at?->timestamp,
         ];
+    }
+
+    /** free | charging | finishing | reserved | fault | offline | inactive */
+    public function connectorState(Connector $c): string
+    {
+        $charger = $c->charger;
+        if (! $charger || ! $charger->is_online) {
+            return 'offline';
+        }
+        if ($c->operational_status !== 'active') {
+            return 'inactive';
+        }
+
+        return match ($c->ocpp_status) {
+            'Charging', 'SuspendedEV', 'SuspendedEVSE' => 'charging',
+            'Finishing' => 'finishing',
+            'Reserved' => 'reserved',
+            'Faulted', 'Unavailable' => 'fault',
+            default => 'free',
+        };
+    }
+
+    private function authLabel(?string $method): string
+    {
+        return match ($method) {
+            'qr' => 'QR',
+            'rfid' => 'RFID',
+            'app', 'wallet' => 'اپ',
+            'anpr' => 'پلاک',
+            'remote', 'admin' => 'ادمین',
+            null, '' => '—',
+            default => $method,
+        };
     }
 
     /** @return array<int, array<string, mixed>> */
     public function monitoringStationsJs(): array
     {
         $activeSessions = ChargingSession::where('status', 'active')
-            ->whereNull('stopped_at')
             ->with('user')
             ->get()
             ->keyBy('connector_id');
@@ -116,48 +152,45 @@ class AdminViewDataService
             ->get()
             ->map(function (Station $st) use ($activeSessions) {
                 $conns = $st->chargers->flatMap(fn ($ch) => $ch->connectors);
-                $total = max(1, $conns->count());
-                $charging = $conns->where('ocpp_status', 'Charging')->count();
-                $faulted = $conns->where('ocpp_status', 'Faulted')->count();
-                $health = $faulted > 0 || $st->status !== 'active' ? 'bad' : ($charging / $total > 0.85 ? 'warn' : 'ok');
-                $sync = $st->edgeStation?->sync_status === 'online' ? 'ok' : ($st->edgeStation ? 'lag' : 'off');
-                $load = (int) min(100, round(($charging / $total) * 100));
-                $onlineKw = 0;
+                $onlineKw = 0.0;
 
                 $connRows = $conns->values()->map(function ($c, $i) use ($activeSessions, &$onlineKw) {
                     $session = $activeSessions->get($c->id);
-                    $chargerOnline = $c->charger?->is_online === true;
-                    $state = $chargerOnline ? match ($c->ocpp_status) {
-                        'Charging' => 'charging',
-                        'Faulted', 'Unavailable' => 'fault',
-                        'Reserved' => 'reserved',
-                        default => 'free',
-                    } : 'offline';
-                    $maxKw = (int) ($c->max_power_kw ?? $c->charger?->max_power_kw ?? 22);
-                    $pw = $state === 'charging' ? $maxKw : 0;
-                    if ($state === 'charging') {
+                    $readings = $session?->liveReadings();
+                    $state = $this->connectorState($c);
+                    $pw = $readings['power_kw'] ?? null;
+                    if ($pw !== null) {
                         $onlineKw += $pw;
-                    }
-                    $soc = 0;
-                    if ($session) {
-                        $meterStart = (float) ($session->meter_start_wh ?? 0);
-                        $energyWh = (float) ($session->energy_kwh ?? 0) * 1000;
-                        if ($meterStart > 0 && $energyWh > 0) {
-                            $soc = (int) min(99, max(5, round(($energyWh / max(1, $meterStart + $energyWh)) * 100)));
-                        } elseif ($session->energy_kwh > 0) {
-                            $soc = (int) min(90, max(10, round((float) $session->energy_kwh * 2)));
-                        }
                     }
 
                     return [
                         'id' => 'C'.($c->connector_number ?? ($i + 1)),
-                        'type' => $c->charger?->connector_type ?? 'Type2',
+                        'type' => ($c->charger?->connector_type ?? '—').' · '.Persian::digits((float) ($c->max_power_kw ?? $c->charger?->max_power_kw ?? 0)).'kW',
                         'state' => $state,
+                        'ocpp' => $c->ocpp_status,
                         'user' => $session?->user?->name,
-                        'pw' => $pw,
-                        'soc' => $soc,
+                        'pw' => $pw !== null ? round($pw, 1) : null,
+                        'soc' => $readings['soc'] ?? null,
+                        'energy' => $readings ? round($readings['energy_kwh'], 2) : null,
                     ];
                 })->all();
+
+                $states = collect($connRows)->pluck('state');
+                $total = max(1, $states->count());
+                $charging = $states->filter(fn ($s) => $s === 'charging')->count();
+                $faulted = $states->filter(fn ($s) => $s === 'fault')->count();
+                $offline = $states->filter(fn ($s) => $s === 'offline')->count();
+                $load = (int) min(100, round(($charging / $total) * 100));
+                $health = match (true) {
+                    $st->status !== 'active', $faulted > 0, $states->isNotEmpty() && $offline === $states->count() => 'bad',
+                    $offline > 0, $load > 85 => 'warn',
+                    default => 'ok',
+                };
+                $sync = match (true) {
+                    $st->chargers->contains(fn ($ch) => $ch->connection_mode === 'direct' || ! $st->edgeStation) => $st->chargers->contains('is_online', true) ? 'ok' : 'off',
+                    $st->edgeStation?->sync_status === 'online' => 'ok',
+                    default => 'lag',
+                };
 
                 return [
                     'id' => $st->id,
@@ -168,7 +201,8 @@ class AdminViewDataService
                     'sync' => $sync,
                     'load' => $load,
                     'charging' => $charging,
-                    'totalkw' => $onlineKw,
+                    'free' => $states->filter(fn ($s) => $s === 'free')->count(),
+                    'totalkw' => round($onlineKw, 1),
                     'remoteUrl' => route('admin.remote', ['station' => $st->id]),
                     'conns' => $connRows,
                 ];
@@ -183,36 +217,6 @@ class AdminViewDataService
         return app(RemoteStationService::class)->jsPayload($station);
     }
 
-    /** @return Collection<int, SupportTicket|RepairOrder> */
-    public function dashboardAlerts(): Collection
-    {
-        $tickets = SupportTicket::with('station')
-            ->whereIn('priority', ['high', 'critical'])
-            ->whereNot('status', 'resolved')
-            ->latest()
-            ->limit(3)
-            ->get();
-
-        $repairs = RepairOrder::with('station')
-            ->where('status', 'open')
-            ->latest()
-            ->limit(2)
-            ->get();
-
-        return $tickets->concat($repairs);
-    }
-
-    public function connectorDcAcCounts(): array
-    {
-        $dcTypes = ['CCS2', 'CHAdeMO', 'CCS1'];
-        $acTypes = ['Type2', 'Type1', 'AC'];
-
-        $dc = Connector::whereHas('charger', fn ($q) => $q->whereIn('connector_type', $dcTypes))->count();
-        $ac = Connector::whereHas('charger', fn ($q) => $q->whereIn('connector_type', $acTypes))->count();
-
-        return ['dc' => $dc, 'ac' => $ac];
-    }
-
     public function fa(mixed $v): string
     {
         return Persian::digits($v);
@@ -223,28 +227,32 @@ class AdminViewDataService
     {
         $anpr = app(StationAnprService::class);
 
+        $activeSessions = ChargingSession::where('status', 'active')->with('user')->get()->keyBy('connector_id');
+
         return Station::with(['chargers.connectors', 'edgeStation'])
             ->withCount('chargers')
             ->orderBy('name')
             ->get()
-            ->map(function (Station $st) use ($anpr) {
+            ->map(function (Station $st) use ($anpr, $activeSessions) {
                 $conns = $st->chargers->flatMap(fn ($ch) => $ch->connectors);
-                $charging = $conns->where('ocpp_status', 'Charging')->count();
+                $states = $conns->map(fn ($c) => $this->connectorState($c));
+                $charging = $states->filter(fn ($s) => $s === 'charging')->count();
                 $total = max(1, $conns->count());
                 $load = (int) min(100, round(($charging / $total) * 100));
-                $fault = $conns->where('ocpp_status', 'Faulted')->count();
+                $fault = $states->filter(fn ($s) => $s === 'fault')->count();
                 $connected = $st->edgeStation?->sync_status === 'online'
                     || $st->chargers->contains(fn ($ch) => $ch->is_online === true);
                 [$status, $pill] = match (true) {
-                    $fault > 0 => ['error', ['pill-red', 'خطا']],
+                    $st->status !== 'active' => ['error', ['pill', $st->status === 'maintenance' ? 'تعمیر' : 'غیرفعال']],
                     ! $connected => ['offline', ['pill', 'آفلاین']],
+                    $fault > 0 => ['error', ['pill-red', 'خطا']],
                     $load > 85 => ['busy', ['pill-amber', 'پرتراکم']],
                     default => ['online', ['pill-green', 'آنلاین']],
                 };
 
                 $todayQuery = ChargingSession::where('station_id', $st->id)
                     ->whereDate('started_at', today());
-                $todayCount = (clone $todayQuery)->count();
+                $todayCount = (clone $todayQuery)->where(fn ($q) => $q->where('status', 'active')->orWhere('energy_kwh', '>', 0))->count();
                 $todayEnergy = (float) (clone $todayQuery)->sum('energy_kwh');
                 $todayRevenue = (float) (clone $todayQuery)->sum('cost_amount');
 
@@ -257,37 +265,43 @@ class AdminViewDataService
                     'chargers' => $st->chargers_count,
                     'load' => $load,
                     'charging' => $charging,
-                    'free' => max(0, $total - $charging),
+                    'free' => $states->filter(fn ($s) => $s === 'free')->count(),
                     'status' => $status,
                     'pill' => $pill,
-                    'today_energy' => Persian::kwh($todayEnergy),
-                    'today_revenue' => Persian::digits(round($todayRevenue / 10_000_000, 1)),
+                    'today_energy' => Persian::kwh($todayEnergy, 2),
+                    'today_revenue' => Persian::money((int) round($todayRevenue / 10)),
                     'today_sessions' => Persian::digits($todayCount),
                     'lat' => (float) $st->latitude,
                     'lng' => (float) $st->longitude,
                     'remoteUrl' => route('admin.remote', ['station' => $st->id]),
                     'anpr' => $anpr->summaryForList($st),
                     'connected' => $connected,
-                    'connectors' => $conns->values()->map(function ($c, $i) use ($st) {
-                        $chargerOnline = $c->charger?->is_online === true || $st->edgeStation?->sync_status === 'online';
-                        $stKey = match (true) {
-                            ! $chargerOnline => 'offline',
-                            $c->ocpp_status === 'Charging' => 'busy',
-                            in_array($c->ocpp_status, ['Faulted', 'Unavailable'], true) => 'fault',
-                            default => 'free',
+                    'connectors' => $conns->values()->map(function ($c) use ($activeSessions) {
+                        $state = $this->connectorState($c);
+                        $stKey = match ($state) {
+                            'charging' => 'busy',
+                            'fault' => 'fault',
+                            'offline', 'inactive' => 'offline',
+                            'free' => 'free',
+                            default => 'busy',
                         };
+                        $session = $activeSessions->get($c->id);
+                        $power = $session?->liveReadings()['power_kw'];
 
                         return [
-                            'id' => chr(65 + intdiv($i, 3)).(($i % 3) + 1),
-                            'type' => ($c->charger?->connector_type ?? 'Type2').' · '.($c->charger?->max_power_kw ?? 22).'kW',
+                            'id' => ($c->charger?->charge_point_id ?? '').' · C'.$c->connector_number,
+                            'type' => ($c->charger?->connector_type ?? '—').' · '.Persian::digits((float) ($c->max_power_kw ?? $c->charger?->max_power_kw ?? 0)).'kW',
                             'st' => $stKey,
-                            'pw' => match ($stKey) {
-                                'busy' => ($c->charger?->max_power_kw ?? 22).' kW',
+                            'pw' => match ($state) {
+                                'charging' => $power !== null ? Persian::digits(round($power, 1)).' kW' : 'در حال شارژ',
+                                'finishing' => 'پایان شارژ',
+                                'reserved' => 'رزرو',
                                 'fault' => 'خطا',
                                 'offline' => 'آفلاین',
+                                'inactive' => 'غیرفعال',
                                 default => 'آماده',
                             },
-                            'u' => '',
+                            'u' => $session?->user?->name ?? '',
                         ];
                     })->all(),
                 ];
@@ -307,6 +321,7 @@ class AdminViewDataService
             'paymentGateways' => $index['paymentGateways'],
             'topup' => $this->walletFlowSeries('topup'),
             'spend' => $this->walletFlowSeries('spend'),
+            'days' => array_map(fn ($d) => Persian::dateTime(now()->subDays($d), 'MM/dd'), range(13, 0)),
             'wallets' => $this->walletUserRows(),
             'refunds' => $this->walletRefundRows(),
             'ranges' => [
@@ -323,15 +338,9 @@ class AdminViewDataService
         $series = [];
         foreach (range(13, 0) as $daysAgo) {
             $day = now()->subDays($daysAgo)->toDateString();
-            if ($kind === 'topup') {
-                $series[] = (int) round((float) WalletTransaction::whereIn('type', ['topup', 'bonus', 'compensation'])->whereDate('occurred_at', $day)->sum('amount') / 10 / 1_000_000);
-            } else {
-                $charge = (float) WalletTransaction::where('type', 'charge')->whereDate('occurred_at', $day)->sum('amount');
-                if ($charge <= 0) {
-                    $charge = (float) ChargingSession::whereDate('started_at', $day)->sum('cost_amount');
-                }
-                $series[] = (int) round($charge / 10 / 1_000_000);
-            }
+            $types = $kind === 'topup' ? WalletTransaction::TOPUP_TYPES : WalletTransaction::DEBIT_TYPES;
+            $sum = (float) WalletTransaction::whereIn('type', $types)->whereDate('occurred_at', $day)->sum('amount');
+            $series[] = (int) round($sum / 10);
         }
 
         return $series;
@@ -419,45 +428,41 @@ class AdminViewDataService
         }
 
         $charge = (float) WalletTransaction::query()
-            ->where('type', 'charge')
+            ->whereIn('type', WalletTransaction::DEBIT_TYPES)
             ->whereHas('wallet', fn ($q) => $q->where('user_id', $ticket->user_id))
             ->latest('occurred_at')
             ->value('amount');
 
-        if ($charge > 0) {
-            return (int) round($charge / 10);
-        }
-
-        return 500_000;
+        return $charge > 0 ? (int) round($charge / 10) : 0;
     }
 
-    /** @return array{topup_million: int, topup_count: int, spend_million: int, topup_trend: float} */
+    /** @return array{topup_toman: int, topup_count: int, spend_toman: int, topup_trend: float} */
     private function walletRangeStats(int $days): array
     {
-        $topupQuery = WalletTransaction::whereIn('type', ['topup', 'bonus', 'compensation']);
-        $spendQuery = ChargingSession::query();
+        $topupQuery = WalletTransaction::whereIn('type', WalletTransaction::TOPUP_TYPES);
+        $spendQuery = WalletTransaction::whereIn('type', WalletTransaction::DEBIT_TYPES);
 
         if ($days === 0) {
             $topupQuery->whereDate('occurred_at', today());
-            $spendQuery->whereDate('started_at', today());
-            $compareTopup = (float) WalletTransaction::whereIn('type', ['topup', 'bonus', 'compensation'])->whereDate('occurred_at', today()->subDay())->sum('amount');
+            $spendQuery->whereDate('occurred_at', today());
+            $compareTopup = (float) WalletTransaction::whereIn('type', WalletTransaction::TOPUP_TYPES)->whereDate('occurred_at', today()->subDay())->sum('amount');
         } else {
             $since = now()->subDays($days)->startOfDay();
             $topupQuery->where('occurred_at', '>=', $since);
-            $spendQuery->where('started_at', '>=', $since);
-            $compareTopup = (float) WalletTransaction::whereIn('type', ['topup', 'bonus', 'compensation'])
+            $spendQuery->where('occurred_at', '>=', $since);
+            $compareTopup = (float) WalletTransaction::whereIn('type', WalletTransaction::TOPUP_TYPES)
                 ->whereBetween('occurred_at', [now()->subDays($days * 2)->startOfDay(), $since])
                 ->sum('amount');
         }
 
         $topupSum = (float) $topupQuery->sum('amount');
-        $spendSum = (float) $spendQuery->sum('cost_amount');
+        $spendSum = (float) $spendQuery->sum('amount');
         $trend = $compareTopup > 0 ? round((($topupSum - $compareTopup) / $compareTopup) * 100, 1) : 0;
 
         return [
-            'topup_million' => (int) round($topupSum / 10 / 1_000_000),
+            'topup_toman' => (int) round($topupSum / 10),
             'topup_count' => (int) $topupQuery->count(),
-            'spend_million' => (int) round($spendSum / 10 / 1_000_000),
+            'spend_toman' => (int) round($spendSum / 10),
             'topup_trend' => $trend,
         ];
     }
@@ -1007,17 +1012,20 @@ class AdminViewDataService
     {
         $net = [];
         $op = [];
+        $days = [];
         foreach (range(29, 0) as $daysAgo) {
-            $day = now()->subDays($daysAgo)->toDateString();
-            $rev = (float) ChargingSession::whereDate('started_at', $day)->sum('cost_amount');
-            $m = (int) round($rev / 10 / 1_000_000);
-            $net[] = max(0, $m);
-            $platformFee = (float) ChargingSession::query()
+            $date = now()->subDays($daysAgo);
+            $day = $date->toDateString();
+            $rev = (float) ChargingSession::finished()->whereDate('started_at', $day)->sum('cost_amount');
+            $net[] = (int) round($rev / 10);
+            $partnerShare = (float) ChargingSession::query()
+                ->whereIn('charging_sessions.status', ChargingSession::FINISHED_STATUSES)
                 ->whereDate('charging_sessions.started_at', $day)
                 ->join('stations', 'charging_sessions.station_id', '=', 'stations.id')
-                ->leftJoin('partners', 'stations.partner_id', '=', 'partners.id')
-                ->sum(DB::raw('charging_sessions.cost_amount * (100 - COALESCE(partners.revenue_share_percent, 70)) / 100'));
-            $op[] = (int) round($platformFee / 10 / 1_000_000);
+                ->join('partners', 'stations.partner_id', '=', 'partners.id')
+                ->sum(DB::raw('charging_sessions.cost_amount * COALESCE(partners.revenue_share_percent, 0) / 100'));
+            $op[] = (int) round($partnerShare / 10);
+            $days[] = Persian::dateTime($date, 'MM/dd');
         }
 
         $settlements = Settlement::with('partner')
@@ -1034,7 +1042,7 @@ class AdminViewDataService
                 return [
                     'code' => $s->settlement_number ?? 'SET‑'.$s->id,
                     'partner' => $s->partner?->name ?? '—',
-                    'period' => Persian::digits($s->period_start?->format('Y/m') ?? '—'),
+                    'period' => $s->period_start ? Persian::dateTime($s->period_start, 'yyyy/MM') : '—',
                     'gross' => Persian::money((int) round((float) $s->gross_revenue / 10)),
                     'share' => Persian::money((int) round((float) $s->partner_share / 10)),
                     'fee' => Persian::money((int) round((float) $s->platform_fee / 10)),
@@ -1053,23 +1061,24 @@ class AdminViewDataService
                     ->limit(6)
                     ->get()
                     ->map(function (WalletTransaction $t) {
-                        $creditTypes = ['topup', 'bonus', 'refund'];
-                        $isCredit = in_array($t->type, $creditTypes, true);
+                        $isCredit = $t->isCredit();
                         $amount = Persian::money((int) round(abs((float) $t->amount) / 10));
 
                         return [
                             'code' => 'JV‑'.Persian::digits($t->id),
-                            'desc' => $t->description ?? $t->type,
+                            'desc' => $t->description ?: $t->typeLabel(),
                             'party' => $t->wallet?->user?->name ?? 'کیف پول',
                             'debit' => $isCredit ? $amount : '—',
                             'credit' => $isCredit ? '—' : $amount,
                             'balance' => Persian::money((int) round((float) ($t->balance_after ?? 0) / 10)),
-                            'date' => Persian::digits($t->occurred_at?->format('Y/m/d') ?? '—'),
+                            'date' => Persian::dateTime($t->occurred_at),
+                            'ts' => $t->occurred_at?->timestamp ?? 0,
                         ];
                     })
             )
             ->merge(
                 Payment::with('user')
+                    ->where('status', 'paid')
                     ->latest()
                     ->limit(4)
                     ->get()
@@ -1081,15 +1090,17 @@ class AdminViewDataService
                             'debit' => Persian::money((int) round((float) $p->amount / 10)),
                             'credit' => '—',
                             'balance' => '—',
-                            'date' => Persian::digits($p->created_at?->format('Y/m/d') ?? '—'),
+                            'date' => Persian::dateTime($p->created_at),
+                            'ts' => $p->created_at?->timestamp ?? 0,
                         ];
                     })
             )
+            ->sortByDesc('ts')
             ->take(10)
             ->values()
             ->all();
 
-        return compact('net', 'op', 'settlements', 'ledger');
+        return compact('net', 'op', 'days', 'settlements', 'ledger');
     }
 
     /** @return array<string, mixed> */
@@ -1101,12 +1112,12 @@ class AdminViewDataService
             ->get()
             ->map(function (Partner $p) use ($monthStart) {
                 $stationIds = $p->stations()->pluck('id');
-                $gross = (float) ChargingSession::whereIn('station_id', $stationIds)
+                $gross = (float) ChargingSession::finished()->whereIn('station_id', $stationIds)
                     ->where('started_at', '>=', $monthStart)
                     ->sum('cost_amount');
-                $sharePct = (float) ($p->revenue_share_percent ?: 70);
+                $sharePct = (float) ($p->revenue_share_percent ?? 0);
                 $share = $gross * ($sharePct / 100);
-                $energy = (float) ChargingSession::whereIn('station_id', $stationIds)
+                $energy = (float) ChargingSession::finished()->whereIn('station_id', $stationIds)
                     ->where('started_at', '>=', $monthStart)
                     ->sum('energy_kwh');
                 $pending = Settlement::where('partner_id', $p->id)
@@ -1163,37 +1174,37 @@ class AdminViewDataService
         for ($i = 5; $i >= 0; $i--) {
             $start = now()->subMonths($i)->startOfMonth();
             $end = now()->subMonths($i)->endOfMonth();
-            $g = (float) ChargingSession::whereBetween('started_at', [$start, $end])->sum('cost_amount');
-            $partnerShare = (float) ChargingSession::query()
+            $partnerSessions = fn () => ChargingSession::query()
+                ->whereIn('charging_sessions.status', ChargingSession::FINISHED_STATUSES)
                 ->whereBetween('charging_sessions.started_at', [$start, $end])
                 ->join('stations', 'charging_sessions.station_id', '=', 'stations.id')
-                ->leftJoin('partners', 'stations.partner_id', '=', 'partners.id')
-                ->sum(DB::raw('charging_sessions.cost_amount * COALESCE(partners.revenue_share_percent, 70) / 100'));
-            $gross[] = (int) round($g / 10 / 1_000_000);
-            $share[] = (int) round($partnerShare / 10 / 1_000_000);
+                ->join('partners', 'stations.partner_id', '=', 'partners.id');
+            $g = (float) $partnerSessions()->sum('charging_sessions.cost_amount');
+            $partnerShare = (float) $partnerSessions()
+                ->sum(DB::raw('charging_sessions.cost_amount * COALESCE(partners.revenue_share_percent, 0) / 100'));
+            $gross[] = (int) round($g / 10);
+            $share[] = (int) round($partnerShare / 10);
         }
 
-        $topPartners = Partner::withCount('stations')
+        $topRows = Partner::withCount('stations')
             ->get()
             ->map(function (Partner $p) use ($monthStart) {
-                $rev = (float) ChargingSession::whereHas('station', fn ($q) => $q->where('partner_id', $p->id))
+                $rev = (float) ChargingSession::finished()->whereHas('station', fn ($q) => $q->where('partner_id', $p->id))
                     ->where('started_at', '>=', $monthStart)
                     ->sum('cost_amount');
 
-                return ['n' => $p->name, 'v' => (int) round($rev / 10 / 1_000_000)];
+                return ['n' => $p->name, 'v' => (int) round($rev / 10)];
             })
             ->sortByDesc('v')
             ->take(5)
-            ->values()
-            ->map(function (array $row, int $i) {
-                $max = max(1, $row['v']);
-
-                return [
-                    'n' => $row['n'],
-                    'v' => Persian::digits($row['v']).' میلیون',
-                    'p' => (int) round(($row['v'] / $max) * 100),
-                ];
-            })
+            ->values();
+        $topMax = max(1, (int) $topRows->max('v'));
+        $topPartners = $topRows
+            ->map(fn (array $row) => [
+                'n' => $row['n'],
+                'v' => Persian::money($row['v']).' تومان',
+                'p' => (int) round(($row['v'] / $topMax) * 100),
+            ])
             ->all();
 
         $cooperationModels = Partner::query()
@@ -1215,18 +1226,18 @@ class AdminViewDataService
         }
 
         $monthStart = now()->startOfMonth();
+        $partnerStationIds = Station::whereNotNull('partner_id')->pluck('id');
         $avgPartnerRevenue = Partner::count() > 0
             ? (int) round(
-                ChargingSession::where('started_at', '>=', $monthStart)->sum('cost_amount')
-                / Partner::count() / 10 / 1_000_000
+                ChargingSession::finished()->whereIn('station_id', $partnerStationIds)->where('started_at', '>=', $monthStart)->sum('cost_amount')
+                / Partner::count() / 10
             )
             : 0;
-        $partnerStationIds = Station::whereNotNull('partner_id')->pluck('id');
         $partnerUtil = 0;
         if ($partnerStationIds->isNotEmpty()) {
             $conns = Connector::whereHas('charger', fn ($q) => $q->whereIn('station_id', $partnerStationIds))->count();
-            $charging = Connector::whereHas('charger', fn ($q) => $q->whereIn('station_id', $partnerStationIds))
-                ->where('ocpp_status', 'Charging')->count();
+            $charging = Connector::whereHas('charger', fn ($q) => $q->whereIn('station_id', $partnerStationIds)->where('is_online', true))
+                ->whereIn('ocpp_status', AdminMetricsService::IN_USE_OCPP)->count();
             $partnerUtil = $conns > 0 ? (int) round($charging / $conns * 100) : 0;
         }
         $onTimeSettlements = Settlement::where('status', 'approved')->count();
@@ -1239,8 +1250,10 @@ class AdminViewDataService
             ->latest('issued_at')
             ->first();
 
+        $months = array_map(fn ($i) => Persian::digits(now()->subMonthsNoOverflow($i)->format('Y/m')), range(5, 0));
+
         return compact(
-            'partners', 'invoices', 'gross', 'share', 'topPartners',
+            'partners', 'invoices', 'gross', 'share', 'months', 'topPartners',
             'cooperationModels', 'growth', 'avgPartnerRevenue', 'partnerUtil', 'onTimePct', 'sampleInvoice'
         );
     }
@@ -1250,11 +1263,7 @@ class AdminViewDataService
     {
         $stock = InventoryItem::orderBy('name')->get()->map(function (InventoryItem $item) {
             $meta = $item->meta ?? [];
-            $unitPrice = (int) ($meta['unit_price'] ?? match ($item->category) {
-                'charger' => 185_000_000,
-                'cable' => 14_000_000,
-                default => 6_800_000,
-            });
+            $unitPrice = (int) ($meta['unit_price'] ?? 0);
             $qty = (int) $item->quantity_on_hand;
             $total = $unitPrice * $qty;
             $kind = $item->category === 'charger' ? 'device' : 'part';
@@ -1268,9 +1277,9 @@ class AdminViewDataService
                 'kind' => $kind,
                 'supplier' => $meta['supplier'] ?? '—',
                 'qty' => Persian::digits($qty),
-                'unit' => Persian::money((int) round($unitPrice / 10)),
-                'total' => Persian::money((int) round($total / 10)),
-                'date' => Persian::digits($item->created_at?->format('Y/m/d') ?? '—'),
+                'unit' => $unitPrice > 0 ? Persian::money((int) round($unitPrice / 10)) : '—',
+                'total' => $unitPrice > 0 ? Persian::money((int) round($total / 10)) : '—',
+                'date' => $item->created_at ? Persian::date($item->created_at) : '—',
                 'status' => $status,
                 'search' => $item->sku.' '.$item->name,
             ];
@@ -1298,7 +1307,7 @@ class AdminViewDataService
                     'partner' => $ch->station?->partner?->name ?? $ch->station?->name ?? '—',
                     'purchase' => $purchase > 0 ? Persian::money((int) round($purchase / 10)) : '—',
                     'sale' => $sale > 0 ? Persian::money((int) round($sale / 10)) : '—',
-                    'date' => Persian::digits($ch->created_at?->format('Y/m/d') ?? '—'),
+                    'date' => $ch->created_at ? Persian::date($ch->created_at) : '—',
                     'status' => $status,
                 ];
             })

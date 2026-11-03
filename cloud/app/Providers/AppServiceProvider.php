@@ -2,19 +2,15 @@
 
 namespace App\Providers;
 
-use App\Models\Charger;
 use App\Models\ChargingSession;
 use App\Models\Connector;
-use App\Models\OperationalAlert;
 use App\Models\Payment;
-use App\Models\StationReview;
 use App\Models\StationWatch;
-use App\Models\SupportTicket;
 use App\Observers\ChargingSessionObserver;
 use App\Observers\PaymentObserver;
+use App\Services\Admin\AdminLiveService;
 use App\Services\App\ConnectivityService;
 use App\Services\App\CustomerEngagementService;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
@@ -47,14 +43,16 @@ class AppServiceProvider extends ServiceProvider
 
         // شمارنده‌های واقعی منوی پنل مدیریت (به‌جای اعداد ثابت قالب)
         View::composer('admin.layouts.app', function ($view) {
-            $view->with('navStats', Cache::remember('admin.nav_stats', 30, fn () => [
-                'sessions' => ChargingSession::where('status', 'active')->count(),
-                'support' => SupportTicket::whereIn('status', ['open', 'in_progress'])->count(),
-                'notifications' => OperationalAlert::where('status', 'open')->count(),
-                'reviews' => StationReview::where('rating', '<=', 2)->whereNull('reply')->where('is_hidden', false)->count(),
-                'online' => Charger::where('is_online', true)->count(),
-                'chargers' => Charger::count(),
-            ]));
+            $view->with('navStats', app(AdminLiveService::class)->nav());
+            $user = auth()->user();
+            $name = (string) ($user?->name ?: 'مدیر');
+            $parts = preg_split('/\s+/u', trim($name)) ?: [$name];
+            $view->with('adminMe', [
+                'name' => $name,
+                'email' => (string) ($user?->email ?? $user?->phone ?? ''),
+                'role' => $user?->role?->label() ?? '',
+                'initials' => count($parts) > 1 ? mb_substr($parts[0], 0, 1).'.'.mb_substr(end($parts), 0, 1) : mb_substr($name, 0, 2),
+            ]);
         });
 
         $connectivity = fn () => app(ConnectivityService::class)->build(auth()->user());

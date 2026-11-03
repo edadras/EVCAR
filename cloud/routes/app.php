@@ -6,6 +6,7 @@ use App\Http\Controllers\App\AssistantController;
 use App\Http\Controllers\App\AuthApiController;
 use App\Http\Controllers\App\AuthController;
 use App\Http\Controllers\App\EngagementController;
+use App\Http\Controllers\App\LiveController;
 use App\Http\Controllers\App\NavigatorController;
 use App\Http\Controllers\App\PageController;
 use Illuminate\Support\Facades\Route;
@@ -49,6 +50,7 @@ Route::middleware(['auth', 'customer'])->group(function () {
     Route::post('api/arrival/confirm', [ApiController::class, 'confirmArrival'])->name('api.arrival.confirm');
     Route::post('api/arrival/cancel', [ApiController::class, 'cancelArrival'])->name('api.arrival.cancel');
     Route::get('api/charging/status', [ApiController::class, 'chargingStatus'])->name('api.charging.status');
+    Route::get('api/live/{section}', [LiveController::class, 'show'])->name('api.live')->where('section', 'home|map|charger|wallet|reserve');
     Route::get('notifications', [PageController::class, 'notifications'])->name('notifications');
     Route::post('notifications/read', [ActionController::class, 'markNotificationsRead'])->name('notifications.read');
     Route::get('profile', [PageController::class, 'profile'])->name('profile');

@@ -55,10 +55,11 @@
 .sheet-grip{width:42px;height:5px;border-radius:10px;background:var(--border);margin:4px auto 14px}
 .ms-station{display:flex;gap:12px;align-items:center;padding:12px;border-radius:16px;background:var(--surface-2);border:1px solid var(--border-2);text-decoration:none;color:inherit}
 .ms-station .si{width:50px;height:50px;border-radius:13px;flex:none;display:grid;place-items:center}
+.ms-station .si:not([class*="ic-"]){background:var(--surface-3);color:var(--muted)}
 .ms-station .si svg{width:23px;height:23px}
 .sc-pin{width:32px;height:32px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);display:grid;place-items:center;color:#fff;font-size:14px;box-shadow:0 2px 8px rgba(0,0,0,.25)}
 .sc-pin span{transform:rotate(45deg)}
-.sc-pin.green{background:var(--green)}.sc-pin.amber{background:var(--amber)}
+.sc-pin.green{background:var(--green)}.sc-pin.amber{background:var(--amber)}.sc-pin.red{background:var(--red)}.sc-pin.gray{background:#94a3b8}
 </style>
 @endpush
 
@@ -115,7 +116,7 @@
     });
     document.getElementById('mapCount').textContent=shown.length.toLocaleString('fa-IR')+' ایستگاه در این محدوده';
     list.innerHTML=shown.map(function(s){
-      var ic=s.status_pill==='pill-green'?'ic-green':'ic-orange';
+      var ic=s.state==='free'?'ic-green':(s.state==='busy'?'ic-orange':(s.state==='fault'?'ic-red':''));
       return '<a href="'+s.url+'" class="ms-station">'+
         '<div class="si '+ic+'">'+window.icon('plug')+'</div>'+
         '<div style="flex:1;min-width:0">'+
@@ -173,6 +174,13 @@
   window.addEventListener('resize',function(){map.invalidateSize();});
   if(markers.length){fitNearby(center.lat,center.lng);}
   apply();
+
+  window.scLive('map',20000,function(d){
+    if(!d.markers||!d.stations)return;
+    markers=d.markers;stations=d.stations;
+    if(d.stats)document.getElementById('freeCount').textContent=Number(d.stats.free).toLocaleString('fa-IR');
+    apply();
+  });
 })();
 </script>
 @endpush

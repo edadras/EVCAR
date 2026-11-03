@@ -37,6 +37,8 @@ use Illuminate\Support\Facades\DB;
 
 class AdminMetricsService
 {
+    public const IN_USE_OCPP = ['Charging', 'SuspendedEV', 'SuspendedEVSE'];
+
     public function __construct(
         private ConnectorAvailabilityService $availability,
     ) {}
@@ -46,7 +48,9 @@ class AdminMetricsService
         $totalChargers = Charger::count();
         $onlineChargers = Charger::where('is_online', true)->count();
         $totalConnectors = Connector::count();
-        $chargingConnectors = Connector::where('ocpp_status', 'Charging')->count();
+        $chargingConnectors = Connector::whereIn('ocpp_status', self::IN_USE_OCPP)
+            ->whereHas('charger', fn ($q) => $q->where('is_online', true))
+            ->count();
         $activeSessions = ChargingSession::where('status', 'active')->count();
 
         $todayEnergy = ChargingSession::whereDate('started_at', today())->sum('energy_kwh');
@@ -102,8 +106,9 @@ class AdminMetricsService
             $row = $rows->get($h);
             $data[] = [
                 'hour' => $h,
-                'energy' => round((float) ($row->e ?? 0), 1),
-                'revenue' => round((float) ($row->r ?? 0) / 10_000_000, 2),
+                'energy' => round((float) ($row->e ?? 0), 3),
+                'revenue' => round((float) ($row->r ?? 0) / 10_000_000, 4),
+                'revenue_rial' => round((float) ($row->r ?? 0)),
             ];
         }
 
@@ -112,16 +117,20 @@ class AdminMetricsService
 
     public function connectorBreakdown(): array
     {
+        $offline = Connector::whereHas('charger', fn ($q) => $q->where('is_online', false))->count();
         $counts = Connector::query()
+            ->whereHas('charger', fn ($q) => $q->where('is_online', true))
             ->selectRaw('ocpp_status, COUNT(*) as c')
             ->groupBy('ocpp_status')
             ->pluck('c', 'ocpp_status');
+        $sum = fn (array $keys) => (int) collect($keys)->sum(fn ($k) => (int) ($counts[$k] ?? 0));
 
         return [
-            'charging' => (int) ($counts['Charging'] ?? 0),
-            'available' => (int) ($counts['Available'] ?? 0) + (int) ($counts['Preparing'] ?? 0),
-            'reserved' => (int) ($counts['Reserved'] ?? 0) + (int) ($counts['Finishing'] ?? 0),
-            'faulted' => (int) ($counts['Faulted'] ?? 0) + (int) ($counts['Unavailable'] ?? 0),
+            'charging' => $sum(self::IN_USE_OCPP),
+            'available' => $sum(['Available', 'Preparing']),
+            'reserved' => $sum(['Reserved', 'Finishing']),
+            'faulted' => $sum(['Faulted', 'Unavailable']),
+            'offline' => $offline,
         ];
     }
 
@@ -179,7 +188,7 @@ class AdminMetricsService
             ->get();
 
         $online = $stations->filter(fn ($s) => $s->status === 'active' && $s->chargers->where('is_online', true)->count() > 0)->count();
-        $faulty = $stations->where('status', '!=', 'active')->count();
+        $faulty = $stations->count() - $online;
 
         return [
             'stations' => $stations,
@@ -197,48 +206,52 @@ class AdminMetricsService
     public function monitoring(): array
     {
         $onlineConnectors = Connector::whereHas('charger', fn ($q) => $q->where('is_online', true))
-            ->whereIn('ocpp_status', ['Available', 'Charging', 'Preparing', 'Finishing'])
+            ->whereIn('ocpp_status', ['Available', 'Preparing', 'Finishing', 'Reserved', ...self::IN_USE_OCPP])
             ->count();
-        $charging = Connector::where('ocpp_status', 'Charging')->count();
-        $activePowerMw = ChargingSession::where('status', 'active')
-            ->with('charger:id,max_power_kw')
-            ->get()
-            ->sum(fn ($s) => (int) ($s->charger?->max_power_kw ?? 0));
+        $charging = Connector::whereIn('ocpp_status', self::IN_USE_OCPP)
+            ->whereHas('charger', fn ($q) => $q->where('is_online', true))
+            ->count();
+        $activePowerKw = $this->liveLoadKw();
 
         $edgesOnline = EdgeStation::where('sync_status', 'online')->count();
         $edgesTotal = EdgeStation::count();
         $syncHealth = $edgesTotal > 0 ? round(($edgesOnline / $edgesTotal) * 100, 1) : 100;
-        $faults = Connector::where('ocpp_status', 'Faulted')->count()
+        $faults = Connector::where('ocpp_status', 'Faulted')
+            ->whereHas('charger', fn ($q) => $q->where('is_online', true))
+            ->count()
             + RepairOrder::where('status', 'open')->count();
 
         return array_merge($this->networkKpis(), [
             'online_connectors' => $onlineConnectors,
             'charging_connectors' => $charging,
-            'load_mw' => round($activePowerMw / 1000, 1),
+            'load_kw' => round($activePowerKw, 1),
+            'load_mw' => round($activePowerKw / 1000, 2),
             'sync_health' => $syncHealth,
             'active_faults' => $faults,
-            'loadChart' => $this->hourlyChart(12),
-            'stations' => Station::orderBy('name')->get(['id', 'name']),
-            'activeSessions' => $this->activeSessionsTable(15),
         ]);
+    }
+
+    /** Sum of the power currently reported by chargers for active sessions. */
+    public function liveLoadKw(): float
+    {
+        return (float) ChargingSession::where('status', 'active')
+            ->get(['id', 'status', 'meta', 'energy_kwh', 'started_at', 'cost_amount'])
+            ->sum(fn (ChargingSession $s) => $s->liveReadings()['power_kw'] ?? 0);
     }
 
     public function sessionsIndex(): array
     {
-        $completedScope = ChargingSession::whereIn('status', ['completed', 'stopped'])
+        $completedScope = ChargingSession::successful()
             ->where('started_at', '>=', now()->subDays(30));
 
         return [
-            'sessions' => ChargingSession::with(['station', 'charger', 'user'])
-                ->latest('started_at')
-                ->paginate(25),
             'stats' => [
                 'active' => ChargingSession::where('status', 'active')->count(),
                 'today' => ChargingSession::whereDate('started_at', today())->count(),
                 'today_energy' => ChargingSession::whereDate('started_at', today())->sum('energy_kwh'),
                 'today_revenue' => ChargingSession::whereDate('started_at', today())->sum('cost_amount'),
                 'avg_duration_min' => (int) round((float) (clone $completedScope)->avg('duration_seconds') / 60),
-                'avg_energy_kwh' => round((float) (clone $completedScope)->avg('energy_kwh'), 1),
+                'avg_energy_kwh' => round((float) (clone $completedScope)->avg('energy_kwh'), 2),
                 'history_total' => ChargingSession::where('status', '!=', 'active')->count(),
             ],
         ];
@@ -248,21 +261,13 @@ class AdminMetricsService
     {
         $totalBalance = (float) Wallet::sum('balance');
         $walletCount = Wallet::count();
-        $todayTopupQuery = WalletTransaction::whereIn('type', ['topup', 'bonus', 'compensation'])->whereDate('occurred_at', today());
+        $todayTopupQuery = WalletTransaction::whereIn('type', WalletTransaction::TOPUP_TYPES)->whereDate('occurred_at', today());
         $todayTopupSum = (float) $todayTopupQuery->sum('amount');
-        $todaySpend = (float) ChargingSession::whereDate('started_at', today())->sum('cost_amount');
+        $todaySpend = (float) WalletTransaction::whereIn('type', WalletTransaction::DEBIT_TYPES)->whereDate('occurred_at', today())->sum('amount');
         $pendingRefunds = SupportTicket::where('category', 'payment')
             ->whereIn('status', ['open', 'in_progress'])
             ->get();
-        $pendingRefundAmount = 0.0;
-        foreach ($pendingRefunds as $ticket) {
-            $amt = WalletTransaction::where('type', 'refund')
-                ->whereHas('wallet', fn ($q) => $q->where('user_id', $ticket->user_id))
-                ->latest('occurred_at')
-                ->value('amount');
-            $pendingRefundAmount += (float) ($amt ?? 0);
-        }
-        $yesterdayTopup = (float) WalletTransaction::whereIn('type', ['topup', 'bonus', 'compensation'])->whereDate('occurred_at', today()->subDay())->sum('amount');
+        $yesterdayTopup = (float) WalletTransaction::whereIn('type', WalletTransaction::TOPUP_TYPES)->whereDate('occurred_at', today()->subDay())->sum('amount');
         $topupTrend = $yesterdayTopup > 0
             ? round((($todayTopupSum - $yesterdayTopup) / $yesterdayTopup) * 100, 1)
             : 0;
@@ -276,13 +281,12 @@ class AdminMetricsService
                 'today_topups' => $todayTopupSum,
             ],
             'kpis' => [
-                'total_balance_billion' => round($totalBalance / 10 / 1_000_000_000, 2),
+                'total_balance_toman' => (int) round($totalBalance / 10),
                 'wallet_count' => $walletCount,
-                'today_topup_million' => (int) round($todayTopupSum / 10 / 1_000_000),
+                'today_topup_toman' => (int) round($todayTopupSum / 10),
                 'today_topup_count' => $todayTopupQuery->count(),
-                'today_spend_million' => (int) round($todaySpend / 10 / 1_000_000),
+                'today_spend_toman' => (int) round($todaySpend / 10),
                 'pending_refunds' => $pendingRefunds->count(),
-                'pending_refund_million' => (int) round($pendingRefundAmount / 10 / 1_000_000, 1),
                 'topup_trend' => $topupTrend,
             ],
             'paymentGateways' => $this->paymentGatewayBreakdown(),
@@ -292,7 +296,7 @@ class AdminMetricsService
 
     public function financeIndex(): array
     {
-        $monthRevenue = ChargingSession::where('started_at', '>=', now()->startOfMonth())->sum('cost_amount');
+        $monthRevenue = ChargingSession::finished()->where('started_at', '>=', now()->startOfMonth())->sum('cost_amount');
         $pendingSettlements = Settlement::whereIn('status', ['draft', 'pending'])->sum('partner_share');
         $paidSettlements = Settlement::where('status', 'approved')->sum('partner_share');
 
@@ -304,7 +308,7 @@ class AdminMetricsService
             'recentPayments' => Payment::with('user')->latest()->limit(10)->get(),
             'invoices' => Invoice::latest()->limit(10)->get(),
             'revenueSources' => $this->revenueSourceBreakdown(),
-            'taxRate' => 9,
+            'taxRate' => (float) config('safircharge.finance.vat_percent', 10),
         ];
     }
 
@@ -313,66 +317,60 @@ class AdminMetricsService
     {
         $since = now()->subDays(30);
         $byGateway = Payment::where('created_at', '>=', $since)
-            ->selectRaw("COALESCE(gateway, 'unknown') as gw, COUNT(*) as c")
+            ->selectRaw("COALESCE(gateway, 'unknown') as gw, COUNT(*) as c, SUM(CASE WHEN status = 'paid' THEN 1 ELSE 0 END) as ok")
             ->groupBy('gw')
             ->get();
-        $byAuth = ChargingSession::where('started_at', '>=', $since)
-            ->selectRaw('auth_method, COUNT(*) as c')
-            ->groupBy('auth_method')
-            ->get()
-            ->keyBy('auth_method');
-        $total = max(1, $byGateway->sum('c') + $byAuth->sum('c'));
+        $total = max(1, (int) $byGateway->sum('c'));
 
         $rows = [];
         foreach ($byGateway as $row) {
             $pct = (int) round($row->c / $total * 100);
+            $success = $row->c > 0 ? (int) round($row->ok / $row->c * 100) : 0;
             $label = match ($row->gw) {
                 'mellat', 'behpardakht' => 'درگاه بانک ملت',
                 'saman', 'sep' => 'درگاه سامان',
                 'zarinpal' => 'زرین‌پال',
                 default => $row->gw ?: 'درگاه پرداخت',
             };
-            $rows[] = ['label' => $label, 'pct' => $pct, 'sub' => $pct.'٪ تراکنش‌ها', 'icon' => 'card', 'color' => 'ic-blue', 'status' => 'pill-green', 'statusLabel' => 'سالم'];
-        }
-        $rfidCount = (int) ($byAuth['rfid']?->c ?? 0);
-        if ($rfidCount > 0) {
-            $rows[] = ['label' => 'کیف پول RFID', 'pct' => (int) round($rfidCount / $total * 100), 'sub' => round($rfidCount / $total * 100).'% تراکنش‌ها', 'icon' => 'chip', 'color' => 'ic-orange', 'status' => 'pill-green', 'statusLabel' => 'سالم'];
-        }
-        $orgCount = (int) ChargingSession::where('started_at', '>=', $since)
-            ->whereHas('user', fn ($q) => $q->whereNotNull('organization_id'))
-            ->count();
-        if ($orgCount > 0) {
-            $rows[] = ['label' => 'اعتبار سازمانی', 'pct' => (int) round($orgCount / $total * 100), 'sub' => round($orgCount / $total * 100).'% تراکنش‌ها', 'icon' => 'users', 'color' => 'ic-violet', 'status' => 'pill-amber', 'statusLabel' => 'فعال'];
+            $rows[] = [
+                'label' => $label, 'pct' => $pct,
+                'sub' => Persian::digits((int) $row->c).' تراکنش · موفق '.Persian::digits($success).'٪',
+                'icon' => 'card', 'color' => 'ic-blue',
+                'status' => $success >= 80 ? 'pill-green' : ($success >= 50 ? 'pill-amber' : 'pill-red'),
+                'statusLabel' => $success >= 80 ? 'سالم' : ($success >= 50 ? 'متوسط' : 'ضعیف'),
+            ];
         }
 
-        return $rows ?: [['label' => 'بدون تراکنش', 'pct' => 0, 'sub' => '۰٪', 'icon' => 'card', 'color' => 'ic-blue', 'status' => 'pill', 'statusLabel' => '—']];
+        return $rows ?: [['label' => 'بدون تراکنش درگاه در ۳۰ روز اخیر', 'pct' => 0, 'sub' => '—', 'icon' => 'card', 'color' => 'ic-blue', 'status' => 'pill', 'statusLabel' => '—']];
     }
 
     /** @return array<int, array{label: string, pct: int, amount: string}> */
     public function revenueSourceBreakdown(): array
     {
         $since = now()->subDays(30);
-        $total = (float) ChargingSession::where('started_at', '>=', $since)->sum('cost_amount');
+        $base = fn () => ChargingSession::finished()->where('started_at', '>=', $since);
+        $total = (float) $base()->sum('cost_amount');
         if ($total <= 0) {
             return [];
         }
-        $dcTypes = ['CCS2', 'CHAdeMO', 'CCS1'];
-        $acTypes = ['Type2', 'Type1', 'AC'];
-        $dc = (float) ChargingSession::where('started_at', '>=', $since)
-            ->whereHas('charger', fn ($q) => $q->whereIn('connector_type', $dcTypes))
-            ->sum('cost_amount');
-        $ac = (float) ChargingSession::where('started_at', '>=', $since)
-            ->whereHas('charger', fn ($q) => $q->whereIn('connector_type', $acTypes))
-            ->sum('cost_amount');
-        $org = (float) ChargingSession::where('started_at', '>=', $since)
+        $acTypes = ['Type2', 'Type1', 'AC', 'GBT-AC'];
+        $org = (float) $base()
             ->whereHas('user', fn ($q) => $q->whereNotNull('organization_id'))
             ->sum('cost_amount');
+        $ac = (float) $base()
+            ->whereHas('user', fn ($q) => $q->whereNull('organization_id'))
+            ->whereHas('charger', fn ($q) => $q->whereIn('connector_type', $acTypes))
+            ->sum('cost_amount');
+        $dc = (float) $base()
+            ->whereHas('user', fn ($q) => $q->whereNull('organization_id'))
+            ->whereHas('charger', fn ($q) => $q->whereNotIn('connector_type', $acTypes))
+            ->sum('cost_amount');
         $other = max(0, $total - $dc - $ac - $org);
-        $fmt = fn (float $v) => Persian::digits((int) round($v / 10 / 1_000_000)).' میلیون';
+        $fmt = fn (float $v) => Persian::money((int) round($v / 10));
         $pct = fn (float $v) => (int) round($v / $total * 100);
 
         return [
-            ['label' => 'شارژ DC سریع', 'pct' => $pct($dc), 'amount' => $fmt($dc)],
+            ['label' => 'شارژ DC', 'pct' => $pct($dc), 'amount' => $fmt($dc)],
             ['label' => 'شارژ AC', 'pct' => $pct($ac), 'amount' => $fmt($ac)],
             ['label' => 'حساب‌های سازمانی', 'pct' => $pct($org), 'amount' => $fmt($org)],
             ['label' => 'سایر', 'pct' => $pct($other), 'amount' => $fmt($other)],
@@ -416,8 +414,22 @@ class AdminMetricsService
                 ->selectRaw('connector_id, count(*) as scan_count')
                 ->pluck('scan_count', 'connector_id');
 
+        $tariffs = Tariff::withCount('chargingSessions')->with('rules')->get();
+        $default = $tariffs->firstWhere('is_default', true) ?? $tariffs->firstWhere('status', 'active');
+        $calc = app(\App\Services\Charging\TariffCalculator::class);
+        $hourly = [];
+        if ($default) {
+            $day = now()->setTimezone(config('safircharge.timezone', 'Asia/Tehran'))->startOfDay();
+            for ($h = 0; $h < 24; $h++) {
+                [$price, $type] = $calc->effectiveKwhPrice($default, $default->price_per_kwh !== null ? (float) $default->price_per_kwh : null, $day->copy()->addHours($h)->addMinutes(30));
+                $hourly[] = ['h' => $h, 'toman' => $price !== null ? (int) round($price / 10) : 0, 'type' => $type ?? 'normal'];
+            }
+        }
+
         return [
-            'tariffs' => Tariff::withCount('chargingSessions')->get(),
+            'tariffs' => $tariffs,
+            'hourlyPrices' => $hourly,
+            'hourlyTariff' => $default,
             'rfidCards' => RfidCard::with(['user.wallet', 'organization'])->latest()->limit(50)->get(),
             'qrTokens' => $qrTokens,
             'qrScanCounts' => $qrScanCounts,
@@ -432,7 +444,7 @@ class AdminMetricsService
     public function usersIndex(): array
     {
         $customers = User::where('role', UserRole::Customer);
-        $avgBalance = (float) Wallet::avg('balance');
+        $avgBalance = (float) Wallet::whereHas('user', fn ($q) => $q->where('role', UserRole::Customer))->avg('balance');
 
         return [
             'users' => User::with(['wallet', 'organization', 'vehicles'])
@@ -611,7 +623,7 @@ class AdminMetricsService
         $eventBase = AnprEvent::query()
             ->when($stationId, fn ($q) => $q->where('station_id', $stationId));
 
-        $avgConfidence = (float) (clone $eventBase)
+        $avgConfidence = (clone $eventBase)
             ->where('detected_at', '>=', now()->subDays(7))
             ->avg('confidence');
 
@@ -635,7 +647,7 @@ class AdminMetricsService
                         ->orWhere('meta->outcome', 'auto_start');
                 })
                 ->count(),
-            'accuracy_pct' => round($avgConfidence * 100, 1) ?: 96.8,
+            'accuracy_pct' => $avgConfidence !== null ? round((float) $avgConfidence * 100, 1) : null,
         ];
     }
 

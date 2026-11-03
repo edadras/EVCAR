@@ -9,41 +9,39 @@
         <div class="ab-sub">{{ $headerDate }}</div>
         <div class="ab-title">سلام، {{ $firstName }} 👋</div>
     </div>
-    <a href="{{ route('app.notifications') }}" class="ab-btn"><span data-ic="bell"></span>@if($unreadNotifications)<span class="dot"></span>@endif</a>
+    <a href="{{ route('app.notifications') }}" class="ab-btn"><span data-ic="bell"></span><span class="dot" data-unread-dot @if(!$unreadNotifications) hidden @endif></span></a>
 </div>
 
 <div class="screen">
 
-    @if($activeSession)
-    <a href="{{ route('app.charging') }}" class="active-card rise">
+    <a href="{{ route('app.charging') }}" class="active-card rise" id="activeCard" @if(!$activeCard) hidden @endif>
         <div class="row between">
             <span class="pill" style="background:rgba(255,255,255,.18);color:#fff"><span class="pdot" style="background:#7ee2a6"></span>در حال شارژ</span>
-            <span class="ac-station">{{ $activeSession->station?->name }} · {{ $activeSession->charger?->charge_point_id }}</span>
+            <span class="ac-station" id="acStation"></span>
         </div>
         <div class="row mt16" style="gap:18px">
             <div class="ac-gauge">
                 <svg width="92" height="92" viewBox="0 0 92 92" id="homeGauge"></svg>
-                <div class="ac-gp tnum">{{ Persian::digits($gaugePct) }}٪</div>
+                <div class="ac-gp tnum" id="acPct"></div>
             </div>
             <div style="flex:1">
-                <div class="ac-stat"><span>انرژی تحویلی</span><b class="tnum">{{ Persian::kwh($activeSession->energy_kwh) }} kWh</b></div>
-                <div class="ac-stat"><span>توان لحظه‌ای</span><b class="tnum">{{ Persian::digits((int) ($activeSession->meta['power_kw'] ?? $activeSession->charger?->max_power_kw ?? 0)) }} kW</b></div>
-                <div class="ac-stat"><span>زمان باقی‌مانده</span><b class="tnum">@if(!empty($activeSession->meta['eta_minutes']))~{{ Persian::digits((int) $activeSession->meta['eta_minutes']) }} دقیقه@else—@endif</b></div>
+                <div class="ac-stat"><span>انرژی تحویلی</span><b class="tnum" id="acEnergy"></b></div>
+                <div class="ac-stat"><span>توان لحظه‌ای</span><b class="tnum" id="acPower"></b></div>
+                <div class="ac-stat"><span>زمان باقی‌مانده</span><b class="tnum" id="acEta"></b></div>
             </div>
         </div>
         <div class="ac-foot">
             <span class="muted2">هزینهٔ تاکنون</span>
-            <b class="tnum" style="font-size:17px">{{ Persian::money($activeSession->cost_amount / 10) }} تومان</b>
+            <b class="tnum" style="font-size:17px" id="acCost"></b>
             <span class="ac-go">مشاهدهٔ جلسه <span data-ic="chevron" class="cv"></span></span>
         </div>
     </a>
-    @endif
 
     <a href="{{ route('app.wallet') }}" class="wstrip rise" style="animation-delay:.05s">
         <div class="ws-ic" data-ic="wallet"></div>
         <div style="flex:1">
             <div class="muted fs12">موجودی کیف پول</div>
-            <div class="fw8 tnum" style="font-size:18px">{{ Persian::money(($user->wallet?->balance ?? 0) / 10) }} <span class="fs12 t2">تومان</span></div>
+            <div class="fw8 tnum" style="font-size:18px"><span id="homeBalance">{{ Persian::money(($user->wallet?->balance ?? 0) / 10) }}</span> <span class="fs12 t2">تومان</span></div>
         </div>
         <span class="ws-add"><span data-ic="plus"></span> افزایش</span>
     </a>
@@ -128,41 +126,65 @@
 @push('scripts')
 <script>
 (function(){
-  @if($activeSession)
-  (function(){
-    var R=40,C=46,sw=8,circ=2*Math.PI*R,pct={{ (int) $gaugePct }},len=circ*pct/100;
+  function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+  var segIdx=0;
+
+  function renderActive(a){
+    var card=document.getElementById('activeCard');
+    if(!a){card.hidden=true;return;}
+    card.hidden=false;
+    document.getElementById('acStation').textContent=a.station;
+    document.getElementById('acPct').textContent=Number(a.pct).toLocaleString('fa-IR')+'٪';
+    document.getElementById('acEnergy').textContent=a.energy+' kWh';
+    document.getElementById('acPower').textContent=a.power;
+    document.getElementById('acEta').textContent=a.eta;
+    document.getElementById('acCost').textContent=a.cost+' تومان';
+    var circ=2*Math.PI*40,len=circ*Math.max(0,Math.min(100,a.pct))/100;
     document.getElementById('homeGauge').innerHTML=
       '<circle cx="46" cy="46" r="40" fill="none" stroke="rgba(255,255,255,.25)" stroke-width="8"/>'+
       '<circle cx="46" cy="46" r="40" fill="none" stroke="#fff" stroke-width="8" stroke-linecap="round" stroke-dasharray="'+len+' '+(circ-len)+'" transform="rotate(-90 46 46)"/>';
-  })();
-  @endif
+  }
 
-  var st=@json($nearbyStations);
-  document.getElementById('stations').innerHTML=st.map(function(s){
-    return '<a href="'+s.url+'" class="station rise" data-cat="'+s.cat+'">'+
-      '<div class="st-img">'+window.icon('plug')+'</div>'+
-      '<div style="flex:1">'+
-        '<div class="row between"><span class="st-name">'+s.name+'</span><span class="pill '+s.status_pill+'"><span class="pdot"></span>'+s.status+'</span></div>'+
-        '<div class="st-meta">'+s.type+'</div>'+
-        '<div class="st-foot">'+
-          '<span class="row" style="gap:4px;color:var(--text-2)">'+window.icon('nav')+s.distance+'</span>'+
-          '<span class="muted">·</span><span class="muted">'+s.free+'</span>'+
-          '<span style="margin-inline-start:auto" class="fw7 tnum">'+s.price+' <span class="fs12 muted">ت/kWh</span></span>'+
+  function applySeg(){
+    document.querySelectorAll('.station').forEach(function(c){
+      var cat=c.getAttribute('data-cat');
+      c.style.display=(segIdx===0||(segIdx===1&&cat==='fast')||(segIdx===2&&cat==='public'))?'':'none';
+    });
+  }
+
+  function renderStations(st){
+    document.getElementById('stations').innerHTML=st.map(function(s){
+      return '<a href="'+esc(s.url)+'" class="station" data-cat="'+esc(s.cat)+'">'+
+        '<div class="st-img">'+window.icon('plug')+'</div>'+
+        '<div style="flex:1">'+
+          '<div class="row between"><span class="st-name">'+esc(s.name)+'</span><span class="pill '+esc(s.status_pill)+'"><span class="pdot"></span>'+esc(s.status)+'</span></div>'+
+          '<div class="st-meta">'+esc(s.type)+'</div>'+
+          '<div class="st-foot">'+
+            '<span class="row" style="gap:4px;color:var(--text-2)">'+window.icon('nav')+esc(s.distance)+'</span>'+
+            '<span class="muted">·</span><span class="muted">'+esc(s.free)+'</span>'+
+            '<span style="margin-inline-start:auto" class="fw7 tnum">'+esc(s.price)+' <span class="fs12 muted">ت/kWh</span></span>'+
+          '</div>'+
         '</div>'+
-      '</div>'+
-    '</a>';
-  }).join('');
-  document.querySelectorAll('.st-foot .row svg, .station .st-foot svg').forEach(function(s){s.style.width='14px';s.style.height='14px';});
+      '</a>';
+    }).join('');
+    document.querySelectorAll('.station .st-foot svg').forEach(function(s){s.style.width='14px';s.style.height='14px';});
+    applySeg();
+  }
+
+  renderActive(@json($activeCard));
+  renderStations(@json($nearbyStations));
 
   document.querySelectorAll('#seg button').forEach(function(b,idx){
     b.addEventListener('click',function(){
       document.querySelectorAll('#seg button').forEach(function(x){x.classList.remove('active');});b.classList.add('active');
-      document.querySelectorAll('.station').forEach(function(c){
-        var cat=c.getAttribute('data-cat');
-        var show=idx===0||(idx===1&&cat==='fast')||(idx===2&&cat==='public');
-        c.style.display=show?'':'none';
-      });
+      segIdx=idx;applySeg();
     });
+  });
+
+  window.scLive('home',10000,function(d){
+    renderActive(d.active);
+    if(d.balance!=null)document.getElementById('homeBalance').textContent=d.balance;
+    if(d.stations)renderStations(d.stations);
   });
 })();
 </script>

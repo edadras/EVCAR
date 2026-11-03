@@ -79,7 +79,7 @@
           </div>
         </div>
         <div class="card card-pad">
-          <div class="flex between" style="font-size:13px"><span class="muted">مخاطبان</span><b class="tnum" id="sumAud">۴۲٬۸۶۰ نفر</b></div>
+          <div class="flex between" style="font-size:13px"><span class="muted">مخاطبان</span><b class="tnum" id="sumAud">{{ Persian::num($counts['all'] ?? 0) }} نفر</b></div>
           <div class="flex between mt-12" style="font-size:13px"><span class="muted">هزینهٔ تقریبی پیامک</span><b class="tnum" id="sumCost">—</b></div>
         </div>
         <button class="btn btn-primary" style="height:48px"><span class="bic" data-ic="bell"></span> تأیید و ارسال</button>

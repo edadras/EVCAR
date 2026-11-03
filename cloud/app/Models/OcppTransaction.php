@@ -2,11 +2,14 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\StoresAppTimezone;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class OcppTransaction extends Model
 {
+    use StoresAppTimezone;
+
     protected $fillable = [
         'charge_point_id', 'connector_number', 'id_tag', 'id_tag_status',
         'meter_start_wh', 'meter_stop_wh', 'started_at', 'stopped_at',

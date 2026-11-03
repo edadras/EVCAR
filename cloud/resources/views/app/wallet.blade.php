@@ -15,7 +15,7 @@
             <span style="font-size:13px;opacity:.9">موجودی کیف پول</span>
             <span class="fw8" style="letter-spacing:.02em">SafirCharge</span>
         </div>
-        <div class="wbal tnum">{{ Persian::money(($wallet?->balance ?? 0) / 10) }} <small>تومان</small></div>
+        <div class="wbal tnum"><span id="walletBalance">{{ Persian::money(($wallet?->balance ?? 0) / 10) }}</span> <small>تومان</small></div>
         <div class="row" style="gap:28px;position:relative;z-index:1">
             <div><div class="wl">اعتبار پاداش</div><div class="wv tnum">{{ Persian::money(($wallet?->bonus_balance ?? 0) / 10) }}</div></div>
             <div><div class="wl">کارت RFID</div><div class="wv">{{ $rfidMasked }}</div></div>
@@ -138,14 +138,21 @@
 @push('scripts')
 <script>
 (function(){
-  var txs=@json($transactionsJs);
-  document.getElementById('txList').innerHTML=txs.length?txs.map(function(x){
-    return '<div class="tx" data-ty="'+x.ty+'">'+
-      '<div class="tx-ic '+x.c+'">'+window.icon(x.ic)+'</div>'+
-      '<div class="l-main"><div class="l-title">'+x.t+'</div><div class="l-sub">'+x.d+'</div></div>'+
-      '<div class="tx-amt '+(x.pos?'pos':'')+'">'+x.a+'</div>'+
-    '</div>';
-  }).join(''):'<div class="tx-empty">تراکنشی نیست</div>';
+  function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+  function renderTx(txs){
+    document.getElementById('txList').innerHTML=txs.length?txs.map(function(x){
+      return '<div class="tx" data-ty="'+esc(x.ty)+'">'+
+        '<div class="tx-ic '+esc(x.c)+'">'+window.icon(x.ic)+'</div>'+
+        '<div class="l-main"><div class="l-title">'+esc(x.t)+'</div><div class="l-sub">'+esc(x.d)+'</div></div>'+
+        '<div class="tx-amt '+(x.pos?'pos':'')+'">'+esc(x.a)+'</div>'+
+      '</div>';
+    }).join(''):'<div class="tx-empty">تراکنشی نیست</div>';
+  }
+  renderTx(@json($transactionsJs));
+  window.scLive('wallet',15000,function(d){
+    if(d.balance!=null)document.getElementById('walletBalance').textContent=d.balance;
+    if(d.transactions){renderTx(d.transactions);applyTxFilter();}
+  });
 
   document.querySelectorAll('#seg button').forEach(function(b,idx){
     b.addEventListener('click',function(){

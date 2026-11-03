@@ -13,6 +13,7 @@ Route::middleware('panel.guest:partner')->group(function () {
 Route::middleware(['auth', 'partner'])->group(function () {
     Route::post('logout', [AuthController::class, 'logout'])->name('logout');
     Route::get('/', DashboardController::class)->name('dashboard');
+    Route::get('api/live', [DashboardController::class, 'live'])->name('live');
     Route::get('stations', [PageController::class, 'stations'])->name('stations');
     Route::get('reports', [PageController::class, 'reports'])->name('reports');
     Route::get('payments', [PageController::class, 'payments'])->name('payments');

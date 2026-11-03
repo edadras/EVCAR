@@ -88,7 +88,7 @@
     { group: "مدیریت شبکه", items: [
       { id: "dashboard", t: "داشبورد و مانیتورینگ", ic: "grid", path: "", dot: true },
       { id: "monitoring", t: "مانیتورینگ زنده شبکه", ic: "activity", path: "monitoring", dot: true },
-      { id: "alerts", t: "هشدارهای عملیاتی", ic: "bell", path: "alerts" },
+      { id: "alerts", t: "هشدارهای عملیاتی", ic: "bell", path: "alerts", stat: "alerts" },
       { id: "insights", t: "تحلیل، پیش‌بینی و خروجی", ic: "bars", path: "insights" },
       { id: "stations", t: "ایستگاه‌ها و نقشه", ic: "map", path: "stations" },
       { id: "sessions", t: "جلسات شارژ", ic: "bolt", path: "sessions", stat: "sessions" },
@@ -114,7 +114,7 @@
     { group: "سامانه و ارتباطات", items: [
       { id: "ev-catalog", t: "کاتالوگ خودرو برقی", ic: "car", path: "ev-catalog" },
       { id: "sync", t: "همگام‌سازی و آفلاین", ic: "refresh", path: "sync" },
-      { id: "notifications", t: "اعلان‌ها", ic: "bell", path: "notifications", stat: "notifications" },
+      { id: "notifications", t: "اعلان‌ها", ic: "bell", path: "notifications" },
       { id: "campaigns", t: "طرح‌ها و کمپین‌ها", ic: "gift", path: "campaigns" },
       { id: "team", t: "کاربران مدیر و دسترسی", ic: "shield", path: "team" },
     ]},
@@ -156,11 +156,30 @@
 
     var stats = {};
     try { stats = JSON.parse(body.getAttribute("data-nav") || "{}") || {}; } catch (e) {}
+    var me = {};
+    try { me = JSON.parse(body.getAttribute("data-me") || "{}") || {}; } catch (e) {}
     var faNum = function (n) { return String(n).replace(/\d/g, function (d) { return "۰۱۲۳۴۵۶۷۸۹"[d]; }); };
+    var esc = function (s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); };
+    function networkText(s) {
+      return s.chargers
+        ? faNum(s.online || 0) + ' از ' + faNum(s.chargers) + ' شارژر آنلاین · ' + faNum(Math.round(100 * (s.online || 0) / s.chargers)) + '٪ در دسترس'
+        : 'شارژری ثبت نشده';
+    }
+    function applyNav(s) {
+      document.querySelectorAll("[data-stat]").forEach(function (el) {
+        var v = s[el.getAttribute("data-stat")] || 0;
+        el.textContent = faNum(v);
+        el.style.display = v ? "" : "none";
+      });
+      var dot = document.getElementById("bellDot");
+      if (dot) dot.style.display = s.alerts ? "" : "none";
+      var net = document.getElementById("navNetwork");
+      if (net) net.textContent = networkText(s);
+    }
     var navHTML = NAV.map(function (g) {
       var items = g.items.map(function (it) {
-        if (it.stat) it.badge = stats[it.stat] ? faNum(stats[it.stat]) : "";
-        var extra = it.badge ? '<span class="badge-mini tnum">' + it.badge + '</span>'
+        var extra = it.stat
+          ? '<span class="badge-mini tnum" data-stat="' + it.stat + '"' + (stats[it.stat] ? '' : ' style="display:none"') + '>' + faNum(stats[it.stat] || 0) + '</span>'
           : (it.dot ? '<span class="badge-dot"></span>' : '');
         return '<a class="nav-link' + (it.id === page ? ' active' : '') + '" href="' + adminUrl(it.path) + '">' +
           svg(it.ic) + '<span>' + it.t + '</span>' + extra + '</a>';
@@ -178,7 +197,7 @@
         '<div class="sidebar-foot">' +
           '<div class="station-card">' +
             '<div class="sc-top"><span class="pulse"></span><span>وضعیت شبکه</span></div>' +
-            '<div class="sc-meta">' + (stats.chargers ? faNum(stats.online || 0) + ' از ' + faNum(stats.chargers) + ' شارژر آنلاین · ' + faNum(Math.round(100 * (stats.online || 0) / stats.chargers)) + '٪ در دسترس' : 'شارژری ثبت نشده') + '<br>به‌روزرسانی: هر ۳۰ ثانیه</div>' +
+            '<div class="sc-meta"><span id="navNetwork">' + networkText(stats) + '</span><br>به‌روزرسانی خودکار · <span data-live-stamp>—</span></div>' +
           '</div>' +
         '</div>' +
       '</aside>';
@@ -196,12 +215,12 @@
         '<div class="topbar-actions">' +
           '<div class="acc-picker">' + accentDots + '</div>' +
           '<button class="icon-btn" id="themeBtn">' + svg(savedTheme === "dark" ? "sun" : "moon") + '</button>' +
-          '<button class="icon-btn" id="bellBtn" onclick="location.href=&quot;' + adminUrl('notifications') + '&quot;">' + svg("bell") + '<span class="dot"></span></button>' +
+          '<button class="icon-btn" id="bellBtn" title="هشدارهای باز" onclick="location.href=&quot;' + adminUrl('alerts') + '&quot;">' + svg("bell") + '<span class="dot" id="bellDot"' + (stats.alerts ? '' : ' style="display:none"') + '></span></button>' +
           '<div class="profile-wrap">' +
-            '<button class="user-chip" id="userChip"><span class="av">ر.ک</span><span><span class="u-name">رضا کاظمی</span><span class="u-role">مدیر شبکه</span></span></button>' +
+            '<button class="user-chip" id="userChip"><span class="av">' + esc(me.initials) + '</span><span><span class="u-name">' + esc(me.name) + '</span><span class="u-role">' + esc(me.role) + '</span></span></button>' +
             '<div class="profile-menu" id="profileMenu">' +
-              '<div class="pm-head"><span class="av" style="width:40px;height:40px;border-radius:12px">ر.ک</span><div><div class="fw7">رضا کاظمی</div><div class="fs12 muted">reza@safircharge.ir</div></div></div>' +
-              '<a class="pm-item" href="' + adminUrl('team') + '">' + svg("shield") + '<span>نقش و دسترسی من</span><span class="tag" style="margin-inline-start:auto">مدیر کل</span></a>' +
+              '<div class="pm-head"><span class="av" style="width:40px;height:40px;border-radius:12px">' + esc(me.initials) + '</span><div><div class="fw7">' + esc(me.name) + '</div><div class="fs12 muted">' + esc(me.email) + '</div></div></div>' +
+              '<a class="pm-item" href="' + adminUrl('team') + '">' + svg("shield") + '<span>نقش و دسترسی من</span><span class="tag" style="margin-inline-start:auto">' + esc(me.role) + '</span></a>' +
               '<a class="pm-item" href="' + adminUrl('notifications') + '">' + svg("bell") + '<span>اعلان‌ها</span></a>' +
               '<a class="pm-item" href="' + adminUrl('settings') + '">' + svg("settings") + '<span>تنظیمات سامانه</span></a>' +
               '<div class="pm-sep"></div>' +
@@ -292,6 +311,8 @@
         document.getElementById("globalSearch"),
         document.getElementById("globalSearchResults")
       );
+      document.addEventListener("admin:nav", function (e) { applyNav(e.detail || {}); });
+      window.AdminUI.live("nav", 20000, applyNav);
     }
   }
 

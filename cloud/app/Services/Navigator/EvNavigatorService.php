@@ -898,8 +898,8 @@ class EvNavigatorService
                 continue;
             }
 
-            $free = $st->chargers->flatMap(fn ($ch) => $ch->connectors)
-                ->filter(fn ($c) => in_array($c->ocpp_status, ['Available', 'Preparing'], true))->count();
+            $free = $st->chargers->filter(fn ($ch) => $ch->is_online)->flatMap(fn ($ch) => $ch->connectors)
+                ->filter(fn ($c) => $c->operational_status === 'active' && in_array($c->ocpp_status, ['Available', 'Preparing'], true))->count();
 
             $result[] = [
                 'uuid' => $st->uuid,

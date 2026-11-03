@@ -56,6 +56,7 @@
     var pShare = body.getAttribute("data-partner-share") || "";
     var pDevices = body.getAttribute("data-partner-devices") || "";
     var pInitials = body.getAttribute("data-partner-initials") || "ش";
+    var openTickets = parseInt(body.getAttribute("data-open-tickets") || "0", 10) || 0;
     var csrf = document.querySelector('meta[name=csrf-token]')?.content || '';
 
     var navHTML = NAV.map(function (it) {
@@ -87,7 +88,7 @@
         '<div class="page-title"><span class="crumb">' + crumb + '</span>' + title + '</div>' +
         '<div class="topbar-actions">' +
           '<button class="icon-btn" id="themeBtn">' + svg(savedTheme === "dark" ? "sun" : "moon") + '</button>' +
-          '<button class="icon-btn"><span></span>' + svg("bell") + '<span class="dot"></span></button>' +
+          '<a class="icon-btn" href="/partner/support" title="تیکت‌های باز: ' + openTickets + '"><span></span>' + svg("bell") + (openTickets > 0 ? '<span class="dot"></span>' : '') + '</a>' +
           '<div class="profile-wrap">' +
             '<button class="user-chip" id="userChip"><span class="av">' + pInitials + '</span><span><span class="u-name">' + pName + '</span><span class="u-role">شریک میزبان</span></span></button>' +
             '<div class="profile-menu" id="profileMenu">' +

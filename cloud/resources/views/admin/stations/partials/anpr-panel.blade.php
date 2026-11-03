@@ -30,7 +30,7 @@
             <div class="kpi-grid" style="margin-bottom:16px;grid-template-columns:repeat(4,1fr)">
                 <div class="mini-stat"><div class="ms-ic ic-blue" data-ic="camera"></div><div><div class="ms-v tnum">{{ Persian::digits($anprPanel['kpis']['camera_count'] ?? 0) }}</div><div class="ms-l">دوربین</div></div></div>
                 <div class="mini-stat"><div class="ms-ic ic-orange" data-ic="bolt"></div><div><div class="ms-v tnum">{{ Persian::digits($anprPanel['kpis']['today'] ?? 0) }}</div><div class="ms-l">شارژ خودکار امروز</div></div></div>
-                <div class="mini-stat"><div class="ms-ic ic-violet" data-ic="check"></div><div><div class="ms-v tnum">{{ Persian::digits($anprPanel['kpis']['accuracy_pct'] ?? 0) }}٪</div><div class="ms-l">دقت ۷ روز</div></div></div>
+                <div class="mini-stat"><div class="ms-ic ic-violet" data-ic="check"></div><div><div class="ms-v tnum">{{ isset($anprPanel['kpis']['accuracy_pct']) ? Persian::digits($anprPanel['kpis']['accuracy_pct']).'٪' : '—' }}</div><div class="ms-l">دقت ۷ روز</div></div></div>
                 <div class="mini-stat"><div class="ms-ic ic-green" data-ic="car"></div><div><div class="ms-v tnum">{{ Persian::digits(number_format($anprPanel['kpis']['registered_plates'] ?? 0)) }}</div><div class="ms-l">پلاک ثبت‌شده</div></div></div>
             </div>
 

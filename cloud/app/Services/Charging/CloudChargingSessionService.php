@@ -295,19 +295,21 @@ class CloudChargingSessionService
             if ($cost > 0) {
                 $wallet = Wallet::where('user_id', $user->id)->lockForUpdate()->first();
                 if ($wallet) {
-                    $newBalance = max(0, (float) $wallet->balance - $cost);
+                    $charged = min($cost, max(0, (float) $wallet->balance));
+                    $newBalance = (float) $wallet->balance - $charged;
                     $wallet->update(['balance' => $newBalance]);
 
                     WalletTransaction::create([
                         'uuid' => (string) Str::uuid(),
                         'wallet_id' => $wallet->id,
                         'type' => 'debit',
-                        'amount' => $cost,
+                        'amount' => $charged,
                         'balance_after' => $newBalance,
                         'reference_type' => ChargingSession::class,
                         'reference_id' => $session->id,
                         'description' => 'هزینه شارژ — '.($session->station?->name ?? 'ایستگاه'),
                         'occurred_at' => $stoppedAt,
+                        'meta' => $charged < $cost ? ['session_cost' => $cost, 'unpaid' => round($cost - $charged, 2)] : null,
                     ]);
                 }
             }

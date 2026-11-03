@@ -1,6 +1,6 @@
 @extends('app.layouts.mobile', ['noTab' => true])
 
-@section('title', 'SafirCharge — پرداخت موفق')
+@section('title', 'SafirCharge — نتیجهٔ پرداخت')
 
 @section('phone')
 @php
@@ -9,13 +9,14 @@ $amount = (int) ($topupAmount ?? request('amount', 0));
 $balanceToman = (int) round(($wallet?->balance ?? 0) / 10);
 $ref = $paymentRef ?? request('payment', '—');
 @endphp
-@if(($payment ?? null) && $payment->status !== 'paid')
+@if(!($payment ?? null) || $payment->status !== 'paid')
+@php $pending = ($payment ?? null) && $payment->status === 'pending'; @endphp
 <div class="screen" style="display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px">
-    <div class="ok-circle rise" style="background:linear-gradient(140deg,var(--red),#f87171)">
-        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+    <div class="ok-circle rise" style="background:linear-gradient(140deg,{{ $pending ? 'var(--amber),#fbbf24' : 'var(--red),#f87171' }})">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round">@if($pending)<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>@else<path d="M18 6 6 18M6 6l12 12"/>@endif</svg>
     </div>
-    <h2 class="mt20" style="font-size:22px">{{ $payment->status === 'pending' ? 'در انتظار تأیید بانک' : 'پرداخت ناموفق بود' }}</h2>
-    <p class="muted" style="margin-top:8px;font-size:13.5px;line-height:1.8">مبلغی از کیف پول شما کسر یا به آن اضافه نشد. اگر از حساب بانکی شما برداشت شده، حداکثر تا ۷۲ ساعت بازگردانده می‌شود.</p>
+    <h2 class="mt20" style="font-size:22px">{{ !($payment ?? null) ? 'پرداخت یافت نشد' : ($pending ? 'در انتظار تأیید بانک' : 'پرداخت ناموفق بود') }}</h2>
+    <p class="muted" style="margin-top:8px;font-size:13.5px;line-height:1.8">{{ $pending ? 'نتیجهٔ پرداخت هنوز از بانک دریافت نشده است؛ پس از تأیید، موجودی کیف پول به‌روز می‌شود.' : 'مبلغی به کیف پول شما اضافه نشد. اگر از حساب بانکی شما برداشت شده، حداکثر تا ۷۲ ساعت بازگردانده می‌شود.' }}</p>
 </div>
 <div class="savebar">
     <a href="{{ route('app.wallet') }}" class="btn btn-orange" style="flex:1;text-decoration:none">بازگشت به کیف پول</a>
@@ -33,13 +34,12 @@ $ref = $paymentRef ?? request('payment', '—');
         <div class="rrow"><span class="muted">موجودی جدید</span><b class="tnum" id="newBal">{{ Persian::money($balanceToman) }} تومان</b></div>
         <div class="rrow"><span class="muted">شمارهٔ پیگیری</span><b class="mono">{{ $ref }}</b></div>
         <div class="rrow"><span class="muted">درگاه</span><b>{{ ['mellat' => 'به‌پرداخت ملت', 'saman' => 'سامان (سپ)', 'zarinpal' => 'زرین‌پال'][$payment?->gateway ?? 'mellat'] ?? $payment?->gateway }}</b></div>
-        <div class="rrow"><span class="muted">تاریخ</span><b class="tnum">{{ Persian::digits(now()->format('Y/m/d')) }} — {{ Persian::digits(now()->format('H:i')) }}</b></div>
+        <div class="rrow"><span class="muted">تاریخ</span><b class="tnum">{{ Persian::dateTime($payment->paid_at ?? $payment->updated_at) }}</b></div>
     </div>
 </div>
 
 <div class="savebar" style="display:flex;gap:11px">
     <a href="{{ route('app.wallet') }}" class="btn btn-orange" style="flex:1;height:50px;display:flex;align-items:center;justify-content:center">بازگشت به کیف پول</a>
-    <button type="button" class="btn btn-ghost" style="flex:none;width:54px" title="رسید"><span data-ic="download"></span></button>
 </div>
 @endif
 @endsection

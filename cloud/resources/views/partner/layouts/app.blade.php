@@ -2,6 +2,7 @@
     $partner = auth()->user()?->partner;
     $initials = mb_substr($partner?->name ?? 'ش', 0, 2);
     $onlineChargers = $partner ? \App\Models\Charger::whereIn('station_id', $partner->stations()->pluck('id'))->where('is_online', true)->count() : 0;
+    $openTickets = $partner ? \App\Models\SupportTicket::whereIn('station_id', $partner->stations()->pluck('id'))->whereIn('status', ['open', 'in_progress'])->count() : 0;
 @endphp
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">
@@ -24,6 +25,7 @@
     data-partner-share="{{ $partner?->revenue_share_percent }}"
     data-partner-devices="{{ $onlineChargers }}"
     data-partner-initials="{{ $initials }}"
+    data-open-tickets="{{ $openTickets }}"
 >
 <div class="app">
 <div class="main">

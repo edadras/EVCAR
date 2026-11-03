@@ -89,7 +89,7 @@
             <div class="card-pad">
               <div class="form-grid">
                 <div class="ffield"><label>درگاه پرداخت پیش‌فرض</label><select class="fselect"><option>به‌پرداخت ملت</option><option>سامان (سپ)</option><option>زرین‌پال</option></select></div>
-                <div class="ffield"><label>مالیات ارزش افزوده</label><input class="finput tnum" dir="ltr" style="text-align:right" value="۹٪"></div>
+                <div class="ffield"><label>مالیات ارزش افزوده</label><input class="finput tnum" dir="ltr" style="text-align:right" value="{{ \App\Support\Persian::digits(config('safircharge.finance.vat_percent', 10)) }}٪" readonly title="از تنظیمات سرور (SC_VAT_PERCENT)"></div>
                 <div class="ffield"><label>حداقل شارژ کیف پول (تومان)</label><input class="finput tnum" dir="ltr" style="text-align:right" value="۵۰٬۰۰۰"></div>
                 <div class="ffield"><label>دورهٔ تسویهٔ شرکا</label><select class="fselect"><option>ماهانه</option><option>دوهفته‌ای</option></select></div>
               </div>

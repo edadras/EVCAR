@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Station;
+use App\Services\Admin\AdminLiveService;
 use App\Services\Admin\AdminMetricsService;
 use App\Services\Admin\AdminViewDataService;
 use App\Services\Stations\StationAnprService;
@@ -18,7 +19,10 @@ class PageController extends Controller
 
     public function monitoring(): View
     {
-        return view('admin.monitoring', $this->metrics->monitoring());
+        return view('admin.monitoring', [
+            'live' => app(AdminLiveService::class)->monitoring(),
+            'stations' => Station::orderBy('name')->get(['id', 'name']),
+        ]);
     }
 
     public function reservations(): View

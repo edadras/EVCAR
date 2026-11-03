@@ -19,7 +19,7 @@
     <div class="kpi-grid">
       <div class="mini-stat"><div class="ms-ic ic-blue" data-ic="building"></div><div><div class="ms-v tnum">{{ Persian::digits($stats['active']) }}</div><div class="ms-l">مالک فعال (CPO میزبان)</div></div></div>
       <div class="mini-stat"><div class="ms-ic ic-green" data-ic="station"></div><div><div class="ms-v tnum">{{ Persian::digits($partners->sum('stations_count')) }}</div><div class="ms-l">ایستگاه شرکا</div></div></div>
-      <div class="mini-stat"><div class="ms-ic ic-orange" data-ic="coins"></div><div><div class="ms-v tnum">{{ Persian::digits(round($partnersJs['gross'][5] ?? 0)) }} <small>میلیارد</small></div><div class="ms-l">سهم شرکا (این ماه)</div></div></div>
+      <div class="mini-stat"><div class="ms-ic ic-orange" data-ic="coins"></div><div><div class="ms-v tnum">{{ Persian::money($partnersJs['share'][5] ?? 0) }} <small>تومان</small></div><div class="ms-l">سهم شرکا (این ماه)</div></div></div>
       <div class="mini-stat"><div class="ms-ic ic-violet" data-ic="receipt"></div><div><div class="ms-v tnum">{{ Persian::digits(count($partnersJs['invoices'] ?? [])) }}</div><div class="ms-l">فاکتور اخیر</div></div></div>
     </div>
 
@@ -112,7 +112,7 @@
     <!-- آمار -->
     <section data-pane="stats" style="display:none">
       <div class="grid g-3 mt-16">
-        <div class="card card-pad"><div class="muted fs12">میانگین درآمد ماهانهٔ هر مالک</div><div class="fs22 fw8 tnum mt-8">{{ Persian::digits($partnersJs['avgPartnerRevenue'] ?? 0) }} <small style="font-size:13px;color:var(--text-2)">میلیون</small></div><div class="bar bar-accent mt-12"><i style="width:{{ min(100, $partnersJs['avgPartnerRevenue'] ?? 0) }}%"></i></div></div>
+        <div class="card card-pad"><div class="muted fs12">میانگین درآمد ماهانهٔ هر مالک</div><div class="fs22 fw8 tnum mt-8">{{ Persian::money($partnersJs['avgPartnerRevenue'] ?? 0) }} <small style="font-size:13px;color:var(--text-2)">تومان</small></div></div>
         <div class="card card-pad"><div class="muted fs12">میانگین بهره‌برداری ایستگاه‌های شرکا</div><div class="fs22 fw8 tnum mt-8">{{ Persian::digits($partnersJs['partnerUtil'] ?? 0) }}٪</div><div class="bar mt-12"><i style="width:{{ $partnersJs['partnerUtil'] ?? 0 }}%"></i></div></div>
         <div class="card card-pad"><div class="muted fs12">نرخ تسویهٔ به‌موقع</div><div class="fs22 fw8 tnum mt-8">{{ Persian::digits($partnersJs['onTimePct'] ?? 0) }}٪</div><div class="bar bar-orange mt-12"><i style="width:{{ $partnersJs['onTimePct'] ?? 0 }}%"></i></div></div>
       </div>
@@ -165,7 +165,7 @@
   // نمودار درآمد
   (function(){
     var gross=PD.gross||[],share=PD.share||[];
-    var W=700,H=220,pad=14,max=700,bw=40,gap=(W-pad*2)/gross.length;
+    var W=700,H=220,pad=14,max=Math.max.apply(null,gross.concat([1])),bw=40,gap=(W-pad*2)/Math.max(1,gross.length);
     var bars='';gross.forEach(function(v,i){
       var x=pad+i*gap+gap/2;
       var h1=(H-pad*2)*v/max,y1=H-pad-h1;
@@ -174,7 +174,7 @@
       bars+='<rect x="'+(x-bw/2-3)+'" y="'+y2+'" width="'+bw+'" height="'+h2+'" rx="7" fill="var(--orange)"/>';
     });
     document.getElementById('revChart').innerHTML=bars;
-    var ax=document.getElementById('revAxis');['تیر','مرداد','شهریور','مهر','آبان','آذر'].forEach(function(t){var s=document.createElement('span');s.textContent=t;ax.appendChild(s);});
+    var ax=document.getElementById('revAxis');(PD.months||[]).forEach(function(t){var s=document.createElement('span');s.textContent=t;ax.appendChild(s);});
   })();
 
   document.getElementById('partnerBody').innerHTML=(PD.partners||[]).map(function(p){

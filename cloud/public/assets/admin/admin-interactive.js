@@ -67,11 +67,72 @@
           }
         }
         if (!r.ok) {
-          var msg = data.message || (data.errors && Object.values(data.errors).flat().join(" ")) || "خطای سرور";
+          var msg = data.message || data.error || (data.errors && Object.values(data.errors).flat().join(" ")) || "خطای سرور";
           throw { message: msg, errors: data.errors };
         }
         return data;
       });
+    });
+  }
+
+  function getJson(url) {
+    return fetch(url, {
+      credentials: "same-origin",
+      cache: "no-store",
+      headers: { Accept: "application/json", "X-Requested-With": "XMLHttpRequest" },
+    }).then(function (r) {
+      if (r.status === 401 || r.status === 419) { location.reload(); throw { message: "auth" }; }
+      if (!r.ok) throw { message: "HTTP " + r.status };
+      return r.json();
+    });
+  }
+
+  /**
+   * Poll /admin/api/live/{section}; pauses while the tab is hidden and refreshes on return.
+   * Returns { refresh() } to force an immediate update (e.g. after an action).
+   */
+  function live(section, intervalMs, onData) {
+    var timer = null, busy = false;
+    function run() {
+      if (busy || document.hidden) return;
+      busy = true;
+      getJson(apiBase() + "/api/live/" + section)
+        .then(function (data) {
+          onData(data);
+          if (data && data.nav) document.dispatchEvent(new CustomEvent("admin:nav", { detail: data.nav }));
+          setLiveStamp(true);
+        })
+        .catch(function () { setLiveStamp(false); })
+        .then(function () { busy = false; });
+    }
+    function start() { stop(); timer = setInterval(run, intervalMs); }
+    function stop() { if (timer) clearInterval(timer); timer = null; }
+    document.addEventListener("visibilitychange", function () {
+      if (document.hidden) { stop(); } else { run(); start(); }
+    });
+    start();
+    return { refresh: run };
+  }
+
+  function setLiveStamp(ok) {
+    document.querySelectorAll("[data-live-stamp]").forEach(function (el) {
+      var d = new Date();
+      var t = ("0" + d.getHours()).slice(-2) + ":" + ("0" + d.getMinutes()).slice(-2) + ":" + ("0" + d.getSeconds()).slice(-2);
+      el.textContent = ok ? t.replace(/\d/g, function (x) { return FA[x]; }) : "قطع ارتباط";
+      el.classList.toggle("live-err", !ok);
+    });
+  }
+
+  function fa(n, digits) {
+    if (n == null || n === "") return "—";
+    var v = typeof n === "number" ? n : parseFloat(n);
+    if (isNaN(v)) return String(n);
+    return v.toLocaleString("fa-IR", { maximumFractionDigits: digits == null ? 1 : digits });
+  }
+
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
     });
   }
 
@@ -232,6 +293,10 @@
     localDatetime: localDatetime,
     parseDigits: parseDigits,
     postJson: postJson,
+    getJson: getJson,
+    live: live,
+    fa: fa,
+    esc: esc,
     bindTableSearch: bindTableSearch,
     bindListSearch: bindListSearch,
     bindSegRows: bindSegRows,

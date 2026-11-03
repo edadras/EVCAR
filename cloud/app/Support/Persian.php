@@ -31,6 +31,36 @@ class Persian
         return self::digits(number_format($amount, $decimals));
     }
 
+    /** Jalali date/time in the app timezone, e.g. ۱۴۰۵/۰۸/۱۲ ۱۴:۳۵ */
+    public static function dateTime(?\DateTimeInterface $at, string $pattern = 'yyyy/MM/dd HH:mm'): string
+    {
+        if (! $at) {
+            return '—';
+        }
+        if (class_exists(\IntlDateFormatter::class)) {
+            $fmt = new \IntlDateFormatter('fa_IR@calendar=persian', \IntlDateFormatter::NONE, \IntlDateFormatter::NONE,
+                config('app.timezone'), \IntlDateFormatter::TRADITIONAL, $pattern);
+            $out = $fmt->format($at);
+            if ($out !== false) {
+                return self::digits(self::toAsciiDigits($out));
+            }
+        }
+
+        $php = strtr($pattern, ['yyyy' => 'Y', 'MMMM' => 'F', 'MM' => 'm', 'dd' => 'd', 'HH' => 'H', 'mm' => 'i']);
+
+        return self::digits(\Carbon\Carbon::instance($at)->setTimezone(config('app.timezone'))->format($php));
+    }
+
+    public static function date(?\DateTimeInterface $at): string
+    {
+        return self::dateTime($at, 'yyyy/MM/dd');
+    }
+
+    public static function time(?\DateTimeInterface $at): string
+    {
+        return $at ? self::digits(\Carbon\Carbon::instance($at)->setTimezone(config('app.timezone'))->format('H:i')) : '—';
+    }
+
     public static function toAsciiDigits(string $value): string
     {
         return str_replace(

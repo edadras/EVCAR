@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\StoresAppTimezone;
 use Illuminate\Database\Eloquent\Model;
 
 class SyncInbox extends Model
 {
+    use StoresAppTimezone;
+
     protected $table = 'sync_inbox';
 
     protected $fillable = [

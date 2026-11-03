@@ -7,6 +7,8 @@ use Illuminate\Support\Str;
 
 trait HasUuid
 {
+    use StoresAppTimezone;
+
     protected static function bootHasUuid(): void
     {
         static::creating(function (Model $model) {

@@ -422,7 +422,7 @@ class CloudChargePointHandler
     private function timestamp(mixed $value): CarbonInterface
     {
         try {
-            $time = CarbonImmutable::parse((string) $value)->utc();
+            $time = CarbonImmutable::parse((string) $value)->setTimezone(config('app.timezone'));
         } catch (\Throwable) {
             return now();
         }

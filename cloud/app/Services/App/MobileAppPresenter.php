@@ -78,10 +78,10 @@ class MobileAppPresenter
         return $stations->map(function (Station $st) use ($refLat, $refLng) {
             $connectors = $st->chargers->flatMap(fn ($ch) => $ch->connectors);
             $total = $connectors->count();
-            $free = $connectors->filter(fn ($c) => $this->availability->snapshot($c)['reservable'])->count();
+            $status = $this->stationStatus($st);
+            $free = $status['free'];
             $maxKw = (int) $st->chargers->max('max_power_kw');
             $isFast = $maxKw >= 50;
-            $busy = $free === 0;
             $cat = $isFast ? 'fast' : 'public';
             $km = ($st->latitude && $st->longitude)
                 ? Geo::haversineKm($refLat, $refLng, (float) $st->latitude, (float) $st->longitude)
@@ -100,8 +100,9 @@ class MobileAppPresenter
                 'price' => $this->defaultTariffToman() !== null
                     ? Persian::digits($this->defaultTariffToman())
                     : '—',
-                'status' => $busy ? 'پرتراکم' : 'آزاد',
-                'status_pill' => $busy ? 'pill-amber' : 'pill-green',
+                'status' => $status['label'],
+                'status_pill' => $status['pill'],
+                'state' => $status['state'],
                 'cat' => $cat,
                 'has_free' => $free > 0,
                 'url' => route('app.charger', ['station' => $st->code]),
@@ -121,16 +122,16 @@ class MobileAppPresenter
         return $stations
             ->filter(fn (Station $s) => $s->latitude && $s->longitude)
             ->map(function (Station $st) {
-                $free = $this->stationFreeCount($st);
-                $busy = $free === 0;
+                $status = $this->stationStatus($st);
 
                 return [
                     'id' => $st->id,
                     'name' => $st->name,
                     'lat' => (float) $st->latitude,
                     'lng' => (float) $st->longitude,
-                    'free' => $free,
-                    'color' => $busy ? 'amber' : 'green',
+                    'free' => $status['free'],
+                    'state' => $status['state'],
+                    'color' => $status['color'],
                     'url' => route('app.charger', ['station' => $st->code]),
                 ];
             })
@@ -154,11 +155,11 @@ class MobileAppPresenter
     {
         return $transactions->map(function (WalletTransaction $t) {
             $amount = (int) round((float) $t->amount / 10);
-            $isIn = in_array($t->type, ['topup', 'credit', 'refund', 'bonus', 'compensation'], true);
+            $isIn = $t->isCredit();
 
             return [
                 't' => $t->description ?: $t->typeLabel(),
-                'd' => $t->occurred_at ? Persian::digits($t->occurred_at->format('Y/m/d H:i')) : '—',
+                'd' => $t->occurred_at ? Persian::dateTime($t->occurred_at) : '—',
                 'a' => ($isIn ? '+' : '−').Persian::money(abs($amount)),
                 'pos' => $isIn,
                 'ic' => $isIn ? 'plus' : 'bolt',
@@ -172,7 +173,12 @@ class MobileAppPresenter
     public function historySessions(Collection $sessions): array
     {
         return $sessions->map(function (ChargingSession $s) {
-            $ok = in_array($s->status, ['completed', 'stopped'], true) || $s->energy_kwh > 0;
+            $st = match (true) {
+                $s->status === 'active' => ['در حال شارژ', 'pill-amber'],
+                $s->isSuccessful() => ['تکمیل', 'pill-green'],
+                in_array($s->status, ChargingSession::FINISHED_STATUSES, true) => ['بدون شارژ', 'pill'],
+                default => ['ناموفق', 'pill-red'],
+            };
             $auth = match ($s->auth_method) {
                 'rfid' => 'کارت RFID',
                 'qr' => 'QR موبایل',
@@ -183,12 +189,12 @@ class MobileAppPresenter
             return [
                 'uuid' => $s->uuid,
                 'n' => $s->station?->name ?? '—',
-                'date' => $s->started_at ? Persian::digits($s->started_at->format('Y/m/d H:i')) : '—',
+                'date' => $s->started_at ? Persian::dateTime($s->started_at) : '—',
                 'en' => Persian::kwh($s->energy_kwh).' kWh',
-                'dur' => $s->duration_seconds ? Persian::digits((int) ceil($s->duration_seconds / 60)).' دقیقه' : '—',
+                'dur' => ($secs = $s->elapsedSeconds()) > 0 ? Persian::digits((int) ceil($secs / 60)).' دقیقه' : '—',
                 'amt' => Persian::money((int) round((float) $s->cost_amount / 10)),
                 'm' => $auth,
-                'st' => [$ok ? 'تکمیل' : 'ناموفق', $ok ? 'pill-green' : 'pill-red'],
+                'st' => $st,
             ];
         })->values()->all();
     }
@@ -198,6 +204,7 @@ class MobileAppPresenter
         $start = now()->startOfMonth();
         $sessions = ChargingSession::where('user_id', $user->id)
             ->where('started_at', '>=', $start)
+            ->successful()
             ->get();
         $energy = (float) $sessions->sum('energy_kwh');
         $cost = (int) round($sessions->sum('cost_amount') / 10);
@@ -207,7 +214,7 @@ class MobileAppPresenter
             'energy' => Persian::kwh($energy),
             'cost' => $cost >= 1_000_000 ? Persian::money($cost / 1_000_000, 1).' م' : Persian::money($cost),
             'co2_kg' => Persian::digits((int) round($energy * 0.68)),
-            'trees' => Persian::digits(max(1, (int) round($energy * 0.03))),
+            'trees' => Persian::digits($energy > 0 ? max(1, (int) round($energy * 0.03)) : 0),
         ];
     }
 
@@ -219,7 +226,9 @@ class MobileAppPresenter
         foreach ($station->chargers as $ci => $charger) {
             foreach ($charger->connectors as $cn) {
                 $snap = $this->availability->snapshot($cn);
-                $busy = ! $snap['reservable'] || $cn->ocpp_status === 'Charging';
+                $replug = $cn->ocpp_status === 'Finishing' && $snap['charger_online']
+                    && in_array($snap['station_status'], ['active'], true) && $cn->operational_status === 'active';
+                $busy = ! $snap['reservable'] && ! $replug;
                 $label = ($letters[$ci] ?? 'C').$cn->connector_number;
                 $rows[] = [
                     'id' => $label,
@@ -237,6 +246,26 @@ class MobileAppPresenter
         }
 
         return $rows;
+    }
+
+    /** @return array{state: string, label: string, pill: string, color: string, free: int, in_use: int, total: int} */
+    public function stationStatus(Station $station): array
+    {
+        $states = $station->chargers->flatMap(fn ($ch) => $ch->connectors)
+            ->map(fn ($c) => $this->availability->snapshot($c));
+        $total = $states->count();
+        $free = $states->where('reservable', true)->count();
+        $inUse = $states->whereIn('state', ['charging', 'reserved'])->count();
+
+        [$state, $label, $pill, $color] = match (true) {
+            $free > 0 => ['free', 'آزاد', 'pill-green', 'green'],
+            $inUse > 0 => ['busy', 'پر', 'pill-amber', 'amber'],
+            $total > 0 && $states->where('state', 'fault')->count() > 0 => ['fault', 'خطا', 'pill-red', 'red'],
+            $station->status !== 'active' => ['inactive', 'غیرفعال', 'pill', 'gray'],
+            default => ['offline', 'آفلاین', 'pill', 'gray'],
+        };
+
+        return compact('state', 'label', 'pill', 'color', 'free', 'total') + ['in_use' => $inUse];
     }
 
     public function stationFreeCount(Station $station): int
@@ -418,6 +447,24 @@ class MobileAppPresenter
         }
 
         return $this->charging->liveMetrics($session)['pct'];
+    }
+
+    public function homeActiveCard(?ChargingSession $session): ?array
+    {
+        if (! $session) {
+            return null;
+        }
+
+        $live = $this->charging->liveMetrics($session);
+
+        return [
+            'station' => trim(($session->station?->name ?? '').' · '.($session->charger?->charge_point_id ?? ''), ' ·'),
+            'pct' => (int) $live['pct'],
+            'energy' => Persian::kwh($live['energy']),
+            'power' => $live['power'] > 0 ? Persian::digits($live['power']).' kW' : '—',
+            'eta' => $live['eta'] ? '~'.Persian::digits((int) $live['eta']).' دقیقه' : '—',
+            'cost' => Persian::money($live['cost']),
+        ];
     }
 
     public function sessionLivePayload(ChargingSession $session): array

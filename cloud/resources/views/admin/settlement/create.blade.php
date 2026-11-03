@@ -43,7 +43,7 @@
             </div>
             <div class="form-grid">
               <div class="ffield"><label>هزینهٔ نگهداری (تومان)</label><input class="finput tnum" name="maintenance_fee" dir="ltr" style="text-align:right" id="maint" value="0"></div>
-              <div class="ffield"><label>مالیات ارزش افزوده</label><input class="finput tnum" dir="ltr" style="text-align:right" value="۹٪"></div>
+              <div class="ffield"><label>مالیات ارزش افزوده</label><input class="finput tnum" dir="ltr" style="text-align:right" value="{{ \App\Support\Persian::digits(config('safircharge.finance.vat_percent', 10)) }}٪" readonly></div>
             </div>
             <label class="toggle-row mt-12"><div><div class="fw7 fs13">کسر مالیات از سهم اپراتور</div><div class="fhint">در صورت غیرفعال بودن، سامانه پرداخت می‌کند</div></div><span class="switch on" data-sw><i></i></span></label>
           </div>

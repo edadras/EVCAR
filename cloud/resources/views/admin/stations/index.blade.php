@@ -7,7 +7,7 @@
         <div class="seg" id="statusSeg">
           <button class="active">همه ({{ Persian::digits($stats['total']) }})</button>
           <button>آنلاین ({{ Persian::digits($stats['online']) }})</button>
-          <button>خطا ({{ Persian::digits($stats['faulty']) }})</button>
+          <button>خطا / آفلاین ({{ Persian::digits($stats['faulty']) }})</button>
         </div>
       </div>
       <div class="flex gap-8">
@@ -18,9 +18,9 @@
 
     <!-- KPI کوچک -->
     <div class="kpi-grid" style="margin-bottom:16px">
-      <div class="mini-stat"><div class="ms-ic ic-blue" data-ic="station"></div><div><div class="ms-v tnum">{{ Persian::digits($stats['total']) }}</div><div class="ms-l">ایستگاه فعال</div></div></div>
+      <div class="mini-stat"><div class="ms-ic ic-blue" data-ic="station"></div><div><div class="ms-v tnum">{{ Persian::digits($stats['total']) }}</div><div class="ms-l">ایستگاه ثبت‌شده</div></div></div>
       <div class="mini-stat"><div class="ms-ic ic-green" data-ic="plug"></div><div><div class="ms-v tnum">{{ Persian::digits($stats['connectors']) }}</div><div class="ms-l">کانکتور نصب‌شده</div></div></div>
-      <div class="mini-stat"><div class="ms-ic ic-orange" data-ic="activity"></div><div><div class="ms-v tnum">{{ Persian::digits($kpis['utilization_percent'] ?? 0) }}٪</div><div class="ms-l">میانگین بهره‌برداری</div></div></div>
+      <div class="mini-stat"><div class="ms-ic ic-orange" data-ic="activity"></div><div><div class="ms-v tnum"><span id="utilPct">{{ Persian::digits($kpis['utilization_percent'] ?? 0) }}</span>٪</div><div class="ms-l">بهره‌برداری لحظه‌ای کانکتورها</div></div></div>
       <div class="mini-stat"><div class="ms-ic ic-violet" data-ic="leaf"></div><div><div class="ms-v tnum">{{ Persian::digits($stats['cities']) }} شهر</div><div class="ms-l">پوشش جغرافیایی</div></div></div>
     </div>
 
@@ -42,37 +42,25 @@
 
       <!-- لیست ایستگاه -->
       <div class="card" style="align-self:start">
-        <div class="card-head"><h3>فهرست ایستگاه‌ها</h3><div class="head-actions"><span class="muted fs12">مرتب: بهره‌برداری</span></div></div>
-        <div class="scroll-y" style="max-height:560px" id="stationList">
-          @foreach($stationsJs as $i => $st)
-          <div class="st-item {{ $i === 0 ? 'active' : '' }}" data-station="{{ $i }}" data-status="{{ $st['status'] }}" data-search="{{ $st['name'] }} {{ $st['city'] }} {{ $st['code'] }}">
-            <div class="st-top">
-              <span class="st-name">{{ $st['name'] }}</span>
-              <span class="pill {{ $st['pill'][0] }}">@if($st['pill'][0]==='pill-green')<span class="pdot"></span>@endif{{ $st['pill'][1] }}</span>
-            </div>
-            <div class="st-meta">{{ $st['city'] }} · {{ Persian::digits($st['chargers']) }} کانکتور @if(!empty($st['anpr']['enabled'])) · <span class="anpr-badge">ANPR</span>@endif</div>
-            <div class="st-bars"><div class="bar {{ $st['load']>85?'bar-orange':'' }}"><i style="width:{{ $st['load'] }}%"></i></div></div>
-            <div class="st-foot"><span class="muted">بهره‌برداری {{ Persian::digits($st['load']) }}٪</span><span class="tnum t2">{{ Persian::digits($st['charging']) }} فعال / {{ Persian::digits($st['free']) }} آزاد</span></div>
-          </div>
-          @endforeach
-        </div>
+        <div class="card-head"><h3>فهرست ایستگاه‌ها</h3><div class="head-actions"><span class="muted fs12">به‌روزرسانی: <b class="tnum" data-live-stamp>—</b></span></div></div>
+        <div class="scroll-y" style="max-height:560px" id="stationList"></div>
       </div>
     </div>
 
     <!-- جزئیات ایستگاه انتخاب‌شده -->
     <div class="card mt-16">
       <div class="card-head">
-        <div><h3 id="detName">ایستگاه میدان آزادی</h3><div class="ch-sub" id="detAddr">تهران، میدان آزادی، ابتدای بزرگراه لشکری · کد ایستگاه ST‑۱۰۰۱</div></div>
+        <div><h3 id="detName">—</h3><div class="ch-sub" id="detAddr">—</div></div>
         <div class="head-actions">
           <span class="pill" id="detPill">—</span>
-          <a href="/admin/remote" class="btn btn-sm">کنترل از راه دور</a>
-          <button class="btn btn-sm btn-primary">گزارش ایستگاه</button>
+          <a href="/admin/remote" class="btn btn-sm" id="detRemote">کنترل از راه دور</a>
+          <a href="#" class="btn btn-sm btn-primary" id="detShow">جزئیات ایستگاه</a>
         </div>
       </div>
       <div class="card-pad">
         <div class="grid g-3" style="margin-bottom:18px">
           <div class="det-stat"><div class="ds-l">انرژی امروز</div><div class="ds-v tnum" id="detEnergy">— <small>kWh</small></div></div>
-          <div class="det-stat"><div class="ds-l">درآمد امروز</div><div class="ds-v tnum" id="detRevenue">— <small>م تومان</small></div></div>
+          <div class="det-stat"><div class="ds-l">درآمد امروز</div><div class="ds-v tnum" id="detRevenue">— <small>تومان</small></div></div>
           <div class="det-stat"><div class="ds-l">جلسات امروز</div><div class="ds-v tnum" id="detSessions">—</div></div>
         </div>
 
@@ -127,70 +115,85 @@
 
 @push('scripts')
 <script>
-window.__STATIONS_DATA = {!! json_encode($stationsJs, JSON_UNESCAPED_UNICODE) !!};
+window.__STATIONS_DATA = @json($stationsJs);
 (function () {
+  var UI = window.AdminUI, fa = UI.fa, esc = UI.esc;
   document.querySelectorAll('[data-ic]').forEach(function (el) { el.innerHTML = window.icon(el.getAttribute('data-ic')); });
 
-  var stMap={busy:{c:'green',p:'pill-green',l:'در حال شارژ'},free:{c:'blue',p:'pill-accent',l:'آماده'},fault:{c:'red',p:'pill-red',l:'خطا'},offline:{c:'gray',p:'pill',l:'آفلاین'}};
-  function renderConns(idx){
-    var st=(window.__STATIONS_DATA||[])[idx]; if(!st)return;
-    document.getElementById('connectors').innerHTML=(st.connectors||[]).map(function(c){
-      var s=stMap[c.st]||stMap.free;
-      return '<div class="conn"><div class="conn-top"><div class="conn-ic ic-'+s.c+'">'+window.icon('plug')+'</div><div><div class="conn-id">کانکتور '+c.id+'</div><div class="conn-type">'+c.type+'</div></div><div class="conn-pw"><b class="tnum">'+c.pw+'</b></div></div><div class="flex between items-center mt-12"><span class="pill '+s.p+'"><span class="pdot"></span>'+s.l+'</span><span class="muted fs12">'+(c.u||'—')+'</span></div></div>';
-    }).join('');
-    var pill=document.getElementById('detPill'), sp=st.pill||['pill','—'];
-    pill.className='pill '+sp[0];
-    pill.innerHTML=(sp[0]==='pill-green'?'<span class="pdot"></span>':'')+sp[1];
-    document.getElementById('detName').textContent='ایستگاه '+st.name;
-    document.getElementById('detAddr').textContent=(st.city||'')+'، '+(st.address||'')+' · کد '+st.code;
-    document.getElementById('detEnergy').innerHTML=(st.today_energy||'۰')+' <small>kWh</small>';
-    document.getElementById('detRevenue').innerHTML=(st.today_revenue||'۰')+' <small>م تومان</small>';
-    document.getElementById('detSessions').textContent=st.today_sessions||'۰';
-    var remote=document.querySelector('.card-head .head-actions a[href="/admin/remote"]');
-    if(remote&&st.id) remote.href='/admin/remote?station='+st.id;
-    var anpr=st.anpr||{};
-    var anprBox=document.getElementById('anprSummary');
-    var anprTitle=document.getElementById('anprSectionTitle');
-    if(anpr.enabled){
-      anprTitle.hidden=false;anprBox.hidden=false;
-      anprBox.innerHTML='<div class="as-row"><span class="muted">دوربین‌های فعال</span><b class="tnum">'+anpr.cameras+'</b></div>'+
-        '<div class="as-row"><span class="muted">تشخیص امروز</span><b class="tnum">'+anpr.today+'</b></div>'+
-        (anpr.last_plate?'<div class="as-row"><span class="muted">آخرین پلاک</span><b>'+anpr.last_plate+(anpr.last_time?' · '+anpr.last_time:'')+'</b></div>':'')+
-        '<a href="'+anpr.anpr_url+'" class="btn btn-sm mt-12" style="width:100%">مدیریت پلاک‌خوان</a>';
-    }else{
-      anprTitle.hidden=true;anprBox.hidden=true;anprBox.innerHTML='';
-    }
-  }
-  document.querySelectorAll('.st-item').forEach(function(it){
-    it.addEventListener('click',function(){
-      document.querySelectorAll('.st-item').forEach(function(x){x.classList.remove('active');});
-      it.classList.add('active');
-      renderConns(+it.getAttribute('data-station'));
-    });
-  });
-  if(window.__STATIONS_DATA&&window.__STATIONS_DATA.length)renderConns(0);
+  var DATA = [], selectedId = null;
+  var stMap = { busy: { c: 'green', p: 'pill-green', l: 'در حال استفاده' }, free: { c: 'blue', p: 'pill-accent', l: 'آماده' }, fault: { c: 'red', p: 'pill-red', l: 'خطا' }, offline: { c: 'gray', p: 'pill', l: 'آفلاین' } };
 
-  var statusKeys=['all','online','error'];
-  function applyStationFilter(){
-    var active=document.querySelector('#statusSeg button.active');
-    var i=[].indexOf.call(document.querySelectorAll('#statusSeg button'),active);
-    var f=statusKeys[i]||'all';
-    var q=window.AdminUI?window.AdminUI.normalize(document.getElementById('stationSearch').value):'';
-    document.querySelectorAll('.st-item').forEach(function(el){
-      var st=el.getAttribute('data-status');
-      var segOk=f==='all'||(f==='online'&&(st==='online'||st==='busy'))||(f==='error'&&st==='error');
-      var text=window.AdminUI?window.AdminUI.normalize(el.getAttribute('data-search')||''):'';
-      el.style.display=segOk&&(!q||text.indexOf(q)!==-1)?'':'none';
+  function renderList() {
+    document.getElementById('stationList').innerHTML = DATA.map(function (st) {
+      var p = st.pill || ['pill', '—'];
+      return '<div class="st-item' + (st.id === selectedId ? ' active' : '') + '" data-id="' + st.id + '" data-status="' + st.status + '" data-search="' + esc(st.name + ' ' + (st.city || '') + ' ' + (st.code || '')) + '">' +
+        '<div class="st-top"><span class="st-name">' + esc(st.name) + '</span><span class="pill ' + p[0] + '">' + (p[0] === 'pill-green' ? '<span class="pdot"></span>' : '') + esc(p[1]) + '</span></div>' +
+        '<div class="st-meta">' + esc(st.city || '') + ' · ' + fa((st.connectors || []).length, 0) + ' کانکتور' + (st.anpr && st.anpr.enabled ? ' · <span class="anpr-badge">ANPR</span>' : '') + '</div>' +
+        '<div class="st-bars"><div class="bar ' + (st.load > 85 ? 'bar-orange' : '') + '"><i style="width:' + st.load + '%"></i></div></div>' +
+        '<div class="st-foot"><span class="muted">بهره‌برداری ' + fa(st.load, 0) + '٪</span><span class="tnum t2">' + fa(st.charging, 0) + ' فعال / ' + fa(st.free, 0) + ' آزاد</span></div></div>';
+    }).join('') || '<div class="muted" style="padding:20px;text-align:center">ایستگاهی ثبت نشده</div>';
+    applyStationFilter();
+  }
+
+  function renderDetail() {
+    var st = DATA.filter(function (s) { return s.id === selectedId; })[0]; if (!st) return;
+    document.getElementById('connectors').innerHTML = (st.connectors || []).map(function (c) {
+      var s = stMap[c.st] || stMap.free;
+      return '<div class="conn"><div class="conn-top"><div class="conn-ic ic-' + s.c + '">' + window.icon('plug') + '</div><div><div class="conn-id">' + esc(c.id) + '</div><div class="conn-type">' + esc(c.type) + '</div></div><div class="conn-pw"><b class="tnum">' + esc(c.pw) + '</b></div></div><div class="flex between items-center mt-12"><span class="pill ' + s.p + '"><span class="pdot"></span>' + s.l + '</span><span class="muted fs12">' + esc(c.u || '—') + '</span></div></div>';
+    }).join('') || '<div class="muted">کانکتوری ثبت نشده</div>';
+    var pill = document.getElementById('detPill'), sp = st.pill || ['pill', '—'];
+    pill.className = 'pill ' + sp[0];
+    pill.innerHTML = (sp[0] === 'pill-green' ? '<span class="pdot"></span>' : '') + esc(sp[1]);
+    document.getElementById('detName').textContent = st.name;
+    document.getElementById('detAddr').textContent = [st.city, st.address].filter(Boolean).join('، ') + ' · کد ' + (st.code || '—');
+    document.getElementById('detEnergy').innerHTML = esc(st.today_energy || '۰') + ' <small>kWh</small>';
+    document.getElementById('detRevenue').innerHTML = esc(st.today_revenue || '۰') + ' <small>تومان</small>';
+    document.getElementById('detSessions').textContent = st.today_sessions || '۰';
+    document.getElementById('detRemote').href = st.remoteUrl || '/admin/remote';
+    document.getElementById('detShow').href = UI.apiBase() + '/stations/' + st.id;
+    var anpr = st.anpr || {}, anprBox = document.getElementById('anprSummary'), anprTitle = document.getElementById('anprSectionTitle');
+    if (anpr.enabled) {
+      anprTitle.hidden = false; anprBox.hidden = false;
+      anprBox.innerHTML = '<div class="as-row"><span class="muted">دوربین‌های فعال</span><b class="tnum">' + esc(anpr.cameras) + '</b></div>' +
+        '<div class="as-row"><span class="muted">تشخیص امروز</span><b class="tnum">' + esc(anpr.today) + '</b></div>' +
+        (anpr.last_plate ? '<div class="as-row"><span class="muted">آخرین پلاک</span><b>' + esc(anpr.last_plate) + (anpr.last_time ? ' · ' + esc(anpr.last_time) : '') + '</b></div>' : '') +
+        '<a href="' + esc(anpr.anpr_url) + '" class="btn btn-sm mt-12" style="width:100%">مدیریت پلاک‌خوان</a>';
+    } else { anprTitle.hidden = true; anprBox.hidden = true; anprBox.innerHTML = ''; }
+  }
+
+  document.getElementById('stationList').addEventListener('click', function (e) {
+    var it = e.target.closest('.st-item'); if (!it) return;
+    selectedId = +it.getAttribute('data-id');
+    document.querySelectorAll('.st-item').forEach(function (x) { x.classList.toggle('active', x === it); });
+    renderDetail();
+  });
+
+  var statusKeys = ['all', 'online', 'error'];
+  function applyStationFilter() {
+    var i = [].indexOf.call(document.querySelectorAll('#statusSeg button'), document.querySelector('#statusSeg button.active'));
+    var f = statusKeys[i] || 'all', q = UI.normalize(document.getElementById('stationSearch').value);
+    document.querySelectorAll('.st-item').forEach(function (el) {
+      var st = el.getAttribute('data-status');
+      var segOk = f === 'all' || (f === 'online' && (st === 'online' || st === 'busy')) || (f === 'error' && (st === 'error' || st === 'offline'));
+      el.style.display = segOk && (!q || UI.normalize(el.getAttribute('data-search') || '').indexOf(q) !== -1) ? '' : 'none';
     });
   }
-  document.querySelectorAll('#statusSeg button').forEach(function(b){
-    b.addEventListener('click',function(){
-      document.querySelectorAll('#statusSeg button').forEach(function(x){x.classList.remove('active');});
-      b.classList.add('active');
-      applyStationFilter();
+  document.querySelectorAll('#statusSeg button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      document.querySelectorAll('#statusSeg button').forEach(function (x) { x.classList.remove('active'); });
+      b.classList.add('active'); applyStationFilter();
     });
   });
-  document.getElementById('stationSearch').addEventListener('input',applyStationFilter);
+  document.getElementById('stationSearch').addEventListener('input', applyStationFilter);
+
+  function apply(stations, util) {
+    DATA = stations || [];
+    if (selectedId === null || !DATA.some(function (s) { return s.id === selectedId; })) selectedId = DATA.length ? DATA[0].id : null;
+    renderList(); renderDetail();
+    if (util != null) document.getElementById('utilPct').textContent = fa(util);
+  }
+  apply(window.__STATIONS_DATA, null);
+  UI.live('stations', 15000, function (d) { apply(d.stations, d.utilization); });
 })();
 </script>
 @endpush

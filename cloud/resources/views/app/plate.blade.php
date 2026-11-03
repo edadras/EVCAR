@@ -6,10 +6,10 @@
 @php
 use App\Support\Persian;
 $vehicle = $vehicles->firstWhere('is_default', true) ?? $vehicles->first();
-$d2 = $vehicle ? Persian::digits($vehicle->plate_two) : '۱۲';
+$d2 = $vehicle?->plate_two ? Persian::digits($vehicle->plate_two) : '';
 $letter = $vehicle?->plate_letter ?? 'س';
-$d3 = $vehicle ? Persian::digits($vehicle->plate_three) : '۳۴۵';
-$prov = $vehicle ? Persian::digits($vehicle->plate_province) : '۱۱';
+$d3 = $vehicle?->plate_three ? Persian::digits($vehicle->plate_three) : '';
+$prov = $vehicle?->plate_province ? Persian::digits($vehicle->plate_province) : '';
 @endphp
 <div class="appbar" style="padding-top:2px">
     <a href="{{ route('app.account') }}" class="ab-btn"><span data-ic="back"></span></a>
@@ -34,7 +34,7 @@ $prov = $vehicle ? Persian::digits($vehicle->plate_province) : '۱۱';
     <div class="card card-p">
         <div class="plate-edit" id="plateEdit">
             <span class="pe-flag"><i></i><i></i><i></i></span>
-            <span class="pe-seg"><input class="pe-d2 tnum" name="plate_two" maxlength="2" value="{{ $d2 }}" inputmode="numeric" required><small>دو رقم</small></span>
+            <span class="pe-seg"><input class="pe-d2 tnum" name="plate_two" maxlength="2" value="{{ $d2 }}" placeholder="۱۲" inputmode="numeric" required><small>دو رقم</small></span>
             <span class="pe-seg">
                 <select class="pe-let" name="plate_letter">
                     @foreach(['الف','ب','ج','د','س','ص','ط','ق','ل','م','ن','و','ه','ی','معلولین'] as $l)
@@ -43,8 +43,8 @@ $prov = $vehicle ? Persian::digits($vehicle->plate_province) : '۱۱';
                 </select>
                 <small>حرف</small>
             </span>
-            <span class="pe-seg"><input class="pe-d3 tnum" name="plate_three" maxlength="3" value="{{ $d3 }}" inputmode="numeric" required><small>سه رقم</small></span>
-            <span class="pe-seg"><input class="pe-prov tnum" name="plate_province" maxlength="2" value="{{ $prov }}" inputmode="numeric" required><small>استان</small></span>
+            <span class="pe-seg"><input class="pe-d3 tnum" name="plate_three" maxlength="3" value="{{ $d3 }}" placeholder="۳۴۵" inputmode="numeric" required><small>سه رقم</small></span>
+            <span class="pe-seg"><input class="pe-prov tnum" name="plate_province" maxlength="2" value="{{ $prov }}" placeholder="۱۱" inputmode="numeric" required><small>استان</small></span>
         </div>
     </div>
     </form>

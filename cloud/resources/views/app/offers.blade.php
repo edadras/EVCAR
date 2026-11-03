@@ -13,7 +13,7 @@
             return Persian::digits((int) $c->discount_percent).'%';
         }
         if ($c->bonus_amount) {
-            return Persian::money((int) round((float) $c->bonus_amount / 1000)).'K';
+            return Persian::money((int) round((float) $c->bonus_amount / 10000)).'K';
         }
 
         return '★';
@@ -36,7 +36,7 @@
             $parts[] = Persian::money((int) round((float) $c->bonus_amount / 10)).' تومان اعتبار';
         }
         if ($c->ends_at) {
-            $parts[] = 'تا '.Persian::digits($c->ends_at->format('Y/m/d'));
+            $parts[] = 'تا '.Persian::date($c->ends_at);
         }
 
         return implode(' · ', $parts) ?: ($c->conditions['summary'] ?? 'طرح فعال SafirCharge');

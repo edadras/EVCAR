@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="/assets/admin/app.css">
     @stack('styles')
 </head>
-<body data-page="{{ $page ?? 'dashboard' }}" data-title="{{ $title ?? '' }}" data-crumb="{{ $crumb ?? 'مدیریت شبکه' }}" data-admin-base="{{ rtrim(route('admin.dashboard'), '/') }}" data-nav='@json($navStats ?? [])'>
+<body data-page="{{ $page ?? 'dashboard' }}" data-title="{{ $title ?? '' }}" data-crumb="{{ $crumb ?? 'مدیریت شبکه' }}" data-admin-base="{{ rtrim(route('admin.dashboard'), '/') }}" data-nav='@json($navStats ?? [])' data-me='@json($adminMe ?? [])'>
 <div class="app">
 <div class="main">
     <div class="content">

@@ -222,8 +222,8 @@ window.__RESERVE = @json($reserveConfig);
           '<span class="pill pill-muted">'+lbl+'</span></div>';
       }
       return '<div class="conn'+sel+'" data-id="'+c.db_id+'"><div class="cn-ic ic-orange">'+window.icon('plug')+'</div>'+
-        '<div class="cn-main"><div class="cn-t">کانکتور '+c.id+'</div><div class="cn-s">خودروی فعلی: '+fa(c.soc||0)+'٪ شارژ شده</div>'+
-        '<div class="cn-prog"><i style="width:'+(c.soc||0)+'%"></i></div></div>'+
+        '<div class="cn-main"><div class="cn-t">کانکتور '+c.id+'</div><div class="cn-s">'+(c.soc!=null?'خودروی فعلی: '+fa(c.soc)+'٪ شارژ شده':'در حال شارژ')+'</div>'+
+        (c.soc!=null?'<div class="cn-prog"><i style="width:'+c.soc+'%"></i></div>':'')+'</div>'+
         '<div class="cn-eta"><div class="e-v">'+(c.eta?'~'+fa(c.eta)+' دق':'—')+'</div><div class="e-l">تا آزاد شدن</div></div></div>';
     }).join('');
     document.querySelectorAll('#connList .conn.free').forEach(function(el){
@@ -285,6 +285,19 @@ window.__RESERVE = @json($reserveConfig);
   document.getElementById('closeStationOv').addEventListener('click',function(){document.getElementById('stationOv').classList.remove('show');});
 
   buildDays(); updateStationUi();
+
+  window.scLive('reserve',15000,function(d){
+    if(!d.station||d.station.id!==stationId)return;
+    var st=station();
+    if(!st)return;
+    st.stats=d.station.stats;st.connectors=d.station.connectors;
+    var keep=selConnectorId;
+    if(keep&&!st.connectors.some(function(c){return c.db_id===keep&&c.free;}))keep=null;
+    document.getElementById('statFree').textContent=fa(st.stats.free||0);
+    document.getElementById('statBusy').textContent=fa(st.stats.busy||0);
+    document.getElementById('statSoon').textContent=fa(st.stats.soon||0);
+    selConnectorId=keep;renderConnectors();updateBar();
+  },{get station(){return stationId;}});
 })();
 </script>
 @endpush

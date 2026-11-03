@@ -59,15 +59,11 @@
 
       <div class="grid col-2-1 mt-16">
         <div class="card">
-          <div class="card-head"><div><h3>ساختار تعرفهٔ ساعتی</h3><div class="ch-sub">قیمت‌گذاری اوج / غیراوج مصرف</div></div></div>
+          <div class="card-head"><div><h3>ساختار تعرفهٔ ساعتی (امروز)</h3><div class="ch-sub">{{ $hourlyTariff ? 'قیمت هر kWh در تعرفهٔ «'.$hourlyTariff->name.'» بر اساس قوانین اوج/کم‌باری' : 'تعرفهٔ فعالی تعریف نشده' }}</div></div></div>
           <div class="card-pad">
             <svg id="peakChart" width="100%" height="190" viewBox="0 0 680 190" preserveAspectRatio="none"></svg>
             <div class="chart-axis" id="peakAxis"></div>
-            <div class="flex gap-16 mt-16">
-              <span class="legend-inline"><i style="background:var(--red)"></i>اوج مصرف (۱۷–۲۲) · ۴٬۵۰۰ تومان</span>
-              <span class="legend-inline"><i style="background:var(--accent)"></i>عادی · ۳٬۲۰۰ تومان</span>
-              <span class="legend-inline"><i style="background:var(--green)"></i>کم‌باری (۰۰–۰۶) · ۲٬۱۰۰ تومان</span>
-            </div>
+            <div class="flex gap-16 mt-16" id="peakLegend"></div>
           </div>
         </div>
         <div class="card">
@@ -258,14 +254,18 @@ html[dir=rtl] .switch.on i{transform:translateX(-18px)}
 
   // نمودار اوج مصرف
   (function(){
-    var hrs=[2.1,2.1,2.1,2.1,2.1,2.1,3.2,3.2,3.2,3.2,3.2,3.2,3.2,3.2,3.2,3.2,3.2,4.5,4.5,4.5,4.5,4.5,3.2,2.1];
-    var W=680,H=190,pad=10,max=5,bw=(W-pad*2)/24-3;
-    var bars=hrs.map(function(v,i){
-      var x=pad+i*((W-pad*2)/24), h=(H-pad*2)*(v/max), y=H-pad-h;
-      var c=v>4?'var(--red)':(v<2.5?'var(--green)':'var(--accent)');
-      return '<rect x="'+x+'" y="'+y+'" width="'+bw+'" height="'+h+'" rx="3" fill="'+c+'"/>';
+    var rows=@json($hourlyPrices);
+    if(!rows.length)return;
+    var colors={peak:'var(--red)',off_peak:'var(--green)',weekend:'var(--violet)',normal:'var(--accent)'};
+    var labels={peak:'اوج مصرف',off_peak:'کم‌باری',weekend:'آخر هفته',normal:'عادی'};
+    var W=680,H=190,pad=10,max=Math.max.apply(null,rows.map(function(r){return r.toman;}).concat([1]))*1.1,bw=(W-pad*2)/24-3;
+    var bars=rows.map(function(r,i){
+      var x=pad+i*((W-pad*2)/24), h=(H-pad*2)*(r.toman/max), y=H-pad-h;
+      return '<rect x="'+x+'" y="'+y+'" width="'+bw+'" height="'+h+'" rx="3" fill="'+(colors[r.type]||colors.normal)+'"><title>'+r.h+':00 — '+r.toman.toLocaleString('fa-IR')+' تومان</title></rect>';
     }).join('');
     document.getElementById('peakChart').innerHTML=bars;
+    var seen={};rows.forEach(function(r){seen[r.type]=r.toman;});
+    document.getElementById('peakLegend').innerHTML=Object.keys(seen).map(function(t){return '<span class="legend-inline"><i style="background:'+(colors[t]||colors.normal)+'"></i>'+(labels[t]||t)+' · '+seen[t].toLocaleString('fa-IR')+' تومان</span>';}).join('');
     var ax=document.getElementById('peakAxis');['۰۰','۰۶','۱۲','۱۸','۲۴'].forEach(function(t){var s=document.createElement('span');s.textContent=t;ax.appendChild(s);});
   })();
 

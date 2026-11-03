@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\ChargingSessionController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\EvCatalogVehicleController;
 use App\Http\Controllers\Admin\InsightsController;
+use App\Http\Controllers\Admin\LiveController;
 use App\Http\Controllers\Admin\NotificationController;
 use App\Http\Controllers\Admin\PageController;
 use App\Http\Controllers\Admin\PartnerController;
@@ -50,6 +51,8 @@ Route::middleware(['auth', 'staff'])->group(function () {
         Route::get('stations/{station}/remote-live', [RemoteCommandController::class, 'live'])->name('remote-command.live');
         Route::get('reports/data', [ApiController::class, 'reportsData'])->name('reports.data');
         Route::post('sessions/{session}/stop', [ApiController::class, 'stopSession'])->name('sessions.stop');
+        Route::get('live/{section}', [LiveController::class, 'show'])->name('live')
+            ->where('section', 'nav|dashboard|monitoring|sessions|stations');
     });
 
     // مدیریت شبکه

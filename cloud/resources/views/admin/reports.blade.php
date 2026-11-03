@@ -128,8 +128,8 @@
   };
 
   var heads={
-    energy:['دوره','جلسات','انرژی (kWh)','میانگین هر جلسه','اوج توان'],
-    revenue:['دوره','تراکنش','درآمد ناخالص','کارمزد','درآمد خالص'],
+    energy:['دوره','جلسات','انرژی (kWh)','میانگین هر جلسه','بیشینه توان نامی'],
+    revenue:['دوره','جلسهٔ پرداختی','درآمد ناخالص (تومان)','سهم شرکا','سهم پلتفرم'],
     sessions:['دوره','جلسات','موفق','ناموفق','میانگین مدت'],
     users:['دوره','کاربر جدید','فعال','جلسات','میانگین موجودی'],
     stations:['ایستگاه','جلسات','انرژی','بهره‌برداری','درآمد']
@@ -149,17 +149,18 @@
     return {
       energy:pack('energy',root),revenue:pack('revenue',root),sessions:pack('sessions',root),
       users:pack('users',root),stations:pack('stations',root),
-      chartPoints:root.chartPoints||30,chartSubtitle:root.chartSubtitle||''
+      chartPoints:root.chartPoints||30,chartSubtitle:root.chartSubtitle||'',labels:root.labels||[]
     };
   }
 
   var DATA=buildData(RJ);
 
   function axisLabels(n){
-    if(n<=7)return ['۱','۲','۳','۴','۵','۶','۷'];
-    if(n<=13)return ['۱','۳','۵','۷','۹','۱۱','۱۳'];
-    if(n<=12)return ['۱','۲','۳','۴','۵','۶','۷','۸','۹','۱۰','۱۱','۱۲'];
-    return ['۱','۵','۱۰','۱۵','۲۰','۲۵','۳۰'];
+    var L=DATA.labels||[];
+    if(!L.length)return [];
+    var k=Math.min(L.length,7),out=[];
+    for(var i=0;i<k;i++){out.push(L[k===1?0:Math.round(i*(L.length-1)/(k-1))]);}
+    return out;
   }
 
   function renderKPIs(d){
@@ -189,7 +190,9 @@
     var ax=document.getElementById('axis');ax.innerHTML='';
     axisLabels(n).forEach(function(t){var s=document.createElement('span');s.textContent=t;ax.appendChild(s);});
     document.getElementById('chartTitle').textContent=d.title;
-    document.getElementById('chartSub').textContent=DATA.chartSubtitle||'';
+    var units={energy:' kWh',revenue:' تومان',sessions:' جلسه',users:' کاربر',stations:' جلسه'};
+    var peak=Math.max.apply(null,vals.concat([0]));
+    document.getElementById('chartSub').textContent=(DATA.chartSubtitle||'')+' · بیشینه: '+Number(peak).toLocaleString('fa-IR',{maximumFractionDigits:2})+(units[cur]||'');
   }
 
   function renderDonut(d){

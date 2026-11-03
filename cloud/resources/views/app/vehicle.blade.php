@@ -108,7 +108,7 @@ $modelOptions = collect($catalogModels)
             <label class="fld-l mt16">شماره پلاک</label>
             <div class="plate-edit" id="plateEdit">
                 <span class="pe-flag" aria-hidden="true"><i></i><i></i><i></i></span>
-                <span class="pe-seg"><input class="pe-d2 tnum" id="plateTwo" name="plate_two" maxlength="2" value="۱۲" inputmode="numeric" autocomplete="off" required><small>دو رقم</small></span>
+                <span class="pe-seg"><input class="pe-d2 tnum" id="plateTwo" name="plate_two" maxlength="2" value="" placeholder="۱۲" inputmode="numeric" autocomplete="off" required><small>دو رقم</small></span>
                 <span class="pe-seg">
                     <select class="pe-let" id="plateLetter" name="plate_letter">
                         @foreach($plateLetters as $l)
@@ -117,8 +117,8 @@ $modelOptions = collect($catalogModels)
                     </select>
                     <small>حرف</small>
                 </span>
-                <span class="pe-seg"><input class="pe-d3 tnum" id="plateThree" name="plate_three" maxlength="3" value="۳۴۵" inputmode="numeric" autocomplete="off" required><small>سه رقم</small></span>
-                <span class="pe-seg"><input class="pe-prov tnum" id="plateProvince" name="plate_province" maxlength="2" value="۱۱" inputmode="numeric" autocomplete="off" required><small>استان</small></span>
+                <span class="pe-seg"><input class="pe-d3 tnum" id="plateThree" name="plate_three" maxlength="3" value="" placeholder="۳۴۵" inputmode="numeric" autocomplete="off" required><small>سه رقم</small></span>
+                <span class="pe-seg"><input class="pe-prov tnum" id="plateProvince" name="plate_province" maxlength="2" value="" placeholder="۱۱" inputmode="numeric" autocomplete="off" required><small>استان</small></span>
             </div>
 
             <input type="hidden" name="is_default" value="0" id="isDefault">
@@ -258,10 +258,10 @@ html[dir=rtl] .switch.on i{transform:translateX(-20px)}
     formMethod.value='POST';
     document.getElementById('modelSel').selectedIndex=0;
     document.getElementById('batteryInput').value='60';
-    setPlateField(plateTwo,'۱۲');
+    setPlateField(plateTwo,'');
     setPlateField(plateLetter,'س');
-    setPlateField(plateThree,'۳۴۵');
-    setPlateField(plateProvince,'۱۱');
+    setPlateField(plateThree,'');
+    setPlateField(plateProvince,'');
     setDefaultSwitch(true);
     openSheet();
   }

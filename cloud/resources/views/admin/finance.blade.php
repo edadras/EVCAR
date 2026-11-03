@@ -3,9 +3,9 @@
 @section('content')
 @php use App\Support\Persian; @endphp
 <div class="flex between items-center mt-8" style="margin-bottom:18px">
-      <div class="seg" id="rangeSeg"><button>هفته</button><button class="active">ماه</button><button>فصل</button><button>سال</button></div>
+      <span class="muted fs12">مبالغ به تومان · فقط جلسات پایان‌یافته</span>
       <div class="flex gap-8">
-        <button class="btn btn-sm"><span class="bic" data-ic="download"></span> گزارش مالیاتی</button>
+        <a class="btn btn-sm" href="{{ route('admin.exports', 'tax') }}"><span class="bic" data-ic="download"></span> گزارش مالیاتی</a>
         <a href="/admin/settlement/create" class="btn btn-sm btn-primary">تسویهٔ جدید</a>
       </div>
     </div>
@@ -14,26 +14,26 @@
       <div class="kpi">
         <div class="kpi-ic ic-green" data-ic="coins"></div>
         <div class="kpi-label">درآمد ناخالص (ماه)</div>
-        <div class="kpi-val tnum">{{ Persian::digits(round($monthRevenue / 10 / 1_000_000_000, 2)) }} <small>میلیارد تومان</small></div>
-        <div class="kpi-foot"><span class="muted">ماه جاری</span></div>
+        <div class="kpi-val tnum">{{ Persian::money((int) round($monthRevenue / 10)) }} <small>تومان</small></div>
+        <div class="kpi-foot"><span class="muted">ماه جاری (میلادی)</span></div>
       </div>
       <div class="kpi">
         <div class="kpi-ic ic-blue" data-ic="chart"></div>
-        <div class="kpi-label">سهم اپراتورها</div>
-        <div class="kpi-val tnum">{{ Persian::digits(round($paidSettlements / 10 / 1_000_000_000, 2)) }} <small>میلیارد</small></div>
+        <div class="kpi-label">سهم پرداخت‌شدهٔ اپراتورها</div>
+        <div class="kpi-val tnum">{{ Persian::money((int) round($paidSettlements / 10)) }} <small>تومان</small></div>
         <div class="kpi-foot"><span class="muted">تسویه‌شده</span></div>
       </div>
       <div class="kpi">
         <div class="kpi-ic ic-orange" data-ic="receipt"></div>
         <div class="kpi-label">تسویه‌های در انتظار</div>
-        <div class="kpi-val tnum">{{ Persian::digits(round($pendingSettlements / 10 / 1_000_000)) }} <small>میلیون</small></div>
+        <div class="kpi-val tnum">{{ Persian::money((int) round($pendingSettlements / 10)) }} <small>تومان</small></div>
         <div class="kpi-foot"><span class="muted">در صف تسویه</span></div>
       </div>
       <div class="kpi">
         <div class="kpi-ic ic-violet" data-ic="leaf"></div>
-        <div class="kpi-label">مالیات بر ارزش افزوده</div>
-        <div class="kpi-val tnum">{{ Persian::digits(round($monthRevenue * 0.09 / 10 / 1_000_000)) }} <small>میلیون</small></div>
-        <div class="kpi-foot"><span class="muted">۹٪ · آمادهٔ اظهار</span></div>
+        <div class="kpi-label">مالیات بر ارزش افزوده (ماه)</div>
+        <div class="kpi-val tnum">{{ Persian::money((int) round($monthRevenue * $taxRate / (100 + $taxRate) / 10)) }} <small>تومان</small></div>
+        <div class="kpi-foot"><span class="muted">{{ Persian::digits($taxRate) }}٪ · مبالغ شامل مالیات</span></div>
       </div>
     </div>
 
@@ -43,8 +43,8 @@
         <div class="card-head">
           <div><h3>درآمد و سهم تفکیکی</h3><div class="ch-sub">۳۰ روز گذشته</div></div>
           <div class="head-actions">
-            <span class="legend-inline"><i style="background:var(--accent)"></i>درآمد خالص</span>
-            <span class="legend-inline"><i style="background:var(--orange)"></i>سهم اپراتور</span>
+            <span class="legend-inline"><i style="background:var(--accent)"></i>درآمد ناخالص روزانه · بیشینه <b class="tnum" id="revMax">—</b></span>
+            <span class="legend-inline"><i style="background:var(--orange)"></i>سهم اپراتورها</span>
           </div>
         </div>
         <div class="card-pad">
@@ -90,7 +90,7 @@
     <div class="card mt-16">
       <div class="card-head">
         <div><h3>دفتر کل مالی</h3><div class="ch-sub">آخرین رویدادهای حسابداری</div></div>
-        <div class="head-actions"><button class="btn btn-sm"><span class="bic" data-ic="download"></span> خروجی دفتر کل</button></div>
+        <div class="head-actions"><a class="btn btn-sm" href="{{ route('admin.exports', 'revenue') }}"><span class="bic" data-ic="download"></span> خروجی درآمد</a></div>
       </div>
       <div class="table-wrap">
         <table class="tbl">
@@ -121,10 +121,11 @@
   (function(){
     var net=FD.net||[];
     var op=FD.op||[];
-    var max=Math.max.apply(null,net.concat([1]));
+    var max=Math.max.apply(null,net.concat(op).concat([1]));
+    document.getElementById('revMax').textContent=Math.max.apply(null,net.concat([0])).toLocaleString('fa-IR')+' تومان';
     var W=720,H=250,pad=12;
     function path(vals,area){
-      var step=(W-pad*2)/(vals.length-1);
+      var step=(W-pad*2)/Math.max(1,vals.length-1);
       var d=vals.map(function(v,i){var x=pad+i*step;var y=pad+(H-pad*2)*(1-v/max);return (i?'L':'M')+x.toFixed(1)+' '+y.toFixed(1);}).join(' ');
       if(area)d+=' L'+(W-pad)+' '+(H-pad)+' L'+pad+' '+(H-pad)+' Z';
       return d;
@@ -136,7 +137,7 @@
       '<path d="'+path(net,true)+'" fill="url(#gR)"/>'+
       '<path d="'+path(net)+'" fill="none" stroke="var(--accent)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>'+
       '<path d="'+path(op)+'" fill="none" stroke="var(--orange)" stroke-width="2.2" stroke-dasharray="2 4" stroke-linecap="round" stroke-linejoin="round"/>';
-    var ax=document.getElementById('revAxis');['۱','۵','۱۰','۱۵','۲۰','۲۵','۳۰'].forEach(function(t){var s=document.createElement('span');s.textContent=t;ax.appendChild(s);});
+    var ax=document.getElementById('revAxis');(FD.days||[]).forEach(function(t,i,a){if(i%5===0||i===a.length-1){var s=document.createElement('span');s.textContent=t;ax.appendChild(s);}});
   })();
 
   var setFilter='all';

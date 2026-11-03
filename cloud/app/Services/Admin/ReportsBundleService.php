@@ -15,9 +15,25 @@ use Illuminate\Database\Eloquent\Builder;
 
 class ReportsBundleService
 {
-    private const DC_CONNECTORS = ['CCS2', 'CHAdeMO', 'CCS1'];
+    private const AC_CONNECTORS = ['Type2', 'Type1', 'AC', 'GBT-AC'];
 
-    private const AC_CONNECTORS = ['Type2', 'Type1', 'AC'];
+    private function dcScope(): \Closure
+    {
+        return fn ($q) => $q->where(fn ($w) => $w->whereNull('connector_type')->orWhereNotIn('connector_type', self::AC_CONNECTORS));
+    }
+
+    private function acScope(): \Closure
+    {
+        return fn ($q) => $q->whereIn('connector_type', self::AC_CONNECTORS);
+    }
+
+    private function partnerShareOf(Builder $q): float
+    {
+        return (float) (clone $q)->finished()
+            ->join('stations as rs', 'charging_sessions.station_id', '=', 'rs.id')
+            ->join('partners as rp', 'rs.partner_id', '=', 'rp.id')
+            ->sum(\Illuminate\Support\Facades\DB::raw('charging_sessions.cost_amount * COALESCE(rp.revenue_share_percent, 0) / 100'));
+    }
 
     /** @param  array<string, mixed>  $input */
     public function resolveFilters(array $input): array
@@ -84,11 +100,13 @@ class ReportsBundleService
         $revenueRows = [];
         $sessionRows = [];
         $userRows = [];
+        $labels = [];
 
         foreach ($buckets as $i => $bucket) {
             $stats = $this->bucketStats($baseQuery, $bucket['start'], $bucket['end']);
-            $energyVals[] = (int) round($stats['energy']);
-            $revenueVals[] = (int) round($stats['revenue'] / 10 / 1_000_000);
+            $labels[] = $bucket['label'];
+            $energyVals[] = round($stats['energy'], 2);
+            $revenueVals[] = (int) round($stats['revenue'] / 10);
             $sessionVals[] = $stats['sessions'];
             $stationVals[] = $stats['sessions'];
             $userVals[] = $stats['new_users'];
@@ -100,16 +118,14 @@ class ReportsBundleService
                     Persian::digits($stats['sessions']),
                     Persian::kwh($stats['energy']),
                     Persian::kwh($stats['sessions'] > 0 ? $stats['energy'] / $stats['sessions'] : 0),
-                    Persian::digits((int) round($stats['peak_kw'])).' kW',
+                    $stats['peak_kw'] > 0 ? Persian::digits((int) round($stats['peak_kw'])).' kW' : '—',
                 ];
-                $grossM = (int) round($stats['revenue'] / 10 / 1_000_000);
-                $feeM = (int) round($stats['fee'] / 10 / 1_000_000);
                 $revenueRows[] = [
                     $label,
-                    Persian::digits($stats['sessions']),
-                    Persian::digits($grossM).' م',
-                    Persian::digits($feeM).' م',
-                    Persian::digits(max(0, $grossM - $feeM)).' م',
+                    Persian::digits($stats['paid_sessions']),
+                    Persian::money((int) round($stats['revenue'] / 10)),
+                    Persian::money((int) round($stats['partner_share'] / 10)),
+                    Persian::money((int) round(max(0, $stats['revenue'] - $stats['partner_share']) / 10)),
                 ];
                 $sessionRows[] = [
                     $label,
@@ -129,12 +145,13 @@ class ReportsBundleService
         }
 
         $scoped = fn () => $this->sessionQuery($filters, $periodStart, $periodEnd);
-        $totalEnergy = max(1, (float) (clone $scoped())->sum('energy_kwh'));
-        $dcEnergy = (float) (clone $scoped())->whereHas('charger', fn ($q) => $q->whereIn('connector_type', self::DC_CONNECTORS))->sum('energy_kwh');
-        $acEnergy = (float) (clone $scoped())->whereHas('charger', fn ($q) => $q->whereIn('connector_type', self::AC_CONNECTORS))->sum('energy_kwh');
-        $dcPct = (int) round($dcEnergy / $totalEnergy * 100);
-        $acPct = (int) round($acEnergy / $totalEnergy * 100);
-        $otherPct = max(0, 100 - $dcPct - $acPct);
+        $energySum = (float) (clone $scoped())->sum('energy_kwh');
+        $totalEnergy = max(0.0001, $energySum);
+        $dcEnergy = (float) (clone $scoped())->whereHas('charger', $this->dcScope())->sum('energy_kwh');
+        $acEnergy = (float) (clone $scoped())->whereHas('charger', $this->acScope())->sum('energy_kwh');
+        $dcPct = $energySum > 0 ? (int) round($dcEnergy / $totalEnergy * 100) : 0;
+        $acPct = $energySum > 0 ? (int) round($acEnergy / $totalEnergy * 100) : 0;
+        $otherPct = $energySum > 0 ? max(0, 100 - $dcPct - $acPct) : 0;
 
         $stationRows = $this->stationRows($filters, $periodStart, $periodEnd);
 
@@ -142,18 +159,17 @@ class ReportsBundleService
         $activeUsers = (clone $scoped())->whereNotNull('user_id')->distinct('user_id')->count('user_id');
         $newUsers = User::where('role', UserRole::Customer)->whereBetween('created_at', [$periodStart, $periodEnd])->count();
 
-        $totalRev = (float) (clone $scoped())->sum('cost_amount');
-        $dcRev = (float) (clone $scoped())->whereHas('charger', fn ($q) => $q->whereIn('connector_type', self::DC_CONNECTORS))->sum('cost_amount');
-        $acRev = (float) (clone $scoped())->whereHas('charger', fn ($q) => $q->whereIn('connector_type', self::AC_CONNECTORS))->sum('cost_amount');
-        $orgRev = (float) (clone $scoped())->whereHas('user', fn ($q) => $q->whereNotNull('organization_id'))->sum('cost_amount');
+        $paid = fn () => (clone $scoped())->finished();
+        $totalRev = (float) $paid()->sum('cost_amount');
+        $orgRev = (float) $paid()->whereHas('user', fn ($q) => $q->whereNotNull('organization_id'))->sum('cost_amount');
+        $nonOrg = fn () => $paid()->where(fn ($w) => $w->whereNull('user_id')->orWhereHas('user', fn ($q) => $q->whereNull('organization_id')));
+        $dcRev = (float) $nonOrg()->whereHas('charger', $this->dcScope())->sum('cost_amount');
+        $acRev = (float) $nonOrg()->whereHas('charger', $this->acScope())->sum('cost_amount');
         $otherRev = max(0, $totalRev - $dcRev - $acRev - $orgRev);
         $revPct = fn (float $v) => $totalRev > 0 ? (int) round($v / $totalRev * 100) : 0;
 
-        $partnerShareTotal = (float) Settlement::whereBetween('created_at', [$periodStart, $periodEnd])->sum('partner_share');
-        $platformFeeTotal = (float) Settlement::whereBetween('created_at', [$periodStart, $periodEnd])->sum('platform_fee');
-        if ($platformFeeTotal <= 0) {
-            $platformFeeTotal = $totalRev * 0.09;
-        }
+        $partnerShareTotal = $this->partnerShareOf($scoped());
+        $platformFeeTotal = max(0, $totalRev - $partnerShareTotal);
 
         $sessionTotal = (int) (clone $scoped())->count();
         $completedSessions = (clone $scoped())->whereIn('status', ['completed', 'stopped'])->count();
@@ -170,7 +186,7 @@ class ReportsBundleService
         $normalPct = (int) round($normalUsers / $userDenom * 100);
         $guestPct = max(0, 100 - $orgUserPct - $normalPct);
 
-        $utils = collect($stationRows)->map(fn ($r) => (int) preg_replace('/\D/', '', (string) ($r[3] ?? '0')))->filter();
+        $utils = collect($stationRows)->map(fn ($r) => (int) preg_replace('/\D/', '', Persian::toAsciiDigits((string) ($r[3] ?? '0'))));
         $avgUtil = $utils->isNotEmpty() ? (int) round($utils->avg()) : 0;
         $highUtil = $utils->filter(fn ($u) => $u >= 70)->count();
         $midUtil = $utils->filter(fn ($u) => $u >= 40 && $u < 70)->count();
@@ -178,17 +194,18 @@ class ReportsBundleService
         $utilDenom = max(1, $highUtil + $midUtil + $lowUtil);
 
         $totalEnergySum = array_sum($energyVals);
-        $totalRevenueM = array_sum($revenueVals);
+        $totalRevenueToman = array_sum($revenueVals);
         $chartSubtitle = match ($range) {
             'week' => '۷ روز گذشته',
             'quarter' => '۱۳ هفته گذشته',
             'year' => '۱۲ ماه گذشته',
-            'custom' => Persian::digits($periodStart->format('Y/m/d')).' تا '.Persian::digits($periodEnd->format('Y/m/d')),
+            'custom' => Persian::date($periodStart).' تا '.Persian::date($periodEnd),
             default => '۳۰ روز گذشته',
         };
 
         return [
             'filters' => $filters,
+            'labels' => $labels,
             'chartPoints' => count($buckets),
             'chartSubtitle' => $chartSubtitle,
             'rangeLabel' => $rangeLabel,
@@ -213,10 +230,10 @@ class ReportsBundleService
                     ['سایر', $revPct($otherRev), 'var(--violet)'],
                 ],
                 'kpis' => [
-                    ['درآمد کل', Persian::digits($totalRevenueM).' میلیون', 'ic-green', 'coins', $rangeLabel],
-                    ['میانگین دوره', Persian::digits((int) round($totalRevenueM / max(1, count($revenueVals)))).' م', 'ic-blue', 'chart', ''],
-                    ['سهم شرکا', Persian::digits((int) round($partnerShareTotal / 10 / 1_000_000)).' م', 'ic-orange', 'users', ''],
-                    ['کارمزد پلتفرم', Persian::digits((int) round($platformFeeTotal / 10 / 1_000_000)).' م', 'ic-violet', 'receipt', ''],
+                    ['درآمد کل', Persian::money($totalRevenueToman).' تومان', 'ic-green', 'coins', $rangeLabel],
+                    ['میانگین هر دوره', Persian::money((int) round($totalRevenueToman / max(1, count($revenueVals)))).' تومان', 'ic-blue', 'chart', ''],
+                    ['سهم شرکا', Persian::money((int) round($partnerShareTotal / 10)).' تومان', 'ic-orange', 'users', ''],
+                    ['سهم پلتفرم', Persian::money((int) round($platformFeeTotal / 10)).' تومان', 'ic-violet', 'receipt', ''],
                 ],
             ],
             'sessions' => [
@@ -290,16 +307,16 @@ class ReportsBundleService
     /** @param  array<string, mixed>  $filters */
     private function sessionQuery(array $filters, Carbon $periodStart, Carbon $periodEnd): Builder
     {
-        $query = ChargingSession::query()->whereBetween('started_at', [$periodStart, $periodEnd]);
+        $query = ChargingSession::query()->whereBetween('charging_sessions.started_at', [$periodStart, $periodEnd]);
 
         if (! empty($filters['city'])) {
             $query->whereHas('station', fn ($q) => $q->where('city', $filters['city']));
         }
 
         if (($filters['connector'] ?? null) === 'dc') {
-            $query->whereHas('charger', fn ($q) => $q->whereIn('connector_type', self::DC_CONNECTORS));
+            $query->whereHas('charger', $this->dcScope());
         } elseif (($filters['connector'] ?? null) === 'ac') {
-            $query->whereHas('charger', fn ($q) => $q->whereIn('connector_type', self::AC_CONNECTORS));
+            $query->whereHas('charger', $this->acScope());
         }
 
         return $query;
@@ -337,7 +354,7 @@ class ReportsBundleService
                 $buckets[] = [
                     'start' => $start->lt($periodStart) ? $periodStart->copy() : $start,
                     'end' => $end->gt($periodEnd) ? $periodEnd->copy() : $end,
-                    'label' => 'هفته '.Persian::digits($start->format('m/d')),
+                    'label' => 'هفته '.Persian::dateTime($start, 'MM/dd'),
                 ];
             }
 
@@ -353,24 +370,26 @@ class ReportsBundleService
             $buckets[] = [
                 'start' => $day->copy()->startOfDay(),
                 'end' => $day->copy()->endOfDay(),
-                'label' => Persian::digits($day->format('Y/m/d')),
+                'label' => Persian::date($day),
             ];
         }
 
         return $buckets;
     }
 
-    /** @return array{energy: float, revenue: float, sessions: int, completed: int, failed: int, avg_duration_min: int, peak_kw: float, new_users: int, active_users: int, avg_wallet_toman: int, fee: float} */
+    /** @return array{energy: float, revenue: float, sessions: int, completed: int, failed: int, avg_duration_min: int, peak_kw: float, new_users: int, active_users: int, avg_wallet_toman: int, paid_sessions: int, partner_share: float} */
     private function bucketStats(Builder $baseQuery, Carbon $start, Carbon $end): array
     {
-        $q = (clone $baseQuery)->whereBetween('started_at', [$start, $end]);
+        $q = (clone $baseQuery)->whereBetween('charging_sessions.started_at', [$start, $end]);
         $sessions = (int) (clone $q)->count();
         $energy = (float) (clone $q)->sum('energy_kwh');
-        $revenue = (float) (clone $q)->sum('cost_amount');
+        $revenue = (float) (clone $q)->finished()->sum('cost_amount');
 
         return [
             'energy' => $energy,
             'revenue' => $revenue,
+            'paid_sessions' => (int) (clone $q)->finished()->where('cost_amount', '>', 0)->count(),
+            'partner_share' => $this->partnerShareOf($q),
             'sessions' => $sessions,
             'completed' => (int) (clone $q)->whereIn('status', ['completed', 'stopped'])->count(),
             'failed' => (int) (clone $q)->whereIn('status', ['failed', 'cancelled', 'interrupted'])->count(),
@@ -378,8 +397,7 @@ class ReportsBundleService
             'peak_kw' => (float) (clone $q)->join('chargers', 'chargers.id', '=', 'charging_sessions.charger_id')->max('chargers.max_power_kw'),
             'new_users' => (int) User::where('role', UserRole::Customer)->whereBetween('created_at', [$start, $end])->count(),
             'active_users' => (int) (clone $q)->whereNotNull('user_id')->distinct('user_id')->count('user_id'),
-            'avg_wallet_toman' => (int) round((float) Wallet::avg('balance') / 10),
-            'fee' => $revenue * 0.09,
+            'avg_wallet_toman' => (int) round((float) Wallet::whereHas('user', fn ($u) => $u->where('role', UserRole::Customer))->avg('balance') / 10),
         ];
     }
 
@@ -400,10 +418,11 @@ class ReportsBundleService
                 $sessionsQ = $this->sessionQuery($filters, $periodStart, $periodEnd)->where('station_id', $st->id);
                 $sessionCount = (int) (clone $sessionsQ)->count();
                 $energy = (float) (clone $sessionsQ)->sum('energy_kwh');
-                $revenue = (float) (clone $sessionsQ)->sum('cost_amount');
+                $revenue = (float) (clone $sessionsQ)->finished()->sum('cost_amount');
                 $conns = $st->chargers->sum(fn (Charger $c) => $c->connectors->count());
-                $charging = $st->chargers->sum(fn (Charger $c) => $c->connectors->where('ocpp_status', 'Charging')->count());
-                $util = $conns > 0 ? (int) round($charging / $conns * 100) : 0;
+                $busySeconds = (float) (clone $sessionsQ)->sum('duration_seconds');
+                $windowSeconds = max(1, $periodStart->diffInSeconds($periodEnd->lt(now()) ? $periodEnd : now()));
+                $util = $conns > 0 ? min(100, (int) round($busySeconds / ($conns * $windowSeconds) * 100)) : 0;
 
                 return [
                     'sessions' => $sessionCount,
@@ -412,7 +431,7 @@ class ReportsBundleService
                         Persian::digits($sessionCount),
                         Persian::kwh($energy),
                         Persian::digits($util).'٪',
-                        Persian::digits((int) round($revenue / 10 / 1_000_000)).' م',
+                        Persian::money((int) round($revenue / 10)).' ت',
                     ],
                 ];
             })
