@@ -20,6 +20,13 @@
     ->selectRaw('type, COUNT(*) as c, SUM(read_at IS NOT NULL) as r, GROUP_CONCAT(DISTINCT channel) as chs, MAX(title) as title')
     ->groupBy('type')->orderByDesc('c')->get();
   $typeCount = \App\Models\UserNotification::distinct()->count('type');
+  $typeRows = $typeStats->map(fn ($t) => [
+    (string) ($t->type ?: '—'),
+    (string) ($t->title ?? ''),
+    collect(explode(',', (string) $t->chs))->filter()->map(fn ($c) => $channelNames[$c] ?? $c)->values()->all(),
+    (int) $t->c,
+    $t->c > 0 ? round($t->r / $t->c * 100, 1) : 0,
+  ])->values()->all();
 @endphp
 <div class="flex between items-center mt-8" style="margin-bottom:18px">
       <div class="muted fs12">آمار کانال‌ها مربوط به امروز و قالب‌ها مربوط به ۳۰ روز اخیر است.</div>
@@ -150,13 +157,7 @@ html[dir=rtl] .switch.on i{transform:translateX(-18px)}
     document.getElementById('donut').innerHTML=rings+'<text x="64" y="60" text-anchor="middle" font-size="20" font-weight="800" fill="var(--text)" font-family="Vazirmatn">{{ Persian::digits($stats['today'] ?? 0) }}</text><text x="64" y="78" text-anchor="middle" font-size="10" fill="var(--muted)" font-family="Vazirmatn">ارسال امروز</text>';
   })();
 
-  var tpls=@json($typeStats->map(fn ($t) => [
-    (string) ($t->type ?: '—'),
-    (string) ($t->title ?? ''),
-    collect(explode(',', (string) $t->chs))->filter()->map(fn ($c) => $channelNames[$c] ?? $c)->values()->all(),
-    (int) $t->c,
-    $t->c > 0 ? round($t->r / $t->c * 100, 1) : 0,
-  ])->values());
+  var tpls=@json($typeRows);
   var esc=AdminUI.esc;
   document.getElementById('tplBody').innerHTML=tpls.length?tpls.map(function(t){
     var chips=t[2].map(function(c){return '<span class="tag">'+esc(c)+'</span>';}).join(' ');
