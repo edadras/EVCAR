@@ -83,19 +83,22 @@ class ApiController extends Controller
 
         ChargingSession::query()
             ->with('user:id,name')
-            ->where(function ($query) use ($like) {
-                $query->where('session_code', 'like', $like)
-                    ->orWhereHas('user', fn ($q) => $q->where('name', 'like', $like));
+            ->where(function ($query) use ($like, $q) {
+                $query->where('uuid', 'like', $like)
+                    ->orWhereHas('user', fn ($u) => $u->where('name', 'like', $like));
+                if (ctype_digit($this->normalizeDigits($q))) {
+                    $query->orWhere('id', (int) $this->normalizeDigits($q));
+                }
             })
             ->latest('started_at')
             ->limit(6)
-            ->get(['id', 'session_code', 'user_id', 'status'])
+            ->get(['id', 'uuid', 'user_id', 'status'])
             ->each(function (ChargingSession $s) use (&$results) {
                 $results[] = [
                     'type' => 'session',
-                    'label' => $s->session_code ?? 'جلسه #'.$s->id,
+                    'label' => 'جلسه #'.Persian::digits($s->id),
                     'meta' => ($s->user?->name ?? 'مهمان').' · '.$s->status,
-                    'url' => route('admin.sessions.index', ['q' => $s->session_code]),
+                    'url' => route('admin.sessions.index'),
                 ];
             });
 
