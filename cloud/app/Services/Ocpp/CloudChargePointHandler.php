@@ -98,6 +98,17 @@ class CloudChargePointHandler
             ->filter(fn (ChargingSession $s) => ($s->meta['direct_ocpp'] ?? false) && ($s->meta['edge_state'] ?? null) === 'starting')
             ->each(fn (ChargingSession $s) => $this->charging->cancel($s, 'NoCableConnected'));
 
+        // شارژر ریست شد یا تراکنش را رها کرد و StopTransaction نفرستاد.
+        $grace = max(30, (int) $this->commander->setting('lost_transaction_grace_seconds', 90));
+        ChargingSession::where('status', 'active')
+            ->whereNotNull('ocpp_transaction_id')
+            ->get()
+            ->filter(fn (ChargingSession $s) => ! empty($s->meta['lost_since']) && CarbonImmutable::parse($s->meta['lost_since'])->lt(now()->subSeconds($grace)))
+            ->each(function (ChargingSession $s) {
+                $this->charging->closeLost($s, (string) ($s->meta['lost_mark'] ?? 'TransactionLost'));
+                app(CloudLoadBalancer::class)->apply($s->station_id);
+            });
+
         $days = max(1, (int) $this->commander->setting('log_retention_days', 14));
         OcppMessageLog::where('created_at', '<', now()->subDays($days))->limit(5000)->delete();
         OcppCall::where('created_at', '<', now()->subDays($days))->limit(5000)->delete();
@@ -116,6 +127,9 @@ class CloudChargePointHandler
             'last_heartbeat_at' => now(),
             'is_online' => true,
         ]);
+
+        ChargingSession::where('charger_id', $charger->id)->where('status', 'active')->whereNotNull('ocpp_transaction_id')
+            ->get()->each(fn (ChargingSession $s) => $this->markLost($s, 'Reboot'));
 
         // پس از راه‌اندازی، نمونه‌برداری کنتور را برای صورتحساب دقیق تنظیم می‌کنیم.
         $this->commander->dispatch($charger->charge_point_id, 'ChangeConfiguration', ['key' => 'MeterValueSampleInterval', 'value' => '30']);
@@ -169,6 +183,11 @@ class CloudChargePointHandler
             $this->charging->cancel($active, 'StartAborted');
         } elseif ($active) {
             $this->charging->markIdle($active, in_array($status, ['SuspendedEV', 'Finishing'], true));
+            if ($active->ocpp_transaction_id && in_array($status, ['Available', 'Preparing'], true)) {
+                $this->markLost($active, 'TransactionLost');
+            } elseif (in_array($status, ['Charging', 'SuspendedEV', 'SuspendedEVSE'], true)) {
+                $this->clearLost($active);
+            }
         }
 
         $key = $charger->charge_point_id.'#'.$number;
@@ -260,6 +279,9 @@ class CloudChargePointHandler
         $session = $this->sessionFor($charger, ((int) $transactionId) > 0 ? $transactionId : null, (int) $payload['connectorId']);
         if (! $session) {
             return [];
+        }
+        if (((int) $transactionId) > 0) {
+            $this->clearLost($session);
         }
 
         $stop = false;
@@ -395,6 +417,27 @@ class CloudChargePointHandler
         return $connector
             ? ChargingSession::where('connector_id', $connector->id)->where('status', 'active')->whereNotNull('ocpp_transaction_id')->latest('id')->first()
             : null;
+    }
+
+    private function markLost(ChargingSession $session, string $reason): void
+    {
+        $meta = $session->meta ?? [];
+        if (! empty($meta['lost_since']) && ($meta['lost_mark'] ?? null) === 'Reboot') {
+            return;
+        }
+        $meta['lost_since'] ??= now()->toIso8601String();
+        $meta['lost_mark'] = $reason;
+        $session->update(['meta' => $meta]);
+    }
+
+    private function clearLost(ChargingSession $session): void
+    {
+        $meta = $session->meta ?? [];
+        if (! isset($meta['lost_since'])) {
+            return;
+        }
+        unset($meta['lost_since'], $meta['lost_mark']);
+        $session->update(['meta' => $meta]);
     }
 
     private function cancelPendingRemoteStart(OcppCall $call, string $reason): void

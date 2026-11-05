@@ -5,6 +5,7 @@ namespace App\Services\Charging;
 use App\Models\Charger;
 use App\Models\ChargingSession;
 use App\Models\Connector;
+use App\Models\OcppTransaction;
 use App\Models\RfidCard;
 use App\Models\SessionMeterValue;
 use App\Models\Tariff;
@@ -159,6 +160,12 @@ class DirectChargingService
         );
 
         if (($response['status'] ?? 'Rejected') === 'Rejected') {
+            $session->load('connector');
+            $connectorIdle = in_array($session->connector?->ocpp_status, ['Available', 'Preparing'], true);
+            if (isset($response['status']) && ($connectorIdle || ! empty($session->meta['lost_since']))) {
+                // شارژر تراکنش را نمی‌شناسد (معمولاً پس از ریست)؛ جلسه با آخرین کنتور بسته می‌شود.
+                return $this->closeLost($session, 'TransactionLost');
+            }
             $this->mergeMeta($session, ['edge_state' => 'charging']);
 
             throw new \RuntimeException('شارژر درخواست توقف را رد کرد.');
@@ -173,6 +180,28 @@ class DirectChargingService
         }
 
         return $session->refresh();
+    }
+
+    /** بستن جلسه‌ای که شارژر StopTransaction آن را هرگز نفرستاد، با آخرین انرژی ثبت‌شده. */
+    public function closeLost(ChargingSession $session, string $reason, ?CarbonInterface $stoppedAt = null): ChargingSession
+    {
+        $stoppedAt ??= isset($session->meta['lost_since']) ? CarbonImmutable::parse($session->meta['lost_since']) : now();
+        $lastWh = SessionMeterValue::where('charging_session_id', $session->id)->whereNotNull('energy_wh')->latest('id')->value('energy_wh');
+        $this->mergeMeta($session, ['force_closed' => true, 'lost_reason' => $reason]);
+        $closed = $this->finalize($session, $lastWh !== null ? (int) $lastWh : null, $stoppedAt, $reason);
+
+        if ($session->ocpp_transaction_id) {
+            OcppTransaction::whereKey($session->ocpp_transaction_id)->whereNull('stopped_at')->update([
+                'stopped_at' => $stoppedAt,
+                'meter_stop_wh' => $lastWh,
+                'stop_reason' => substr($reason, 0, 32),
+            ]);
+        }
+        if ($session->connector_id) {
+            Connector::whereKey($session->connector_id)->whereIn('ocpp_status', ['Charging', 'Finishing', 'SuspendedEV', 'SuspendedEVSE'])->update(['ocpp_status' => 'Available']);
+        }
+
+        return $closed;
     }
 
     public function cancel(ChargingSession $session, string $reason): ChargingSession

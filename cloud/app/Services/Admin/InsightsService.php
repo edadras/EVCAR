@@ -15,7 +15,7 @@ class InsightsService
     public const FINISHED = ['stopped', 'completed'];
 
     /** دلایل توقف غیرعادی OCPP 1.6 که نشانهٔ مشکل دستگاه است. */
-    public const ABNORMAL_STOPS = ['EmergencyStop', 'PowerLoss', 'Reboot', 'HardReset', 'SoftReset', 'Other', 'UnlockCommand', 'ChargerOffline'];
+    public const ABNORMAL_STOPS = ['EmergencyStop', 'PowerLoss', 'Reboot', 'HardReset', 'SoftReset', 'Other', 'UnlockCommand', 'ChargerOffline', 'TransactionLost'];
 
     /** @return list<array<string, mixed>> */
     public function stationPerformance(int $days = 30): array
