@@ -11,7 +11,7 @@ Route::get('/', function () {
 Route::get('payment/callback/{payment:uuid}', PaymentCallbackController::class)->name('payment.callback');
 
 Route::get('q/{token}', function (string $token) {
-    $qr = QrToken::with('station')->where('token', $token)->where('status', 'active')->first();
+    $qr = QrToken::findActiveByCode($token);
     abort_unless($qr && $qr->station, 404, 'کد QR نامعتبر یا غیرفعال است.');
 
     return redirect()->route('app.charger', ['station' => $qr->station->code, 'connector' => $qr->connector_id, 'qr' => $qr->token]);

@@ -29,7 +29,7 @@ class QrToken extends Model
     {
         static::creating(function (QrToken $qr) {
             if (empty($qr->token)) {
-                $qr->token = Str::upper(Str::random(24));
+                $qr->token = static::newShortToken();
             }
 
             if (! empty($qr->deep_link)) {
@@ -46,6 +46,29 @@ class QrToken extends Model
                 $qr->deep_link = 'https://charge.safircharge.ir/c/'.$station->code.'/'.($connector?->connector_number ?? '1');
             }
         });
+    }
+
+    /** کد کوتاه برای لینک QR نمایشگر؛ بدون حروف مشابه (0/O، 1/I/L) تا تایپ دستی هم بی‌خطا باشد. */
+    public static function newShortToken(int $length = 6): string
+    {
+        $alphabet = '23456789ABCDEFGHJKMNPQRSTUVWXYZ';
+        do {
+            $token = '';
+            for ($i = 0; $i < $length; $i++) {
+                $token .= $alphabet[random_int(0, strlen($alphabet) - 1)];
+            }
+        } while (static::where('token', $token)->exists());
+
+        return $token;
+    }
+
+    public static function findActiveByCode(string $code): ?self
+    {
+        $code = Str::upper($code);
+
+        return static::with('station')->where('status', 'active')
+            ->where(fn ($q) => $q->where('token', $code)->orWhere('meta->legacy_token', $code))
+            ->first();
     }
 
     public function station(): BelongsTo

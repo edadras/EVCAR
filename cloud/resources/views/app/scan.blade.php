@@ -87,7 +87,7 @@
     var target=null;
     if(url&&/^\/q\/[A-Za-z0-9]+\/?$/.test(url.pathname))target=url.pathname.replace(/\/$/,'');
     else if(url&&url.pathname==='/app/charger'&&url.searchParams.get('qr'))target=url.pathname+url.search;
-    else if(/^[A-Z0-9]{16,40}$/.test(text))target='/q/'+text;
+    else if(/^[A-Z0-9]{6,40}$/.test(text))target='/q/'+text;
     if(!target){setHint('این کد QR متعلق به شارژرهای سامانه نیست.');return false;}
     done=true;
     setHint('کد شناسایی شد، در حال باز کردن شارژر…');
