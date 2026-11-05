@@ -3,6 +3,7 @@
 namespace App\Services\App;
 
 use App\Models\AuditLog;
+use App\Models\Charger;
 use App\Models\ChargingSession;
 use App\Models\QrToken;
 use App\Models\RfidCard;
@@ -234,13 +235,13 @@ class MobileAppPresenter
                     'id' => $label,
                     'uuid' => $cn->uuid,
                     'db_id' => $cn->id,
-                    't' => $charger->connector_type ?? 'Type2',
+                    't' => Charger::CONNECTOR_TYPES[$charger->connector_type] ?? ($charger->connector_type ?? 'Type2'),
                     'pw' => Persian::digits((int) ($cn->max_power_kw ?: $charger->max_power_kw)).' kW',
                     'st' => $busy ? 'busy' : 'free',
                     'state' => $snap['state'],
                     'reason' => $snap['reason'],
                     'ic' => $busy ? 'ic-orange' : 'ic-green',
-                    'name' => $label.' · '.($charger->connector_type ?? 'Type2').' · '.Persian::digits((int) ($cn->max_power_kw ?: $charger->max_power_kw)).' kW',
+                    'name' => (($cn->meta['name'] ?? null) ?: $label).' · '.(Charger::CONNECTOR_TYPES[$charger->connector_type] ?? ($charger->connector_type ?? 'Type2')).' · '.Persian::digits((int) ($cn->max_power_kw ?: $charger->max_power_kw)).' kW',
                 ];
             }
         }

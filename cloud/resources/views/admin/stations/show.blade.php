@@ -21,12 +21,12 @@
             <tbody>
                 @forelse($station->chargers as $charger)
                 <tr>
-                    <td class="tnum">{{ $charger->charge_point_id }}</td>
-                    <td>{{ $charger->vendor }} {{ $charger->model }}</td>
+                    <td class="tnum">{{ $charger->charge_point_id }}@if(!empty($charger->meta['name']))<div class="fs12 muted">{{ $charger->meta['name'] }}</div>@endif</td>
+                    <td>{{ $charger->vendor }} {{ $charger->model }} · {{ \App\Models\Charger::CONNECTOR_TYPES[$charger->connector_type] ?? $charger->connector_type }}</td>
                     <td class="tnum">{{ $charger->max_power_kw ?? '—' }} kW</td>
                     <td>{{ $charger->is_online ? 'بله' : 'خیر' }}</td>
                     <td class="tnum">{{ $charger->connectors->count() }}</td>
-                    <td><a href="{{ route('admin.chargers.show', $charger) }}" class="btn btn-sm">جزئیات</a></td>
+                    <td><a href="{{ route('admin.chargers.show', $charger) }}" class="btn btn-sm">جزئیات</a> <a href="{{ route('admin.chargers.edit', $charger) }}" class="btn btn-sm">ویرایش</a></td>
                 </tr>
                 @empty
                 <tr><td colspan="6" class="muted" style="text-align:center;padding:24px">شارژری ثبت نشده است.</td></tr>

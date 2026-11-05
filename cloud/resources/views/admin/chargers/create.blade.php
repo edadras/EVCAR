@@ -1,55 +1,111 @@
-@extends('admin.layouts.app', ['page' => 'stations', 'title' => 'افزودن شارژر', 'crumb' => $station->name])
+@php
+  $charger = $charger ?? null;
+  $editing = $charger !== null;
+  $cmeta = $charger?->meta ?? [];
+  $connCount = $editing ? (int) $charger->connectors->max('connector_number') : 2;
+@endphp
+@extends('admin.layouts.app', ['page' => 'stations', 'title' => $editing ? 'ویرایش شارژر '.$charger->charge_point_id : 'افزودن شارژر', 'crumb' => $station->name])
 
 @section('content')
 <div class="flex items-center gap-12 mt-8" style="margin-bottom:18px">
-  <a href="{{ route('admin.stations.show', $station) }}" class="btn btn-sm"><span class="bic" data-ic="dots"></span> بازگشت به ایستگاه</a>
+  <a href="{{ $editing ? route('admin.chargers.show', $charger) : route('admin.stations.show', $station) }}" class="btn btn-sm"><span class="bic" data-ic="dots"></span> {{ $editing ? 'بازگشت به شارژر' : 'بازگشت به ایستگاه' }}</a>
 </div>
 
+@if($errors->any())
+<div class="card mt-8" style="border-color:var(--red);margin-bottom:16px"><div class="card-pad" style="color:var(--red)">@foreach($errors->all() as $e)<div>{{ $e }}</div>@endforeach</div></div>
+@endif
+
+<form method="POST" action="{{ $editing ? route('admin.chargers.update', $charger) : route('admin.stations.chargers.store', $station) }}">@csrf
+@if($editing)@method('PUT')@endif
 <div class="grid col-2-1">
+  <div style="display:flex;flex-direction:column;gap:16px">
   <div class="card">
-    <div class="card-head"><div><h3>شارژر جدید</h3><div class="ch-sub">{{ $station->name }} · ثبت در OCPP</div></div></div>
+    <div class="card-head"><div><h3>{{ $editing ? 'مشخصات شارژر' : 'شارژر جدید' }}</h3><div class="ch-sub">{{ $station->name }} · ثبت در OCPP</div></div></div>
     <div class="card-pad">
-      <form method="POST" action="{{ route('admin.stations.chargers.store', $station) }}">@csrf
         <div class="form-grid">
-          <div class="ffield col-span"><label>شناسه Charge Point (OCPP) <span class="req">*</span></label><input class="finput tnum" name="charge_point_id" value="{{ old('charge_point_id', 'CP-'.strtoupper(\Illuminate\Support\Str::random(4))) }}" required dir="ltr" style="text-align:right"></div>
-          <div class="ffield"><label>سازنده</label><input class="finput" name="vendor" value="{{ old('vendor') }}" placeholder="مثلاً ABB"></div>
-          <div class="ffield"><label>مدل</label><input class="finput" name="model" value="{{ old('model') }}" placeholder="مثلاً Terra 184"></div>
-          <div class="ffield"><label>حداکثر توان (kW)</label><input class="finput tnum" name="max_power_kw" type="number" value="{{ old('max_power_kw', 120) }}" dir="ltr" style="text-align:right"></div>
+          <div class="ffield"><label>شناسه Charge Point (OCPP) <span class="req">*</span></label><input class="finput tnum" name="charge_point_id" value="{{ old('charge_point_id', $charger?->charge_point_id ?? 'CP-'.strtoupper(\Illuminate\Support\Str::random(4))) }}" required dir="ltr" style="text-align:right">
+            @if($editing)<span class="fhint">اگر عوض شود، باید روی خود دستگاه هم همین شناسه تنظیم شود.</span>@endif</div>
+          <div class="ffield"><label>نام شارژر</label><input class="finput" name="name" value="{{ old('name', $cmeta['name'] ?? '') }}" placeholder="مثلاً شارژر ورودی پارکینگ"></div>
+          <div class="ffield"><label>سازنده</label><input class="finput" name="vendor" value="{{ old('vendor', $charger?->vendor) }}" placeholder="مثلاً ZT"></div>
+          <div class="ffield"><label>مدل</label><input class="finput" name="model" value="{{ old('model', $charger?->model) }}" placeholder="مثلاً ZT_DC02_160"></div>
+          <div class="ffield"><label>شماره سریال</label><input class="finput tnum" name="serial_number" value="{{ old('serial_number', $charger?->serial_number) }}" dir="ltr" style="text-align:right"></div>
+          <div class="ffield"><label>حداکثر توان (kW)</label><input class="finput tnum" name="max_power_kw" type="number" min="1" max="500" value="{{ old('max_power_kw', $charger?->max_power_kw ?? 120) }}" dir="ltr" style="text-align:right"></div>
           <div class="ffield"><label>نوع کانکتور</label>
             <select class="fselect" name="connector_type">
               @foreach(\App\Models\Charger::CONNECTOR_TYPES as $ct => $label)
-              <option value="{{ $ct }}" @selected(old('connector_type', 'GBT')===$ct)>{{ $label }}</option>
+              <option value="{{ $ct }}" @selected(old('connector_type', $charger?->connector_type ?? 'GBT')===$ct)>{{ $label }}</option>
               @endforeach
             </select>
           </div>
-          <div class="ffield"><label>تعداد کانکتور <span class="req">*</span></label><input class="finput tnum" name="connector_count" type="number" min="1" max="4" value="{{ old('connector_count', 2) }}" required dir="ltr" style="text-align:right"></div>
+          <div class="ffield"><label>تعداد کانکتور <span class="req">*</span></label><input class="finput tnum" name="connector_count" type="number" min="{{ $editing ? max(1, $connCount) : 1 }}" max="4" value="{{ old('connector_count', $connCount) }}" required dir="ltr" style="text-align:right">
+            @if($editing)<span class="fhint">با افزایش، کانکتور جدید و QR آن ساخته می‌شود. برای کنار گذاشتن، کانکتور را غیرفعال کنید.</span>@endif</div>
           <div class="ffield"><label>اتصال OCPP</label>
             <select class="fselect" name="connection_mode">
-              <option value="auto">خودکار (Edge اگر ایستگاه دارد، وگرنه مستقیم)</option>
-              <option value="direct">مستقیم به سرور اصلی</option>
-              <option value="edge">از طریق Edge ایستگاه</option>
+              @foreach(['auto' => 'خودکار (Edge اگر ایستگاه دارد، وگرنه مستقیم)', 'direct' => 'مستقیم به سرور اصلی', 'edge' => 'از طریق Edge ایستگاه'] as $v => $l)
+              <option value="{{ $v }}" @selected(old('connection_mode', $charger?->connection_mode ?? 'auto')===$v)>{{ $l }}</option>
+              @endforeach
             </select>
           </div>
-          <div class="ffield"><label>رمز OCPP (Basic Auth، اختیاری)</label><input class="finput" name="ocpp_password" type="password" minlength="8" autocomplete="new-password" dir="ltr"></div>
+          @if($editing)
+          <div class="ffield"><label>وضعیت شارژر</label>
+            <select class="fselect" name="status">
+              @foreach(\App\Http\Controllers\Admin\ChargerController::CONNECTOR_STATUSES as $v => $l)
+              <option value="{{ $v }}" @selected(old('status', $charger->status)===$v)>{{ $l }}</option>
+              @endforeach
+            </select>
+          </div>
+          @endif
+          <div class="ffield"><label>رمز OCPP (Basic Auth، اختیاری)</label><input class="finput" name="ocpp_password" type="password" minlength="8" autocomplete="new-password" dir="ltr" placeholder="{{ $editing && !empty($cmeta['ocpp_password']) ? 'تنظیم شده — خالی بگذارید تا تغییر نکند' : '' }}">
+            @if($editing && !empty($cmeta['ocpp_password']))
+            <label class="fs12 muted mt-4" style="display:flex;gap:6px;align-items:center"><input type="checkbox" name="clear_ocpp_password" value="1"> حذف رمز</label>
+            @endif</div>
         </div>
-        <div class="fs12 muted mt-12">آدرس OCPP در تنظیمات شارژر: مستقیم ← <span dir="ltr">ws://&lt;سرور&gt;:9100/ocpp/&lt;شناسه&gt;</span> · از طریق Edge ← <span dir="ltr">ws://&lt;IP ایستگاه&gt;:9000/ocpp/&lt;شناسه&gt;</span></div>
-        <button type="submit" class="btn btn-primary mt-16" style="height:48px"><span class="bic" data-ic="plus"></span> ثبت شارژر</button>
-      </form>
+        <div class="fs12 muted mt-12">آدرس OCPP در تنظیمات شارژر: مستقیم ← <span dir="ltr">wss://ev.edadras.com/ocpp/&lt;شناسه&gt;</span> · از طریق Edge ← <span dir="ltr">ws://&lt;IP ایستگاه&gt;:9000/ocpp/&lt;شناسه&gt;</span></div>
     </div>
   </div>
-  <div class="card" style="align-self:start">
-    <div class="card-head"><h3>راهنما</h3></div>
-    <div class="card-pad">
-      <div class="lrow" style="border:none;padding:8px 0"><div class="l-main"><div class="l-title">شناسه OCPP</div><div class="l-sub">باید با شارژر فیزیکی یکسان باشد</div></div></div>
-      <div class="lrow" style="border:none;padding:8px 0"><div class="l-main"><div class="l-title">کانکتورها</div><div class="l-sub">پس از ثبت، نازل‌ها به‌صورت خودکار ساخته می‌شوند</div></div></div>
+
+  @if($editing)
+  <div class="card">
+    <div class="card-head"><div><h3>کانکتورها</h3><div class="ch-sub">نام، توان و وضعیت هر کانکتور</div></div></div>
+    <div class="card-pad" style="display:flex;flex-direction:column;gap:10px">
+      @foreach($charger->connectors->sortBy('connector_number') as $cn)
+      <div class="conn-edit">
+        <div class="ce-num tnum">{{ $cn->connector_number }}</div>
+        <input class="finput" name="connectors[{{ $cn->id }}][name]" value="{{ old('connectors.'.$cn->id.'.name', $cn->meta['name'] ?? '') }}" placeholder="نام (مثلاً کانکتور {{ ['A','B','C','D'][$cn->connector_number - 1] ?? $cn->connector_number }})" style="flex:1;min-width:120px">
+        <input class="finput tnum" type="number" min="1" max="500" name="connectors[{{ $cn->id }}][max_power_kw]" value="{{ old('connectors.'.$cn->id.'.max_power_kw', $cn->max_power_kw) }}" placeholder="kW" style="max-width:90px" dir="ltr">
+        <span class="fs12 muted">kW</span>
+        <select class="fselect" name="connectors[{{ $cn->id }}][operational_status]" style="max-width:120px">
+          @foreach(\App\Http\Controllers\Admin\ChargerController::CONNECTOR_STATUSES as $v => $l)
+          <option value="{{ $v }}" @selected(old('connectors.'.$cn->id.'.operational_status', $cn->operational_status)===$v)>{{ $l }}</option>
+          @endforeach
+        </select>
+        <span class="pill fs12">{{ $cn->ocpp_status }}</span>
+      </div>
+      @endforeach
     </div>
+  </div>
+  @endif
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:16px;align-self:start">
+    <div class="card">
+      <div class="card-head"><h3>راهنما</h3></div>
+      <div class="card-pad">
+        <div class="lrow" style="border:none;padding:8px 0"><div class="l-main"><div class="l-title">شناسه OCPP</div><div class="l-sub">باید با شارژر فیزیکی یکسان باشد</div></div></div>
+        <div class="lrow" style="border:none;padding:8px 0"><div class="l-main"><div class="l-title">کانکتورها</div><div class="l-sub">هر کانکتور به‌صورت خودکار یک QR اختصاصی می‌گیرد</div></div></div>
+      </div>
+    </div>
+    <button type="submit" class="btn btn-primary" style="height:48px"><span class="bic" data-ic="plus"></span> {{ $editing ? 'ذخیره تغییرات' : 'ثبت شارژر' }}</button>
   </div>
 </div>
+</form>
 @endsection
 
 @push('styles')
 <style>
 .bic{display:inline-grid;width:16px;height:16px}.bic svg{width:16px;height:16px}
+.conn-edit{display:flex;align-items:center;gap:10px;border:1px solid var(--border);border-radius:13px;padding:10px 12px;background:var(--surface-2);flex-wrap:wrap}
+.ce-num{width:34px;height:34px;border-radius:10px;background:var(--accent-soft);color:var(--accent-strong);display:grid;place-items:center;font-weight:800;flex:none}
 </style>
 @endpush
 

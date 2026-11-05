@@ -65,6 +65,8 @@ Route::middleware(['auth', 'staff'])->group(function () {
     Route::get('stations/{station}/chargers/create', [ChargerController::class, 'create'])->name('stations.chargers.create');
     Route::post('stations/{station}/chargers', [ChargerController::class, 'store'])->name('stations.chargers.store');
     Route::get('chargers/{charger}', [ChargerController::class, 'show'])->name('chargers.show');
+    Route::get('chargers/{charger}/edit', [ChargerController::class, 'edit'])->name('chargers.edit');
+    Route::put('chargers/{charger}', [ChargerController::class, 'update'])->name('chargers.update');
     Route::get('sessions', [ChargingSessionController::class, 'index'])->name('sessions.index');
     Route::get('reservations', [PageController::class, 'reservations'])->name('reservations');
     Route::get('anpr', [PageController::class, 'anpr'])->name('anpr');
