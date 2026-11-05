@@ -32,7 +32,7 @@
           <div class="card-pad">
             <div class="form-grid">
               <div class="ffield"><label>خودرو</label><select class="fselect"><option>ایویکو اسکایول ET5</option><option>کیا EV6</option><option>هیوندای آیونیک ۵</option><option>تسلا مدل ۳</option><option>سایر</option></select></div>
-              <div class="ffield"><label>نوع کانکتور</label><select class="fselect"><option>CCS2</option><option>CHAdeMO</option><option>Type 2 (AC)</option></select></div>
+              <div class="ffield"><label>نوع کانکتور</label><select class="fselect"><option>GB/T (DC)</option><option>CCS2</option><option>CHAdeMO</option><option>Type 2 (AC)</option></select></div>
             </div>
 
             <div class="ffield col-span mt-8">
@@ -94,7 +94,7 @@
           </div>
         </div>
         <button class="btn btn-primary" style="height:48px"><span class="bic" data-ic="plus"></span> ثبت کاربر</button>
-        <button class="btn">ذخیره پیش‌نویس</button>
+        <button type="button" class="btn">ذخیره پیش‌نویس</button>
       </div>
     </div>
 </form>

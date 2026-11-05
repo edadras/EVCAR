@@ -39,11 +39,35 @@
 
         <!-- کانکتورها -->
         <div class="card">
-          <div class="card-head"><div><h3>کانکتورها و شارژرها</h3><div class="ch-sub">تعداد و نوع کانکتورهای این ایستگاه</div></div>
-            <div class="head-actions"><button class="btn btn-sm" id="addConn"><span class="bic" data-ic="plus"></span> افزودن کانکتور</button></div>
+          <div class="card-head"><div><h3>کانکتورها و شارژرها</h3><div class="ch-sub">نوع کانکتور و توان هر شارژر این ایستگاه</div></div>
+            @if($station)
+            <div class="head-actions"><a class="btn btn-sm" href="{{ route('admin.stations.chargers.create', $station) }}"><span class="bic" data-ic="plus"></span> افزودن شارژر و کانکتور</a></div>
+            @endif
           </div>
           <div class="card-pad" style="padding-top:8px">
-            <div id="connList" style="display:flex;flex-direction:column;gap:10px"></div>
+            <div style="display:flex;flex-direction:column;gap:10px">
+              @forelse($station?->chargers ?? [] as $ch)
+              <div class="conn-edit">
+                <div class="ce-ic {{ in_array($ch->connector_type, ['Type2','Type1','GBT-AC'], true) ? 'ic-blue' : 'ic-green' }}" data-ic="plug"></div>
+                <div style="min-width:110px">
+                  <a href="{{ route('admin.chargers.show', $ch) }}" class="fw8 tnum" dir="ltr" style="color:var(--text);text-decoration:none">{{ $ch->charge_point_id }}</a>
+                  <div class="fs12 muted">{{ \App\Support\Persian::digits($ch->connectors->count()) }} کانکتور</div>
+                </div>
+                <select name="charger_types[{{ $ch->id }}]" aria-label="نوع کانکتور">
+                  @if($ch->connector_type && ! array_key_exists($ch->connector_type, \App\Models\Charger::CONNECTOR_TYPES))
+                  <option value="{{ $ch->connector_type }}" selected>{{ $ch->connector_type }}</option>
+                  @endif
+                  @foreach(\App\Models\Charger::CONNECTOR_TYPES as $ct => $label)
+                  <option value="{{ $ct }}" @selected(old('charger_types.'.$ch->id, $ch->connector_type) === $ct)>{{ $label }}</option>
+                  @endforeach
+                </select>
+                <input class="finput tnum" type="number" min="1" max="500" name="charger_power[{{ $ch->id }}]" value="{{ old('charger_power.'.$ch->id, $ch->max_power_kw) }}" style="max-width:90px;height:38px" dir="ltr" aria-label="توان (kW)">
+                <span class="fs12 muted">kW</span>
+              </div>
+              @empty
+              <div class="fs12 muted">{{ $station ? 'هنوز شارژری برای این ایستگاه ثبت نشده است.' : 'پس از ثبت ایستگاه، شارژرها و کانکتورها را از صفحهٔ ایستگاه اضافه کنید.' }}</div>
+              @endforelse
+            </div>
           </div>
         </div>
 
@@ -101,8 +125,8 @@
             <div class="fw8" id="pvName" style="font-size:16px">ایستگاه جدید</div>
             <div class="muted fs12 mt-4" id="pvCode">{{ $station?->code ?? 'کد خودکار' }}</div>
             <hr class="sep">
-            <div class="flex between" style="font-size:13px"><span class="muted">کانکتورها</span><b class="tnum" id="pvConn">۲</b></div>
-            <div class="flex between mt-12" style="font-size:13px"><span class="muted">حداکثر توان</span><b class="tnum" id="pvPower">۱۸۰ kW</b></div>
+            <div class="flex between" style="font-size:13px"><span class="muted">کانکتورها</span><b class="tnum">{{ Persian::digits($station ? $station->chargers->sum(fn ($c) => $c->connectors->count()) : 0) }}</b></div>
+            <div class="flex between mt-12" style="font-size:13px"><span class="muted">حداکثر توان</span><b class="tnum">{{ $station && $station->chargers->max('max_power_kw') ? Persian::digits($station->chargers->max('max_power_kw')).' kW' : '—' }}</b></div>
             <div class="flex between mt-12" style="font-size:13px"><span class="muted">شارژ خودکار پلاک</span><span class="pill {{ ($anprEnabled ?? false) ? 'pill-green' : 'pill-amber' }}" id="pvAnpr"><span class="pdot"></span>{{ ($anprEnabled ?? false) ? 'فعال' : 'غیرفعال' }}</span></div>
           </div>
         </div>
@@ -138,25 +162,6 @@
     '<defs><pattern id="gg" width="7" height="7" patternUnits="userSpaceOnUse"><path d="M7 0H0V7" fill="none" stroke="var(--border)" stroke-width=".5"/></pattern></defs>'+
     '<rect width="100" height="100" fill="url(#gg)"/><path d="M0 50 L100 44" stroke="color-mix(in srgb,var(--accent) 30%,transparent)" stroke-width="1"/></svg>'+
     '<div class="pin" style="left:50%;top:52%"><div class="pin-body" style="background:var(--accent);width:32px;height:32px"><span>⚡</span></div><div class="pin-pulse" style="background:var(--accent);opacity:.3"></div></div>';
-
-  var conns=[{t:'DC CCS2',p:'۱۸۰ kW',c:'ic-green'},{t:'AC Type2',p:'۲۲ kW',c:'ic-blue'}];
-  function powerMax(){
-    var max=0;conns.forEach(function(c){var n=parseInt(c.p.replace(/[^۰-۹]/g,'').replace(/[۰-۹]/g,function(d){return '۰۱۲۳۴۵۶۷۸۹'.indexOf(d);}));if(n>max)max=n;});
-    return max;
-  }
-  function render(){
-    document.getElementById('connList').innerHTML=conns.map(function(c,i){
-      return '<div class="conn-edit"><div class="ce-ic '+c.c+'">'+window.icon('plug')+'</div>'+
-        '<select><option'+(c.t==='DC CCS2'?' selected':'')+'>DC CCS2</option><option'+(c.t==='DC CHAdeMO'?' selected':'')+'>DC CHAdeMO</option><option'+(c.t==='AC Type2'?' selected':'')+'>AC Type2</option></select>'+
-        '<select><option'+(c.p==='۱۸۰ kW'?' selected':'')+'>۱۸۰ kW</option><option'+(c.p==='۵۰ kW'?' selected':'')+'>۵۰ kW</option><option'+(c.p==='۲۲ kW'?' selected':'')+'>۲۲ kW</option></select>'+
-        '<button class="ce-del" data-i="'+i+'">'+window.icon('x')+'</button></div>';
-    }).join('');
-    document.getElementById('pvConn').textContent=conns.length.toLocaleString('fa-IR');
-    document.getElementById('pvPower').textContent=conns.some(function(c){return c.t.indexOf('DC')>=0;})?'۱۸۰ kW':'۲۲ kW';
-    document.querySelectorAll('.ce-del').forEach(function(b){b.addEventListener('click',function(){if(conns.length>1){conns.splice(+b.getAttribute('data-i'),1);render();}});});
-  }
-  render();
-  document.getElementById('addConn').addEventListener('click',function(){conns.push({t:'AC Type2',p:'۲۲ kW',c:'ic-blue'});render();});
 
   document.getElementById('stName').addEventListener('input',function(){
     document.getElementById('pvName').textContent=this.value||'ایستگاه جدید';

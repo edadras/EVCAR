@@ -63,7 +63,7 @@
           </div>
         </div>
         <button class="btn btn-primary" style="height:48px"><span class="bic" data-ic="check"></span> ایجاد و صدور فاکتور</button>
-        <button class="btn">ذخیره پیش‌نویس</button>
+        <button type="button" class="btn">ذخیره پیش‌نویس</button>
       </div>
     </div>
 </form>

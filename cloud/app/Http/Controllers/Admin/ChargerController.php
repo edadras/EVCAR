@@ -25,7 +25,7 @@ class ChargerController extends Controller
             'model' => ['nullable', 'string', 'max:128'],
             'serial_number' => ['nullable', 'string', 'max:128'],
             'max_power_kw' => ['nullable', 'integer', 'min:1', 'max:500'],
-            'connector_type' => ['nullable', 'string', 'max:32'],
+            'connector_type' => ['nullable', 'in:'.implode(',', array_keys(Charger::CONNECTOR_TYPES))],
             'connector_count' => ['required', 'integer', 'min:1', 'max:4'],
             'connection_mode' => ['nullable', 'in:auto,edge,direct'],
             'ocpp_password' => ['nullable', 'string', 'min:8', 'max:40'],

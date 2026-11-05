@@ -12,6 +12,16 @@ class Charger extends Model
 {
     use HasUuid, SoftDeletes;
 
+    /** مقدار ذخیره‌شده => برچسب. مقادیر AC باید با فهرست acTypes گزارش‌ها هم‌خوان بمانند. */
+    public const CONNECTOR_TYPES = [
+        'GBT' => 'DC GB/T',
+        'CCS2' => 'DC CCS2',
+        'CHAdeMO' => 'DC CHAdeMO',
+        'GBT-AC' => 'AC GB/T',
+        'Type2' => 'AC Type2',
+        'Type1' => 'AC Type1',
+    ];
+
     protected $fillable = [
         'uuid', 'station_id', 'charge_point_id', 'vendor', 'model',
         'serial_number', 'firmware_version', 'max_power_kw', 'connector_type',

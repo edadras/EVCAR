@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Charger;
 use App\Models\Partner;
 use App\Models\Station;
 use App\Models\Tariff;
@@ -80,7 +81,7 @@ class StationController extends Controller
 
     public function edit(Station $station): View
     {
-        $station->load('edgeStation');
+        $station->load(['edgeStation', 'chargers.connectors']);
 
         return view('admin.stations.create', [
             'station' => $station,
@@ -109,9 +110,30 @@ class StationController extends Controller
             'local_hostname' => ['nullable', 'string', 'max:128'],
             'partner_id' => ['nullable', 'exists:partners,id'],
             'grid_limit_kw' => ['nullable', 'numeric', 'min:0', 'max:100000'],
+            'charger_types' => ['nullable', 'array'],
+            'charger_types.*' => ['nullable', 'string', 'max:32'],
+            'charger_power' => ['nullable', 'array'],
+            'charger_power.*' => ['nullable', 'integer', 'min:1', 'max:500'],
         ]);
         $gridLimit = $data['grid_limit_kw'] ?? null;
-        unset($data['grid_limit_kw']);
+        $chargerTypes = $data['charger_types'] ?? [];
+        $chargerPower = $data['charger_power'] ?? [];
+        unset($data['grid_limit_kw'], $data['charger_types'], $data['charger_power']);
+
+        foreach ($station->chargers as $charger) {
+            $changes = [];
+            $type = $chargerTypes[$charger->id] ?? null;
+            if ($type !== null && $type !== $charger->connector_type && array_key_exists($type, Charger::CONNECTOR_TYPES)) {
+                $changes['connector_type'] = $type;
+            }
+            $power = $chargerPower[$charger->id] ?? null;
+            if ($power !== null && (int) $power !== (int) $charger->max_power_kw) {
+                $changes['max_power_kw'] = (int) $power;
+            }
+            if ($changes) {
+                $charger->update($changes);
+            }
+        }
 
         $meta = $station->meta ?? [];
         if ($gridLimit !== null && (float) $gridLimit > 0) {

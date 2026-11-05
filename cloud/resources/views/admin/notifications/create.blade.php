@@ -83,7 +83,7 @@
           <div class="flex between mt-12" style="font-size:13px"><span class="muted">هزینهٔ تقریبی پیامک</span><b class="tnum" id="sumCost">—</b></div>
         </div>
         <button class="btn btn-primary" style="height:48px"><span class="bic" data-ic="bell"></span> تأیید و ارسال</button>
-        <button class="btn">ذخیره پیش‌نویس</button>
+        <button type="button" class="btn">ذخیره پیش‌نویس</button>
       </div>
     </div>
 </form>

@@ -51,7 +51,7 @@
         <!-- تجهیزات -->
         <div class="card">
           <div class="card-head"><div><h3>پایانه‌های شارژ مالک</h3><div class="ch-sub">دستگاه‌هایی که مالک تأمین و نصب کرده است</div></div>
-            <div class="head-actions"><button class="btn btn-sm" id="addDev"><span class="bic" data-ic="plus"></span> افزودن دستگاه</button></div>
+            <div class="head-actions"><button type="button" class="btn btn-sm" id="addDev"><span class="bic" data-ic="plus"></span> افزودن دستگاه</button></div>
           </div>
           <div class="card-pad" style="padding-top:8px"><div id="devList" style="display:flex;flex-direction:column;gap:10px"></div></div>
         </div>
@@ -75,7 +75,7 @@
           </div>
         </div>
         <button class="btn btn-primary" style="height:48px"><span class="bic" data-ic="plus"></span> ثبت مالک و فعال‌سازی</button>
-        <button class="btn">ذخیره پیش‌نویس</button>
+        <button type="button" class="btn">ذخیره پیش‌نویس</button>
       </div>
     </div>
 </form>
@@ -124,10 +124,10 @@
   function render(){
     document.getElementById('devList').innerHTML=devs.map(function(d,i){
       return '<div class="dev-row"><div class="dv-ic '+d.c+'">'+window.icon('plug')+'</div>'+
-        '<select><option'+(d.t==='DC CCS2'?' selected':'')+'>DC CCS2</option><option'+(d.t==='DC CHAdeMO'?' selected':'')+'>DC CHAdeMO</option><option'+(d.t==='AC Type2'?' selected':'')+'>AC Type2</option></select>'+
+        '<select><option'+(d.t==='DC GB/T'?' selected':'')+'>DC GB/T</option><option'+(d.t==='DC CCS2'?' selected':'')+'>DC CCS2</option><option'+(d.t==='DC CHAdeMO'?' selected':'')+'>DC CHAdeMO</option><option'+(d.t==='AC Type2'?' selected':'')+'>AC Type2</option></select>'+
         '<input class="tnum" value="'+d.p+'" style="width:90px">'+
         '<input placeholder="شماره سریال دستگاه" style="flex:1;min-width:80px">'+
-        '<button class="dv-del" data-i="'+i+'">'+window.icon('x')+'</button></div>';
+        '<button type="button" class="dv-del" data-i="'+i+'">'+window.icon('x')+'</button></div>';
     }).join('');
     document.getElementById('pvDev').textContent=fa(devs.length);
     document.querySelectorAll('.dv-del').forEach(function(b){b.addEventListener('click',function(){if(devs.length>1){devs.splice(+b.getAttribute('data-i'),1);render();}});});

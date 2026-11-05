@@ -17,8 +17,8 @@
           <div class="ffield"><label>حداکثر توان (kW)</label><input class="finput tnum" name="max_power_kw" type="number" value="{{ old('max_power_kw', 120) }}" dir="ltr" style="text-align:right"></div>
           <div class="ffield"><label>نوع کانکتور</label>
             <select class="fselect" name="connector_type">
-              @foreach(['CCS2','CHAdeMO','Type2','Type1'] as $ct)
-              <option value="{{ $ct }}" @selected(old('connector_type', 'CCS2')===$ct)>{{ $ct }}</option>
+              @foreach(\App\Models\Charger::CONNECTOR_TYPES as $ct => $label)
+              <option value="{{ $ct }}" @selected(old('connector_type', 'GBT')===$ct)>{{ $label }}</option>
               @endforeach
             </select>
           </div>
