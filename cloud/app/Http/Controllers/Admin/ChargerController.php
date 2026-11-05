@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Charger;
+use App\Models\ChargingSession;
 use App\Models\Connector;
 use App\Models\QrToken;
 use App\Models\Station;
@@ -119,6 +120,50 @@ class ChargerController extends Controller
             ->with('success', 'تنظیمات شارژر ذخیره شد.');
     }
 
+    /** حذف نرم: سوابق شارژ و مالی می‌مانند؛ شناسه آزاد می‌شود تا بتوان دوباره ثبتش کرد. */
+    public function destroy(Charger $charger): RedirectResponse
+    {
+        if (ChargingSession::where('charger_id', $charger->id)->where('status', 'active')->exists()) {
+            return back()->withErrors(['charger' => 'این شارژر جلسهٔ شارژ فعال دارد؛ اول جلسه را متوقف کنید.']);
+        }
+
+        $station = $charger->station;
+        DB::transaction(function () use ($charger) {
+            QrToken::where('charger_id', $charger->id)->update(['status' => 'revoked']);
+            $meta = $charger->meta ?? [];
+            $meta['deleted_charge_point_id'] = $charger->charge_point_id;
+            $charger->update([
+                'charge_point_id' => mb_substr($charger->charge_point_id, 0, 40).'~del'.$charger->id,
+                'status' => 'inactive',
+                'is_online' => false,
+                'meta' => $meta,
+            ]);
+            $charger->delete();
+        });
+
+        return redirect()->route('admin.stations.show', $station)
+            ->with('success', 'شارژر '.($charger->meta['deleted_charge_point_id'] ?? '').' حذف شد. سوابق شارژ آن در گزارش‌ها باقی می‌ماند.');
+    }
+
+    public function destroyConnector(Connector $connector): RedirectResponse
+    {
+        $charger = $connector->charger;
+        $sessions = ChargingSession::where('connector_id', $connector->id)->count();
+        if ($sessions > 0) {
+            return back()->withErrors(['connector' => 'کانکتور '.$connector->connector_number.' دارای '.$sessions.' جلسهٔ شارژ است و برای حفظ سوابق مالی حذف نمی‌شود؛ آن را «غیرفعال» کنید یا کل شارژر را حذف کنید.']);
+        }
+        if ($charger->connectors()->count() <= 1) {
+            return back()->withErrors(['connector' => 'آخرین کانکتور شارژر حذف نمی‌شود؛ در صورت نیاز کل شارژر را حذف کنید.']);
+        }
+
+        DB::transaction(function () use ($connector) {
+            QrToken::where('connector_id', $connector->id)->update(['status' => 'revoked']);
+            $connector->delete();
+        });
+
+        return redirect()->route('admin.chargers.edit', $charger)->with('success', 'کانکتور '.$connector->connector_number.' حذف شد.');
+    }
+
     /** @return array<string, mixed> */
     private function validated(Request $request, ?Charger $charger = null): array
     {
@@ -143,7 +188,7 @@ class ChargerController extends Controller
             'connectors.*.max_power_kw' => ['nullable', 'integer', 'min:1', 'max:500'],
             'connectors.*.operational_status' => ['nullable', 'in:'.implode(',', array_keys(self::CONNECTOR_STATUSES))],
         ], [
-            'connector_count.min' => 'تعداد کانکتور را نمی‌توان کم کرد؛ کانکتور اضافه را «غیرفعال» کنید.',
+            'connector_count.min' => 'برای کم کردن کانکتور، از دکمهٔ حذف کنار همان کانکتور استفاده کنید.',
             'charge_point_id.regex' => 'شناسه فقط حروف انگلیسی، عدد، نقطه، خط تیره و زیرخط.',
         ]);
     }

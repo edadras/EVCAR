@@ -67,6 +67,8 @@ Route::middleware(['auth', 'staff'])->group(function () {
     Route::get('chargers/{charger}', [ChargerController::class, 'show'])->name('chargers.show');
     Route::get('chargers/{charger}/edit', [ChargerController::class, 'edit'])->name('chargers.edit');
     Route::put('chargers/{charger}', [ChargerController::class, 'update'])->name('chargers.update');
+    Route::delete('chargers/{charger}', [ChargerController::class, 'destroy'])->name('chargers.destroy');
+    Route::delete('connectors/{connector}', [ChargerController::class, 'destroyConnector'])->name('connectors.destroy');
     Route::get('sessions', [ChargingSessionController::class, 'index'])->name('sessions.index');
     Route::get('reservations', [PageController::class, 'reservations'])->name('reservations');
     Route::get('anpr', [PageController::class, 'anpr'])->name('anpr');

@@ -11,10 +11,6 @@
   <a href="{{ $editing ? route('admin.chargers.show', $charger) : route('admin.stations.show', $station) }}" class="btn btn-sm"><span class="bic" data-ic="dots"></span> {{ $editing ? 'بازگشت به شارژر' : 'بازگشت به ایستگاه' }}</a>
 </div>
 
-@if($errors->any())
-<div class="card mt-8" style="border-color:var(--red);margin-bottom:16px"><div class="card-pad" style="color:var(--red)">@foreach($errors->all() as $e)<div>{{ $e }}</div>@endforeach</div></div>
-@endif
-
 <form method="POST" action="{{ $editing ? route('admin.chargers.update', $charger) : route('admin.stations.chargers.store', $station) }}">@csrf
 @if($editing)@method('PUT')@endif
 <div class="grid col-2-1">
@@ -38,7 +34,7 @@
             </select>
           </div>
           <div class="ffield"><label>تعداد کانکتور <span class="req">*</span></label><input class="finput tnum" name="connector_count" type="number" min="{{ $editing ? max(1, $connCount) : 1 }}" max="4" value="{{ old('connector_count', $connCount) }}" required dir="ltr" style="text-align:right">
-            @if($editing)<span class="fhint">با افزایش، کانکتور جدید و QR آن ساخته می‌شود. برای کنار گذاشتن، کانکتور را غیرفعال کنید.</span>@endif</div>
+            @if($editing)<span class="fhint">با افزایش، کانکتور جدید و QR آن ساخته می‌شود. برای حذف، دکمهٔ × کنار همان کانکتور را بزنید.</span>@endif</div>
           <div class="ffield"><label>اتصال OCPP</label>
             <select class="fselect" name="connection_mode">
               @foreach(['auto' => 'خودکار (Edge اگر ایستگاه دارد، وگرنه مستقیم)', 'direct' => 'مستقیم به سرور اصلی', 'edge' => 'از طریق Edge ایستگاه'] as $v => $l)
@@ -80,6 +76,8 @@
           @endforeach
         </select>
         <span class="pill fs12">{{ $cn->ocpp_status }}</span>
+        <button type="submit" form="delConn{{ $cn->id }}" class="ce-del" title="حذف کانکتور" aria-label="حذف کانکتور"
+          onclick="return confirm('کانکتور {{ $cn->connector_number }} و QR آن حذف شود؟');" data-ic="x"></button>
       </div>
       @endforeach
     </div>
@@ -96,15 +94,26 @@
       </div>
     </div>
     <button type="submit" class="btn btn-primary" style="height:48px"><span class="bic" data-ic="plus"></span> {{ $editing ? 'ذخیره تغییرات' : 'ثبت شارژر' }}</button>
+    @if($editing)
+    <button type="submit" form="delCharger" class="btn" style="height:44px;color:var(--red);border-color:var(--red-soft)"
+      onclick="return confirm('شارژر {{ $charger->charge_point_id }} و همهٔ کانکتورها و QRهایش حذف شود؟ سوابق شارژ در گزارش‌ها می‌ماند.');"><span class="bic" data-ic="x"></span> حذف شارژر</button>
+    @endif
   </div>
 </div>
 </form>
+@if($editing)
+<form id="delCharger" method="POST" action="{{ route('admin.chargers.destroy', $charger) }}" hidden>@csrf @method('DELETE')</form>
+@foreach($charger->connectors as $cn)
+<form id="delConn{{ $cn->id }}" method="POST" action="{{ route('admin.connectors.destroy', $cn) }}" hidden>@csrf @method('DELETE')</form>
+@endforeach
+@endif
 @endsection
 
 @push('styles')
 <style>
 .bic{display:inline-grid;width:16px;height:16px}.bic svg{width:16px;height:16px}
 .conn-edit{display:flex;align-items:center;gap:10px;border:1px solid var(--border);border-radius:13px;padding:10px 12px;background:var(--surface-2);flex-wrap:wrap}
+.ce-del{width:34px;height:34px;border-radius:9px;border:1px solid var(--border);background:var(--surface);color:var(--red);display:grid;place-items:center;margin-inline-start:auto;cursor:pointer}.ce-del svg{width:16px;height:16px}
 .ce-num{width:34px;height:34px;border-radius:10px;background:var(--accent-soft);color:var(--accent-strong);display:grid;place-items:center;font-weight:800;flex:none}
 </style>
 @endpush

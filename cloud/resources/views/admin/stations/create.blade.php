@@ -63,6 +63,15 @@
                 </select>
                 <input class="finput tnum" type="number" min="1" max="500" name="charger_power[{{ $ch->id }}]" value="{{ old('charger_power.'.$ch->id, $ch->max_power_kw) }}" style="max-width:90px;height:38px" dir="ltr" aria-label="توان (kW)">
                 <span class="fs12 muted">kW</span>
+                <button type="submit" form="delCharger{{ $ch->id }}" class="ce-del" title="حذف شارژر" aria-label="حذف شارژر"
+                  onclick="return confirm('شارژر {{ $ch->charge_point_id }} و همهٔ کانکتورهایش حذف شود؟ سوابق شارژ در گزارش‌ها می‌ماند.');" data-ic="x"></button>
+              </div>
+              <div class="conn-chips">
+                @foreach($ch->connectors->sortBy('connector_number') as $cn)
+                <span class="conn-chip">کانکتور {{ $cn->meta['name'] ?? (['A','B','C','D'][$cn->connector_number - 1] ?? $cn->connector_number) }}
+                  <button type="submit" form="delConn{{ $cn->id }}" title="حذف کانکتور" aria-label="حذف کانکتور"
+                    onclick="return confirm('کانکتور {{ $cn->connector_number }} شارژر {{ $ch->charge_point_id }} و QR آن حذف شود؟');" data-ic="x"></button></span>
+                @endforeach
               </div>
               @empty
               <div class="fs12 muted">{{ $station ? 'هنوز شارژری برای این ایستگاه ثبت نشده است.' : 'پس از ثبت ایستگاه، شارژرها و کانکتورها را از صفحهٔ ایستگاه اضافه کنید.' }}</div>
@@ -135,6 +144,12 @@
       </div>
     </div>
 </form>
+@foreach($station?->chargers ?? [] as $ch)
+<form id="delCharger{{ $ch->id }}" method="POST" action="{{ route('admin.chargers.destroy', $ch) }}" hidden>@csrf @method('DELETE')</form>
+@foreach($ch->connectors as $cn)
+<form id="delConn{{ $cn->id }}" method="POST" action="{{ route('admin.connectors.destroy', $cn) }}" hidden>@csrf @method('DELETE')</form>
+@endforeach
+@endforeach
 @endsection
 
 @push('styles')
@@ -148,6 +163,9 @@
 .conn-edit select{height:38px;border:1px solid var(--border);background:var(--surface);border-radius:9px;font-family:inherit;font-size:12.5px;color:var(--text);padding:0 10px}
 .conn-edit .ce-del{width:34px;height:34px;border-radius:9px;border:1px solid var(--border);background:var(--surface);color:var(--red);display:grid;place-items:center;margin-inline-start:auto}.conn-edit .ce-del svg{width:16px;height:16px}
 .map-panel{display:grid;place-items:center}
+.conn-chips{display:flex;flex-wrap:wrap;gap:6px;margin:-4px 4px 4px}
+.conn-chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border);border-radius:20px;padding:4px 6px 4px 10px;font-size:12px;background:var(--surface)}
+.conn-chip button{width:20px;height:20px;border-radius:50%;border:none;background:var(--red-soft,#fde8ea);color:var(--red);display:grid;place-items:center;cursor:pointer;padding:0}.conn-chip button svg{width:12px;height:12px}
 </style>
 @endpush
 
