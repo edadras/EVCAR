@@ -257,8 +257,8 @@ class ActionController extends Controller
             return back()->withErrors(['charging' => 'موجودی کیف پول کافی نیست.']);
         }
 
-        $tariff = Tariff::where('is_default', true)->where('status', 'active')->first()
-            ?? Tariff::where('status', 'active')->first();
+        $connector->loadMissing('charger');
+        $tariff = Tariff::effectiveFor($connector->charger?->station_id, $connector->charger?->connector_type);
 
         $vehicle = Vehicle::where('user_id', $user->id)->orderByDesc('is_default')->first();
         $prefs = $user->meta['app_prefs'] ?? [];

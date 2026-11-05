@@ -107,8 +107,7 @@ class DirectChargingService
     {
         $connector->loadMissing('charger');
         $vehicle = Vehicle::where('user_id', $user->id)->orderByDesc('is_default')->first();
-        $tariff = Tariff::where('is_default', true)->where('status', 'active')->first()
-            ?? Tariff::where('status', 'active')->first();
+        $tariff = Tariff::effectiveFor($connector->charger->station_id, $connector->charger->connector_type);
 
         return ChargingSession::create([
             'uuid' => (string) Str::uuid(),

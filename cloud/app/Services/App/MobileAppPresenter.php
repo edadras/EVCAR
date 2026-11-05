@@ -98,9 +98,7 @@ class MobileAppPresenter
                 'type' => ($isFast ? 'DC سریع' : 'AC').' · '.($st->chargers->pluck('connector_type')->filter()->unique()->sort()->implode(' / ') ?: 'Type2'),
                 'free' => Persian::digits($free).' از '.Persian::digits($total).' آزاد',
                 'free_count' => $free,
-                'price' => $this->defaultTariffToman() !== null
-                    ? Persian::digits($this->defaultTariffToman())
-                    : '—',
+                'price' => ($p = $this->defaultTariffToman($st)) !== null ? Persian::digits($p) : '—',
                 'status' => $status['label'],
                 'status_pill' => $status['pill'],
                 'state' => $status['state'],
@@ -276,15 +274,14 @@ class MobileAppPresenter
             ->count();
     }
 
-    public function defaultTariff(): ?Tariff
+    public function defaultTariff(?Station $station = null): ?Tariff
     {
-        return Tariff::where('is_default', true)->where('status', 'active')->first()
-            ?? Tariff::where('status', 'active')->first();
+        return Tariff::effectiveFor($station?->id);
     }
 
-    public function defaultTariffToman(): ?int
+    public function defaultTariffToman(?Station $station = null): ?int
     {
-        $tariff = $this->defaultTariff();
+        $tariff = $this->defaultTariff($station);
 
         if (! $tariff) {
             return null;
@@ -302,10 +299,10 @@ class MobileAppPresenter
     }
 
     /** @return array{energy:int,idle:int,offpeak:int,offpeak_hours:string} */
-    public function tariffBreakdown(): array
+    public function tariffBreakdown(?Station $station = null): array
     {
-        $tariff = $this->defaultTariff();
-        $energy = $this->defaultTariffToman() ?? 0;
+        $tariff = $this->defaultTariff($station);
+        $energy = $this->defaultTariffToman($station) ?? 0;
         if (! $tariff) {
             return [
                 'energy' => 0,

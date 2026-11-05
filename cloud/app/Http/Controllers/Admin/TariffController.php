@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Station;
 use App\Models\Tariff;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -13,7 +14,19 @@ class TariffController extends Controller
 {
     public function create(): View
     {
-        return view('admin.tariffs.create');
+        return view('admin.tariffs.create', ['stations' => $this->stationOptions()]);
+    }
+
+    private function stationOptions()
+    {
+        return Station::orderBy('name')->get(['id', 'name', 'code', 'city', 'status']);
+    }
+
+    /** @param  array<string, mixed>  $data */
+    private function syncStations(Tariff $tariff, array $data): void
+    {
+        $ids = ($data['station_scope'] ?? 'all') === 'selected' ? array_map('intval', $data['station_ids'] ?? []) : [];
+        $tariff->stations()->sync($ids);
     }
 
     public function store(Request $request): RedirectResponse
@@ -44,6 +57,7 @@ class TariffController extends Controller
             'meta' => $this->metaFrom($data, []),
         ]);
         $this->syncRules($tariff, $data);
+        $this->syncStations($tariff, $data);
 
         return redirect()
             ->route('admin.tariffs.index')
@@ -52,9 +66,9 @@ class TariffController extends Controller
 
     public function edit(Tariff $tariff): View
     {
-        $tariff->loadCount('chargingSessions');
+        $tariff->loadCount('chargingSessions')->load('stations:id');
 
-        return view('admin.tariffs.create', ['tariff' => $tariff]);
+        return view('admin.tariffs.create', ['tariff' => $tariff, 'stations' => $this->stationOptions()]);
     }
 
     public function update(Request $request, Tariff $tariff): RedirectResponse
@@ -78,6 +92,7 @@ class TariffController extends Controller
             'meta' => $this->metaFrom($data, $tariff->meta ?? []),
         ]);
         $this->syncRules($tariff, $data);
+        $this->syncStations($tariff, $data);
 
         return redirect()
             ->route('admin.tariffs.index')
@@ -120,6 +135,12 @@ class TariffController extends Controller
             'offpeak_end' => ['nullable', 'date_format:H:i'],
             'idle_fee_per_minute' => ['nullable', 'numeric', 'min:0'],
             'idle_grace_minutes' => ['nullable', 'integer', 'min:0', 'max:240'],
+            'connector_scope' => ['nullable', 'in:all,dc,ac'],
+            'station_scope' => ['nullable', 'in:all,selected'],
+            'station_ids' => ['nullable', 'array', 'required_if:station_scope,selected'],
+            'station_ids.*' => ['integer', 'exists:stations,id'],
+        ], [
+            'station_ids.required_if' => 'حداقل یک ایستگاه را انتخاب کنید.',
         ]);
     }
 
@@ -132,6 +153,7 @@ class TariffController extends Controller
     {
         $meta['idle_fee_per_minute'] = (float) ($data['idle_fee_per_minute'] ?? 0);
         $meta['idle_grace_minutes'] = (int) ($data['idle_grace_minutes'] ?? 10);
+        $meta['connector_scope'] = $data['connector_scope'] ?? 'all';
         if (! empty($data['offpeak_start']) && ! empty($data['offpeak_end'])) {
             $meta['off_peak_hours'] = $data['offpeak_start'].' تا '.$data['offpeak_end'];
         }

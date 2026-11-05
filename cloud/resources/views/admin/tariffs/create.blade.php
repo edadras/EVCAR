@@ -93,11 +93,41 @@
         <div class="card">
           <div class="card-head"><h3>اعمال تعرفه</h3></div>
           <div class="card-pad">
+@php
+    $scope = old('station_scope', ($tariff && $tariff->stations->isNotEmpty()) ? 'selected' : 'all');
+    $selIds = array_map('intval', old('station_ids', $tariff ? $tariff->stations->pluck('id')->all() : []));
+@endphp
             <div class="form-grid">
-              <div class="ffield"><label>نوع کانکتور</label><select class="fselect"><option>همه</option><option>DC سریع</option><option>AC</option></select></div>
-              <div class="ffield"><label>اعمال بر ایستگاه‌ها</label><select class="fselect"><option>همهٔ ایستگاه‌ها</option><option>انتخابی</option><option>بر اساس اپراتور</option></select></div>
+              <div class="ffield"><label>نوع کانکتور</label>
+                <select class="fselect" name="connector_scope">
+                  @foreach(['all' => 'همه', 'dc' => 'DC سریع (GB/T، CCS2، CHAdeMO)', 'ac' => 'AC'] as $v => $l)
+                  <option value="{{ $v }}" @selected(old('connector_scope', $tMeta['connector_scope'] ?? 'all') === $v)>{{ $l }}</option>
+                  @endforeach
+                </select>
+              </div>
+              <div class="ffield"><label>اعمال بر ایستگاه‌ها</label>
+                <select class="fselect" name="station_scope" id="stationScope">
+                  <option value="all" @selected($scope === 'all')>همهٔ ایستگاه‌ها (طبق تعرفهٔ پیش‌فرض)</option>
+                  <option value="selected" @selected($scope === 'selected')>ایستگاه‌های انتخابی</option>
+                </select>
+              </div>
             </div>
-            <label class="toggle-row mt-8"><div><div class="fw7 fs13">هزینهٔ اشغال پس از پایان شارژ</div><div class="fhint">۵۰۰ تومان به ازای هر دقیقه پس از شارژ کامل</div></div><span class="switch on" data-sw><i></i></span></label>
+            <div id="stationPick" class="mt-12" @if($scope !== 'selected') hidden @endif>
+              <input class="finput" id="stationFilter" placeholder="جستجوی نام یا کد ایستگاه…" style="margin-bottom:8px">
+              <div class="st-list">
+                @forelse($stations ?? [] as $st)
+                <label class="st-item" data-q="{{ mb_strtolower($st->name.' '.$st->code.' '.$st->city) }}">
+                  <input type="checkbox" name="station_ids[]" value="{{ $st->id }}" @checked(in_array($st->id, $selIds, true))>
+                  <span class="fw7 fs13">{{ $st->name }}</span>
+                  <span class="fs12 muted tnum" dir="ltr">{{ $st->code }}</span>
+                  @if($st->status !== 'active')<span class="pill pill-amber fs12">{{ $st->status === 'maintenance' ? 'تعمیرات' : 'غیرفعال' }}</span>@endif
+                </label>
+                @empty
+                <div class="fs12 muted">ایستگاهی ثبت نشده است.</div>
+                @endforelse
+              </div>
+              <div class="fhint mt-8">در ایستگاه‌های انتخاب‌شده این تعرفه جای تعرفهٔ پیش‌فرض شبکه را می‌گیرد.</div>
+            </div>
           </div>
         </div>
       </div>
@@ -147,6 +177,10 @@ html[dir=rtl] .switch.on i{transform:translateX(-19px)}
 .tariff-card h3{font-size:16px}
 .tprice{font-size:26px;font-weight:800;margin:14px 0 4px}.tprice small{font-size:13px;font-weight:600;color:var(--text-2)}
 .tmeta{display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding-top:12px;border-top:1px solid var(--border-2);font-size:12px;color:var(--muted)}
+.st-list{display:flex;flex-direction:column;gap:6px;max-height:280px;overflow:auto;border:1px solid var(--border-2);border-radius:12px;padding:8px}
+.st-item{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:9px;cursor:pointer}
+.st-item:hover{background:var(--surface-2)}
+.st-item input{width:17px;height:17px;accent-color:var(--accent)}
 .legend .li{display:flex;align-items:center;gap:9px;font-size:12.5px}.legend .sw{width:11px;height:11px;border-radius:4px}
 </style>
 @endpush
@@ -187,6 +221,12 @@ html[dir=rtl] .switch.on i{transform:translateX(-19px)}
     pill.textContent=l[0];pill.className='pill '+l[1];
   });
   document.querySelectorAll('[data-sw]').forEach(function(s){s.closest('.toggle-row').addEventListener('click',function(){s.classList.toggle('on');});});
+  var scopeSel=document.getElementById('stationScope');
+  scopeSel.addEventListener('change',function(){document.getElementById('stationPick').hidden=this.value!=='selected';});
+  document.getElementById('stationFilter').addEventListener('input',function(){
+    var q=this.value.trim().toLowerCase();
+    document.querySelectorAll('.st-item').forEach(function(el){el.hidden=q&&el.getAttribute('data-q').indexOf(q)<0;});
+  });
   var initKey='{{ $modelKey }}';
   if(initKey&&badge[initKey]){
     var m=badge[initKey];

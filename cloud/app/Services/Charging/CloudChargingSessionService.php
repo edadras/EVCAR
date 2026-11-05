@@ -221,8 +221,7 @@ class CloudChargingSessionService
     public function tariffFor(ChargingSession $session): ?Tariff
     {
         return ($session->tariff_id ? Tariff::with('rules')->find($session->tariff_id) : null)
-            ?? Tariff::with('rules')->where('is_default', true)->where('status', 'active')->first()
-            ?? Tariff::with('rules')->where('status', 'active')->first();
+            ?? Tariff::effectiveFor($session->station_id, $session->charger?->connector_type);
     }
 
     /** @return array{pct:int,energy:float,cost:int,secs:int,power:int,goal:int,eta:?int,state:string,battery_kwh:float} */

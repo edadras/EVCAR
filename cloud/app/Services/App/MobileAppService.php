@@ -248,7 +248,7 @@ class MobileAppService
         $station = $stationCode
             ? Station::where('code', $stationCode)->where('status', 'active')->with(['chargers.connectors'])->first()
             : null;
-        $tariff = $this->presenter->tariffBreakdown();
+        $tariff = $this->presenter->tariffBreakdown($station);
 
         return [
             'station' => $station,

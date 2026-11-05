@@ -57,7 +57,7 @@ class ChargingSessionStartedHandler
             'charger_id' => $charger?->id,
             'connector_id' => $connector?->id,
             'user_id' => $user?->id,
-            'tariff_id' => Tariff::where('status', 'active')->orderByDesc('is_default')->value('id'),
+            'tariff_id' => Tariff::effectiveFor($edge->station_id, $charger?->connector_type)?->id,
             'edge_station_uuid' => $edge->uuid,
             'edge_session_uuid' => $uuid,
             'ocpp_transaction_id' => $payload['ocpp_transaction_id'] ?? null,
