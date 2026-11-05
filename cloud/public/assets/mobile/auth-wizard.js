@@ -14,8 +14,13 @@
   var api = window.SC_AUTH_API || {};
   var csrf = document.querySelector('meta[name="csrf-token"]');
 
+  function enDigits(v) {
+    return String(v || '').replace(/[۰-۹]/g, function (c) { return c.charCodeAt(0) - 0x06F0; })
+      .replace(/[٠-٩]/g, function (c) { return c.charCodeAt(0) - 0x0660; });
+  }
+
   function normPhone(v) {
-    var d = (v || '').replace(/[^\d]/g, '');
+    var d = enDigits(v).replace(/[^\d]/g, '');
     if (d.indexOf('98') === 0 && d.length === 12) d = '0' + d.slice(2);
     return d;
   }
@@ -176,7 +181,7 @@
   }
 
   function verifyOtp() {
-    var code = document.getElementById('authOtpValue').value || readOtpFromCells();
+    var code = enDigits(document.getElementById('authOtpValue').value || readOtpFromCells()).replace(/\D/g, '');
     if (code.length !== 6) {
       setMsg('otpMsg', 'کد ۶ رقمی را کامل وارد کنید.', true);
       return;
@@ -268,7 +273,7 @@
     var input = document.getElementById('authOtpValue');
     if (!input) return;
     input.addEventListener('input', function () {
-      var v = input.value.replace(/\D/g, '').slice(0, 6);
+      var v = enDigits(input.value).replace(/\D/g, '').slice(0, 6);
       input.value = v;
       var chars = v.split('');
       cells.forEach(function (cell, i) {

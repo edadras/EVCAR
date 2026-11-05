@@ -60,8 +60,8 @@
             <button class="txt-back" type="button" id="backFromOtp"><span data-ic="back"></span> تغییر شماره</button>
             <h2 style="font-size:22px;margin-top:12px">کد تأیید</h2>
             <p class="muted fs13 mt8">کد ۶ رقمی ارسال‌شده به <b class="tnum" id="otpPhoneLabel">—</b> را وارد کنید.</p>
-            <input type="hidden" id="authOtpValue">
             <div class="otp mt20" id="otpCells">
+                <input type="text" id="authOtpValue" inputmode="numeric" pattern="[0-9]*" autocomplete="one-time-code" maxlength="6" aria-label="کد تأیید">
                 <div class="cell">_</div><div class="cell">_</div><div class="cell">_</div>
                 <div class="cell">_</div><div class="cell">_</div><div class="cell">_</div>
             </div>
@@ -110,7 +110,8 @@
 .txt-back{background:none;border:none;color:var(--accent);font-weight:600;font-size:13px;display:inline-flex;align-items:center;gap:4px;padding:0;cursor:pointer;font-family:inherit}
 .txt-back svg{width:16px;height:16px}
 .pill-blue{background:var(--accent-soft);color:var(--accent-strong)}
-#authOtpValue{position:absolute;opacity:0;height:0;width:0;pointer-events:none}
+#otpCells{position:relative}
+#authOtpValue{position:absolute;inset:0;width:100%;height:100%;opacity:0;font-size:16px;border:0;background:transparent;color:transparent;caret-color:transparent;z-index:2}
 </style>
 
 <script>
