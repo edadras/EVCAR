@@ -96,13 +96,13 @@
     <button type="submit" class="btn btn-primary" style="height:48px"><span class="bic" data-ic="plus"></span> {{ $editing ? 'ذخیره تغییرات' : 'ثبت شارژر' }}</button>
     @if($editing)
     <button type="submit" form="delCharger" class="btn" style="height:44px;color:var(--red);border-color:var(--red-soft)"
-      onclick="return confirm('شارژر {{ $charger->charge_point_id }} و همهٔ کانکتورها و QRهایش حذف شود؟ سوابق شارژ در گزارش‌ها می‌ماند.');"><span class="bic" data-ic="x"></span> حذف شارژر</button>
+      onclick="var v=prompt('حذف کل شارژر و همهٔ کانکتورها و QRهایش. سوابق شارژ می‌ماند.\nبرای تأیید، شناسهٔ شارژر را بنویسید: {{ $charger->charge_point_id }}');if(v===null)return false;document.getElementById('delChargerId').value=v;return true;"><span class="bic" data-ic="x"></span> حذف کل شارژر</button>
     @endif
   </div>
 </div>
 </form>
 @if($editing)
-<form id="delCharger" method="POST" action="{{ route('admin.chargers.destroy', $charger) }}" hidden>@csrf @method('DELETE')</form>
+<form id="delCharger" method="POST" action="{{ route('admin.chargers.destroy', $charger) }}" hidden>@csrf @method('DELETE')<input type="hidden" name="confirm_id" id="delChargerId"></form>
 @foreach($charger->connectors as $cn)
 <form id="delConn{{ $cn->id }}" method="POST" action="{{ route('admin.connectors.destroy', $cn) }}" hidden>@csrf @method('DELETE')</form>
 @endforeach

@@ -121,8 +121,14 @@ class ChargerController extends Controller
     }
 
     /** حذف نرم: سوابق شارژ و مالی می‌مانند؛ شناسه آزاد می‌شود تا بتوان دوباره ثبتش کرد. */
-    public function destroy(Charger $charger): RedirectResponse
+    public function destroy(Request $request, Charger $charger): RedirectResponse
     {
+        if (trim((string) $request->input('confirm_id')) !== $charger->charge_point_id) {
+            return back()->withErrors(['charger' => 'برای حذف شارژر، شناسهٔ آن ('.$charger->charge_point_id.') را دقیق وارد کنید.']);
+        }
+        if ($charger->is_online || ($charger->last_heartbeat_at && $charger->last_heartbeat_at->gt(now()->subMinutes(15)))) {
+            return back()->withErrors(['charger' => 'شارژر '.$charger->charge_point_id.' هم‌اکنون به سرور وصل است و حذف نمی‌شود. اگر فقط می‌خواهید یک کانکتور را بردارید، از دکمهٔ حذف کنار همان کانکتور استفاده کنید؛ برای کنار گذاشتن کل دستگاه، وضعیتش را «غیرفعال» کنید.']);
+        }
         if (ChargingSession::where('charger_id', $charger->id)->where('status', 'active')->exists()) {
             return back()->withErrors(['charger' => 'این شارژر جلسهٔ شارژ فعال دارد؛ اول جلسه را متوقف کنید.']);
         }
@@ -151,6 +157,9 @@ class ChargerController extends Controller
         $sessions = ChargingSession::where('connector_id', $connector->id)->count();
         if ($sessions > 0) {
             return back()->withErrors(['connector' => 'کانکتور '.$connector->connector_number.' دارای '.$sessions.' جلسهٔ شارژ است و برای حفظ سوابق مالی حذف نمی‌شود؛ آن را «غیرفعال» کنید یا کل شارژر را حذف کنید.']);
+        }
+        if ($charger->is_online || ($charger->last_heartbeat_at && $charger->last_heartbeat_at->gt(now()->subMinutes(15)))) {
+            return back()->withErrors(['connector' => 'شارژر '.$charger->charge_point_id.' به سرور وصل است و این کانکتور را گزارش می‌دهد؛ حذفش فایده ندارد و دوباره ساخته می‌شود. برای کنار گذاشتن، وضعیت کانکتور را «غیرفعال» کنید.']);
         }
         if ($charger->connectors()->count() <= 1) {
             return back()->withErrors(['connector' => 'آخرین کانکتور شارژر حذف نمی‌شود؛ در صورت نیاز کل شارژر را حذف کنید.']);

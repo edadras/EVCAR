@@ -63,8 +63,6 @@
                 </select>
                 <input class="finput tnum" type="number" min="1" max="500" name="charger_power[{{ $ch->id }}]" value="{{ old('charger_power.'.$ch->id, $ch->max_power_kw) }}" style="max-width:90px;height:38px" dir="ltr" aria-label="توان (kW)">
                 <span class="fs12 muted">kW</span>
-                <button type="submit" form="delCharger{{ $ch->id }}" class="ce-del" title="حذف شارژر" aria-label="حذف شارژر"
-                  onclick="return confirm('شارژر {{ $ch->charge_point_id }} و همهٔ کانکتورهایش حذف شود؟ سوابق شارژ در گزارش‌ها می‌ماند.');" data-ic="x"></button>
               </div>
               <div class="conn-chips">
                 @foreach($ch->connectors->sortBy('connector_number') as $cn)
@@ -145,7 +143,6 @@
     </div>
 </form>
 @foreach($station?->chargers ?? [] as $ch)
-<form id="delCharger{{ $ch->id }}" method="POST" action="{{ route('admin.chargers.destroy', $ch) }}" hidden>@csrf @method('DELETE')</form>
 @foreach($ch->connectors as $cn)
 <form id="delConn{{ $cn->id }}" method="POST" action="{{ route('admin.connectors.destroy', $cn) }}" hidden>@csrf @method('DELETE')</form>
 @endforeach
