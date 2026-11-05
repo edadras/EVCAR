@@ -75,7 +75,8 @@
             <!-- اقدامات کنترلی -->
             <div class="section-title" style="margin-bottom:10px">دستورهای کنترلی</div>
             <div class="grid g-2">
-              <button class="ctl-btn" data-cmd="restart"><span class="cb-ic ic-blue" data-ic="refresh"></span><div><div class="fw7 fs13">راه‌اندازی مجدد</div><div class="fhint">Reset (Soft)</div></div></button>
+              <button class="ctl-btn" data-cmd="restart"><span class="cb-ic ic-blue" data-ic="refresh"></span><div><div class="fw7 fs13">راه‌اندازی مجدد نرم</div><div class="fhint">Reset (Soft)</div></div></button>
+              <button class="ctl-btn" data-cmd="hardreset"><span class="cb-ic ic-red" data-ic="refresh"></span><div><div class="fw7 fs13">راه‌اندازی مجدد سخت‌افزاری</div><div class="fhint">Reset (Hard)</div></div></button>
               <button class="ctl-btn" data-cmd="unlock"><span class="cb-ic ic-green" data-ic="plug"></span><div><div class="fw7 fs13">باز کردن قفل کانکتور</div><div class="fhint">UnlockConnector</div></div></button>
               <button class="ctl-btn" data-cmd="stop"><span class="cb-ic ic-orange" data-ic="bolt"></span><div><div class="fw7 fs13">توقف شارژ</div><div class="fhint">RemoteStopTransaction</div></div></button>
               <button class="ctl-btn" data-cmd="disable"><span class="cb-ic ic-red" data-ic="alert"></span><div><div class="fw7 fs13">غیرفعال‌سازی</div><div class="fhint">ChangeAvailability</div></div></button>
@@ -218,6 +219,7 @@ window.__REMOTE_STATION=@json($remoteJs ?? ['devs'=>[]]);
 
   var CMD_MAP={
     restart:{type:'reset',label:'Reset (Soft)',payload:{type:'Soft'}},
+    hardreset:{type:'reset',label:'Reset (Hard)',payload:{type:'Hard'}},
     unlock:{type:'unlock',label:'UnlockConnector'},
     stop:{type:'remote_stop',label:'RemoteStopTransaction'},
     disable:{type:'change_availability',label:'ChangeAvailability',payload:{type:'Inoperative'}},
@@ -259,6 +261,13 @@ window.__REMOTE_STATION=@json($remoteJs ?? ['devs'=>[]]);
     b.addEventListener('click',function(){
       var spec=CMD_MAP[b.getAttribute('data-cmd')];
       if(!spec)return;
+      if(b.getAttribute('data-cmd')==='hardreset'){
+        var d=selectedDev();
+        var busy=devs.some(function(x){return x.chargePointId===(d&&d.chargePointId)&&(x.transactionId||x.ocppStatus==='Charging');});
+        if(!confirm('راه‌اندازی مجدد سخت‌افزاری کل شارژر '+((d&&d.chargePointId)||'')+'؟\n'+(busy?'⚠ روی این شارژر شارژ در جریان است و قطع می‌شود.\n':'')+'دستگاه خاموش و روشن می‌شود و چند دقیقه آفلاین خواهد بود.'))return;
+      } else if(spec.type==='reset'){
+        if(!confirm('راه‌اندازی مجدد نرم شارژر انجام شود؟'))return;
+      }
       if(spec.type==='update_firmware'){
         var url=prompt('آدرس فایل میان‌افزار (http/ftp):');
         if(!url)return;
