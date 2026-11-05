@@ -61,6 +61,17 @@
               <div class="live-stat"><div class="ls-l">وضعیت OCPP</div><div class="ls-v" id="mOcpp" style="font-size:15px">—</div></div>
               <div class="live-stat"><div class="ls-l">آخرین گزارش کنتور</div><div class="ls-v tnum" id="mAt" style="font-size:15px">—</div></div>
             </div>
+            <!-- شروع شارژ برای مشتری -->
+            <div class="section-title" style="margin-bottom:10px">شروع شارژ برای مشتری</div>
+            <div class="start-box">
+              <input class="finput tnum" id="startPhone" inputmode="numeric" dir="ltr" placeholder="شماره موبایل مشتری (مثلاً 0912…)" style="flex:1;min-width:180px">
+              <select class="fselect" id="startSoc" style="max-width:150px" aria-label="حد شارژ">
+                <option value="">حد شارژ: طبق تنظیم مشتری</option>
+                @foreach([60, 70, 80, 90, 100] as $s)<option value="{{ $s }}">تا {{ \App\Support\Persian::digits($s) }}٪</option>@endforeach
+              </select>
+              <button type="button" class="btn btn-primary" id="btnStartFor"><span class="bic" data-ic="bolt"></span> شروع شارژ</button>
+            </div>
+            <div class="fhint" style="margin:6px 0 16px">کابل باید به خودرو وصل باشد. جلسه به نام مشتری ثبت می‌شود، در اپ او نمایش داده می‌شود و هزینه از کیف پولش کسر می‌گردد.</div>
             <!-- اقدامات کنترلی -->
             <div class="section-title" style="margin-bottom:10px">دستورهای کنترلی</div>
             <div class="grid g-2">
@@ -110,6 +121,7 @@
 .live-stat{background:var(--surface-2);border:1px solid var(--border-2);border-radius:12px;padding:12px 14px}
 .live-stat .ls-l{font-size:11.5px;color:var(--muted)}
 .live-stat .ls-v{font-size:19px;font-weight:800;margin-top:3px}.live-stat .ls-v small{font-size:11px;font-weight:600;color:var(--text-2)}
+.start-box{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:12px;border:1px dashed color-mix(in srgb,var(--accent) 40%,var(--border));border-radius:13px;background:var(--surface-2)}
 .ctl-btn{display:flex;align-items:center;gap:11px;padding:13px;border:1px solid var(--border);border-radius:13px;background:var(--surface);font-family:inherit;text-align:start;transition:all .12s}
 .ctl-btn:hover{border-color:var(--accent);background:var(--surface-2)}
 .cb-ic{width:40px;height:40px;border-radius:11px;display:grid;place-items:center;flex:none}.cb-ic svg{width:20px;height:20px}
@@ -255,6 +267,28 @@ window.__REMOTE_STATION=@json($remoteJs ?? ['devs'=>[]]);
       }
       queueCommand(spec);
     });
+  });
+
+  var startBtn=document.getElementById('btnStartFor');
+  startBtn.addEventListener('click',function(){
+    var d=selectedDev();
+    if(!d||!d.connectorId){log('warn','کانکتور انتخاب نشده است.');return;}
+    var phone=document.getElementById('startPhone').value.replace(/[۰-۹]/g,function(c){return '۰۱۲۳۴۵۶۷۸۹'.indexOf(c);}).replace(/[^\d+]/g,'');
+    if(phone.length<10){log('warn','شماره موبایل مشتری را درست وارد کنید.');return;}
+    if(!confirm('شارژ کانکتور '+d.id+' برای مشتری '+phone+' شروع شود؟'))return;
+    var soc=document.getElementById('startSoc').value;
+    startBtn.disabled=true;
+    log('cmd','» شروع شارژ کانکتور '+d.id+' برای '+phone+' …');
+    fetch(@json($station ? route('admin.api.remote-command.start', $station) : ''),{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Accept':'application/json','X-CSRF-TOKEN':csrf()},
+      body:JSON.stringify({connector_id:d.connectorId,phone:phone,target_soc:soc?+soc:null})
+    }).then(function(r){return r.json().then(function(j){return {ok:r.ok,body:j};});})
+      .then(function(res){
+        if(res.ok&&res.body.ok){log('ok','✓ '+res.body.message);setTimeout(refreshLive,2500);}
+        else log('warn','✗ '+(res.body.error||res.body.message||'شروع شارژ ناموفق بود'));
+      }).catch(function(){log('warn','✗ خطای شبکه در شروع شارژ');})
+      .finally(function(){startBtn.disabled=false;});
   });
 
   var pr=document.getElementById('pwRange');

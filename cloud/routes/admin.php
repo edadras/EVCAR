@@ -47,6 +47,7 @@ Route::middleware(['auth', 'staff'])->group(function () {
         Route::post('staff', [ApiController::class, 'storeStaff'])->name('staff.store');
         Route::get('anpr/live', [ApiController::class, 'anprLive'])->name('anpr.live');
         Route::post('stations/{station}/remote-command', [RemoteCommandController::class, 'store'])->name('remote-command.store');
+        Route::post('stations/{station}/remote-start', [RemoteCommandController::class, 'startForCustomer'])->name('remote-command.start');
         Route::get('stations/{station}/remote-commands', [RemoteCommandController::class, 'recent'])->name('remote-command.recent');
         Route::get('stations/{station}/remote-live', [RemoteCommandController::class, 'live'])->name('remote-command.live');
         Route::get('reports/data', [ApiController::class, 'reportsData'])->name('reports.data');

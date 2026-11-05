@@ -182,6 +182,7 @@ class MobileAppPresenter
                 'rfid' => 'کارت RFID',
                 'qr' => 'QR موبایل',
                 'wallet' => 'کیف پول',
+                'admin' => 'شروع توسط پشتیبانی',
                 default => 'کیف پول',
             };
 
@@ -434,6 +435,7 @@ class MobileAppPresenter
             'qr' => 'QR موبایل',
             'wallet' => 'کیف پول',
             'otp' => 'رمز یکبار',
+            'admin' => 'شروع توسط پشتیبانی',
             default => 'کیف پول',
         };
     }
