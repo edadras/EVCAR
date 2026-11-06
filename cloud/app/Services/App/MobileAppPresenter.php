@@ -5,6 +5,7 @@ namespace App\Services\App;
 use App\Models\AuditLog;
 use App\Models\Charger;
 use App\Models\ChargingSession;
+use App\Models\ExternalStation;
 use App\Models\QrToken;
 use App\Models\RfidCard;
 use App\Models\Station;
@@ -134,6 +135,41 @@ class MobileAppPresenter
                     'url' => route('app.charger', ['station' => $st->code]),
                 ];
             })
+            ->values()
+            ->all();
+    }
+
+    /** @return array<int, array<string, mixed>> */
+    public function externalMapStations(): array
+    {
+        return ExternalStation::query()
+            ->where('is_active', true)
+            ->whereHas('operator', fn ($q) => $q->where('is_active', true))
+            ->with('operator')
+            ->get()
+            ->map(fn (ExternalStation $s) => [
+                'id' => $s->id,
+                'name' => $s->name,
+                'lat' => $s->latitude,
+                'lng' => $s->longitude,
+                'operator' => $s->operator->name,
+                'network' => $s->operator->network,
+                'logo' => $s->operator->logoUrl(),
+                'color' => $s->operator->color,
+                'website' => $s->operator->website,
+                'op_phone' => $s->operator->phone,
+                'city' => $s->city,
+                'address' => $s->address,
+                'connectors' => $s->connectorLabel(),
+                'kw' => $s->maxKw() ? Persian::num($s->maxKw()) : null,
+                'fast' => ($s->dc_max_kw ?? 0) >= 20,
+                'ports' => $s->ports ? Persian::digits($s->ports) : null,
+                'tariff' => $s->tariff_toman ? Persian::num($s->tariff_toman) : null,
+                'hours' => $s->hours,
+                'facilities' => $s->facilities,
+                'phone' => $s->phone,
+                'image' => $s->image_url,
+            ])
             ->values()
             ->all();
     }

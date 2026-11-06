@@ -91,6 +91,7 @@
       { id: "alerts", t: "هشدارهای عملیاتی", ic: "bell", path: "alerts", stat: "alerts" },
       { id: "insights", t: "تحلیل، پیش‌بینی و خروجی", ic: "bars", path: "insights" },
       { id: "stations", t: "ایستگاه‌ها و نقشه", ic: "map", path: "stations" },
+      { id: "external-stations", t: "ایستگاه‌های سایر اپراتورها", ic: "map", path: "external-stations" },
       { id: "sessions", t: "جلسات شارژ", ic: "bolt", path: "sessions", stat: "sessions" },
       { id: "reservations", t: "رزرو شارژ", ic: "calendar", path: "reservations" },
       { id: "anpr", t: "تشخیص پلاک (ANPR)", ic: "car", path: "anpr" },

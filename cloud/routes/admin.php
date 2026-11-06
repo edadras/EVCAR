@@ -8,6 +8,8 @@ use App\Http\Controllers\Admin\ChargerController;
 use App\Http\Controllers\Admin\ChargingSessionController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\EvCatalogVehicleController;
+use App\Http\Controllers\Admin\EvOperatorController;
+use App\Http\Controllers\Admin\ExternalStationController;
 use App\Http\Controllers\Admin\InsightsController;
 use App\Http\Controllers\Admin\LiveController;
 use App\Http\Controllers\Admin\NotificationController;
@@ -137,6 +139,8 @@ Route::middleware(['auth', 'staff'])->group(function () {
     Route::get('settings', [PageController::class, 'settings'])->name('settings');
     Route::post('settings', [SettingsController::class, 'update'])->name('settings.update');
     Route::resource('ev-catalog', EvCatalogVehicleController::class)->except(['show']);
+    Route::resource('external-stations', ExternalStationController::class)->except(['show']);
+    Route::resource('ev-operators', EvOperatorController::class)->except(['show']);
 
     // QR
     Route::redirect('qr', '/admin/tariffs?tab=qr');

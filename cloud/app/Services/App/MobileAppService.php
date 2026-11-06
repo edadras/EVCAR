@@ -67,7 +67,7 @@ class MobileAppService
         ];
     }
 
-    public function map(User $user): array
+    public function map(User $user, bool $withExternal = true): array
     {
         $stations = Station::where('status', 'active')->with(['chargers.connectors'])->get();
         $ref = $this->userRef($user);
@@ -77,6 +77,7 @@ class MobileAppService
             'mapStations' => $this->presenter->mapStations($stations, $ref['lat'], $ref['lng']),
             'mapStats' => $this->presenter->mapStats($stations),
             'mapCenter' => $ref,
+            'externalStations' => $withExternal ? $this->presenter->externalMapStations() : [],
         ];
     }
 

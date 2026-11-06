@@ -135,6 +135,7 @@ class MobileApiController extends Controller
             'stations' => $this->markFavorites($request->user(), $d['mapStations']),
             'stats' => $d['mapStats'],
             'center' => $d['mapCenter'],
+            'external_stations' => $d['externalStations'],
         ]);
     }
 

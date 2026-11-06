@@ -18,6 +18,10 @@
     <button class="mchip" type="button" data-filter="fast">شارژ سریع</button>
     <button class="mchip" type="button" data-filter="free">آزاد اکنون</button>
     <button class="mchip" type="button" data-filter="public">عمومی</button>
+    <button class="mchip" type="button" data-filter="quad">ایستگاه‌های QUAD EV</button>
+    @if(count($externalStations))
+    <button class="mchip" type="button" data-filter="others">سایر اپراتورها</button>
+    @endif
 </div>
 
 <button class="loc-btn" type="button" id="locBtn" data-ic="nav"></button>
@@ -29,6 +33,11 @@
         <span class="pill pill-green"><span class="pdot"></span><span id="freeCount">{{ Persian::digits($mapStats['free']) }}</span> آزاد</span>
     </div>
     <div style="display:flex;flex-direction:column;gap:11px" id="list"></div>
+    <div id="extWrap" style="display:none">
+        <div class="fw8 mt16" style="font-size:14px;margin:18px 0 4px">ایستگاه‌های سایر اپراتورها</div>
+        <div class="fs12 muted" style="margin-bottom:10px">فقط برای اطلاع — رزرو و پرداخت این ایستگاه‌ها از QUAD EV انجام نمی‌شود.</div>
+        <div style="display:flex;flex-direction:column;gap:11px" id="extList"></div>
+    </div>
 </div>
 @endsection
 
@@ -57,9 +66,23 @@
 .ms-station .si{width:50px;height:50px;border-radius:13px;flex:none;display:grid;place-items:center}
 .ms-station .si:not([class*="ic-"]){background:var(--surface-3);color:var(--muted)}
 .ms-station .si svg{width:23px;height:23px}
-.sc-pin{width:32px;height:32px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);display:grid;place-items:center;color:#fff;font-size:14px;box-shadow:0 2px 8px rgba(0,0,0,.25)}
-.sc-pin span{transform:rotate(45deg)}
+.sc-pin{width:38px;height:38px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);display:grid;place-items:center;box-shadow:0 2px 8px rgba(0,0,0,.3);padding:3px}
+.sc-pin img{transform:rotate(45deg);width:100%;height:100%;border-radius:50%;background:#fff;object-fit:contain}
 .sc-pin.green{background:var(--green)}.sc-pin.amber{background:var(--amber)}.sc-pin.red{background:var(--red)}.sc-pin.gray{background:#94a3b8}
+.op-pin{width:30px;height:30px;border-radius:50%;background:#fff;border:2px solid #fff;box-shadow:0 2px 7px rgba(0,0,0,.3);overflow:hidden;display:grid;place-items:center}
+.op-pin img{width:100%;height:100%;object-fit:contain}
+.ext-pop{min-width:220px;max-width:260px;direction:rtl;text-align:right;font-size:12.5px;line-height:1.7}
+.ext-pop .eh{display:flex;gap:9px;align-items:center;margin-bottom:6px}
+.ext-pop .eh img{width:36px;height:36px;border-radius:9px;object-fit:contain;background:#fff;border:1px solid #e5e7eb;flex:none}
+.ext-pop .en{font-weight:800;font-size:13.5px;line-height:1.5}
+.ext-pop .eo{color:#64748b;font-size:11.5px}
+.ext-pop .er{display:flex;justify-content:space-between;gap:8px;border-top:1px dashed #e5e7eb;padding:3px 0}
+.ext-pop .er span:first-child{color:#64748b;flex:none}
+.ext-pop .ei{width:100%;height:96px;object-fit:cover;border-radius:10px;margin:4px 0}
+.ext-pop .enote{background:#fff7ed;color:#c2410c;border-radius:8px;padding:6px 8px;font-size:11.5px;margin-top:6px}
+.ext-pop .ego{display:block;text-align:center;margin-top:8px;background:var(--accent);color:#fff!important;border-radius:10px;padding:7px;text-decoration:none;font-weight:700}
+.ms-ext .si{background:#fff!important;border:1px solid var(--border-2);overflow:hidden}
+.ms-ext .si img{width:40px;height:40px;object-fit:contain}
 </style>
 @endpush
 
@@ -69,6 +92,8 @@
 (function(){
   var markers=@json($mapMarkers);
   var stations=@json($mapStations);
+  var ext=@json($externalStations);
+  var quadLogo=@json(asset('assets/brand/quad-icon-256.png'));
   var center=@json($mapCenter);
   var userLat=center.lat,userLng=center.lng;
   var filter='all',searchQ='';
@@ -80,19 +105,61 @@
   function pinIcon(color){
     return L.divIcon({
       className:'',
-      html:'<div class="sc-pin '+color+'"><span>⚡</span></div>',
-      iconSize:[32,32],iconAnchor:[16,32]
+      html:'<div class="sc-pin '+color+'"><img src="'+quadLogo+'" alt=""></div>',
+      iconSize:[38,38],iconAnchor:[19,38],popupAnchor:[0,-36]
+    });
+  }
+  function opIcon(s){
+    return L.divIcon({
+      className:'',
+      html:'<div class="op-pin" style="border-color:'+(s.color||'#fff')+'"><img src="'+s.logo+'" alt=""></div>',
+      iconSize:[30,30],iconAnchor:[15,15],popupAnchor:[0,-14]
+    });
+  }
+  function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+  function row(label,val){return val?'<div class="er"><span>'+label+'</span><span>'+esc(val)+'</span></div>':'';}
+  function extPopup(s){
+    return '<div class="ext-pop">'+
+      '<div class="eh"><img src="'+esc(s.logo)+'" alt=""><div><div class="en">'+esc(s.name)+'</div><div class="eo">'+esc(s.operator)+(s.network?' · '+esc(s.network):'')+'</div></div></div>'+
+      (s.image?'<img class="ei" src="'+esc(s.image)+'" alt="" loading="lazy" onerror="this.remove()">':'')+
+      row('آدرس',s.address)+
+      row('سوکت',s.connectors)+
+      row('حداکثر توان',s.kw?s.kw+' کیلووات':'')+
+      row('تعداد درگاه',s.ports)+
+      row('تعرفه اعلامی',s.tariff?s.tariff+' تومان / kWh':'')+
+      row('ساعات کاری',s.hours)+
+      row('امکانات',s.facilities)+
+      row('تلفن',s.phone||s.op_phone)+
+      '<div class="enote">این ایستگاه متعلق به '+esc(s.operator)+' است؛ رزرو و پرداخت آن از QUAD EV انجام نمی‌شود.</div>'+
+      '<a class="ego" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination='+s.lat+','+s.lng+'">مسیریابی تا ایستگاه</a>'+
+    '</div>';
+  }
+  function extVisible(s){
+    if(filter==='quad'||filter==='free'||filter==='public')return false;
+    if(filter==='fast'&&!s.fast)return false;
+    if(searchQ&&(s.name+' '+s.operator+' '+(s.city||'')+' '+(s.address||'')).indexOf(searchQ)===-1)return false;
+    return true;
+  }
+  var extLayer=L.layerGroup().addTo(map),extMarkers={};
+  function renderExt(){
+    extLayer.clearLayers();extMarkers={};
+    ext.forEach(function(s){
+      if(!extVisible(s))return;
+      var mk=L.marker([s.lat,s.lng],{icon:opIcon(s)}).addTo(extLayer).bindPopup(extPopup(s),{maxWidth:270});
+      extMarkers[s.id]=mk;
     });
   }
 
   function renderMarkers(){
     markerLayer.clearLayers();
+    renderExt();
+    if(filter==='others')return;
     markers.forEach(function(m){
       var st=stations.find(function(s){return s.lat===m.lat&&s.lng===m.lng;})||{};
       var show=matchFilter(st,m);
       if(!show)return;
       if(searchQ&&m.name.indexOf(searchQ)===-1&&!(st.type||'').includes(searchQ))return;
-      var mk=L.marker([m.lat,m.lng],{icon:pinIcon(m.color)}).addTo(markerLayer);
+      var mk=L.marker([m.lat,m.lng],{icon:pinIcon(m.color),zIndexOffset:1000}).addTo(markerLayer);
       mk.bindPopup('<b>'+m.name+'</b><br><a href="'+m.url+'">مشاهده شارژر</a>');
       mk.on('click',function(){window.location.href=m.url;});
     });
@@ -107,14 +174,16 @@
 
   function renderList(){
     var list=document.getElementById('list');
-    var shown=stations.filter(function(s){
+    var shown=filter==='others'?[]:stations.filter(function(s){
       if(filter==='fast'&&s.cat!=='fast')return false;
       if(filter==='free'&&!s.has_free)return false;
       if(filter==='public'&&s.cat!=='public')return false;
       if(searchQ&&s.name.indexOf(searchQ)===-1&&s.type.indexOf(searchQ)===-1)return false;
       return true;
     });
-    document.getElementById('mapCount').textContent=shown.length.toLocaleString('fa-IR')+' ایستگاه در این محدوده';
+    document.getElementById('mapCount').textContent=filter==='others'
+      ?ext.filter(extVisible).length.toLocaleString('fa-IR')+' ایستگاه از سایر اپراتورها'
+      :shown.length.toLocaleString('fa-IR')+' ایستگاه در این محدوده';
     list.innerHTML=shown.map(function(s){
       var ic=s.state==='free'?'ic-green':(s.state==='busy'?'ic-orange':(s.state==='fault'?'ic-red':''));
       return '<a href="'+s.url+'" class="ms-station">'+
@@ -126,6 +195,31 @@
         '</div></a>';
     }).join('');
     document.querySelectorAll('.ms-station .row svg').forEach(function(s){s.style.width='13px';s.style.height='13px';});
+    renderExtList();
+  }
+
+  function renderExtList(){
+    var wrap=document.getElementById('extWrap');
+    var near=ext.filter(extVisible).map(function(s){return {s:s,d:distKm(userLat,userLng,s.lat,s.lng)};})
+      .sort(function(a,b){return a.d-b.d;}).slice(0,filter==='others'?30:8);
+    wrap.style.display=near.length?'':'none';
+    document.getElementById('extList').innerHTML=near.map(function(x){
+      var s=x.s,km=x.d<1?Math.round(x.d*1000).toLocaleString('fa-IR')+' متر':x.d.toFixed(1).replace('.','٫').replace(/\d/g,function(c){return '۰۱۲۳۴۵۶۷۸۹'[c];})+' کیلومتر';
+      return '<a href="#" class="ms-station ms-ext" data-ext="'+s.id+'">'+
+        '<div class="si"><img src="'+esc(s.logo)+'" alt=""></div>'+
+        '<div style="flex:1;min-width:0">'+
+          '<div class="row between"><span class="fw7" style="font-size:14px">'+esc(s.name)+'</span></div>'+
+          '<div class="fs12 muted mt4">'+esc(s.operator)+(s.kw?' · '+s.kw+' kW':'')+(s.connectors?' · '+esc(s.connectors):'')+'</div>'+
+          '<div class="fs12 mt8" style="color:var(--text-2);font-weight:600">'+km+'</div>'+
+        '</div></a>';
+    }).join('');
+    document.querySelectorAll('#extList [data-ext]').forEach(function(a){
+      a.addEventListener('click',function(e){
+        e.preventDefault();
+        var mk=extMarkers[a.getAttribute('data-ext')];
+        if(mk){map.setView(mk.getLatLng(),15);mk.openPopup();}
+      });
+    });
   }
 
   function apply(){
@@ -160,7 +254,7 @@
   // نمای اولیه: ایستگاه‌های نزدیک کاربر (نه کل کشور)، با درنظر گرفتن پنل پایین صفحه.
   function distKm(a,b,c,d){var r=Math.PI/180,x=(c-a)*r,y=(d-b)*r*Math.cos((a+c)/2*r);return Math.sqrt(x*x+y*y)*6371;}
   function fitNearby(lat,lng){
-    var near=markers.map(function(m){return {m:m,d:distKm(lat,lng,m.lat,m.lng)};}).sort(function(a,b){return a.d-b.d;});
+    var near=markers.concat(ext).map(function(m){return {m:m,d:distKm(lat,lng,m.lat,m.lng)};}).sort(function(a,b){return a.d-b.d;});
     var pick=near.filter(function(x){return x.d<=40;});
     if(!pick.length)pick=near.slice(0,3);
     if(!pick.length){map.setView([lat,lng],12);return;}
@@ -170,9 +264,9 @@
     map.fitBounds(L.latLngBounds(pts),{paddingTopLeft:[24,110],paddingBottomRight:[24,bottom+16],maxZoom:14});
   }
   // اندازهٔ واقعی کانتینر پس از چیدمان صفحه (جلوگیری از نمایش نیمه‌کارهٔ کاشی‌ها).
-  setTimeout(function(){map.invalidateSize();if(markers.length)fitNearby(userLat,userLng);},250);
+  setTimeout(function(){map.invalidateSize();if(markers.length||ext.length)fitNearby(userLat,userLng);},250);
   window.addEventListener('resize',function(){map.invalidateSize();});
-  if(markers.length){fitNearby(center.lat,center.lng);}
+  if(markers.length||ext.length){fitNearby(center.lat,center.lng);}
   apply();
 
   window.scLive('map',20000,function(d){

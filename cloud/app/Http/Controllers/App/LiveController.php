@@ -58,7 +58,7 @@ class LiveController extends Controller
 
     private function map(User $user): array
     {
-        $map = $this->app->map($user);
+        $map = $this->app->map($user, false);
 
         return [
             'markers' => $map['mapMarkers'],
