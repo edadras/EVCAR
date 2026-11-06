@@ -1,12 +1,11 @@
 <?php
 
+use App\Http\Controllers\LandingController;
 use App\Http\Controllers\Payment\PaymentCallbackController;
 use App\Models\QrToken;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return view('welcome');
-})->name('welcome');
+Route::get('/', LandingController::class)->name('welcome');
 
 Route::get('payment/callback/{payment:uuid}', PaymentCallbackController::class)->name('payment.callback');
 
