@@ -23,7 +23,7 @@ class LandingController extends Controller
                 ->whereHas('operator', fn ($q) => $q->where('is_active', true))
                 ->whereNotNull('latitude')->whereNotNull('longitude')
                 ->with('operator:id,name,color')
-                ->get(['id', 'operator_id', 'latitude', 'longitude']);
+                ->get(['id', 'ev_operator_id', 'latitude', 'longitude']);
 
             $operators = $ext->pluck('operator')->filter()->unique('id')->values();
             $opIndex = $operators->pluck('id')->flip();
@@ -37,7 +37,7 @@ class LandingController extends Controller
                 ],
                 'map' => [
                     'own' => $own->map(fn ($s) => [round((float) $s->latitude, 5), round((float) $s->longitude, 5), $s->name])->values(),
-                    'ext' => $ext->map(fn ($s) => [round((float) $s->latitude, 5), round((float) $s->longitude, 5), $opIndex[$s->operator_id] ?? 0])->values(),
+                    'ext' => $ext->map(fn ($s) => [round((float) $s->latitude, 5), round((float) $s->longitude, 5), $opIndex[$s->ev_operator_id] ?? 0])->values(),
                     'ops' => $operators->map(fn ($o) => [$o->name, $o->color ?: '#64748b'])->values(),
                 ],
             ];
