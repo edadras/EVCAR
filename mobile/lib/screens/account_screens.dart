@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../core/api.dart';
 import '../core/fmt.dart';
 import '../core/nav.dart';
 import '../core/state.dart';
@@ -146,11 +147,40 @@ class AccountTab extends StatelessWidget {
             );
             if (ok == true) await app.logout();
           }),
-          const SizedBox(height: 16),
+          const SizedBox(height: 6),
+          Center(
+            child: TextButton.icon(
+              style: TextButton.styleFrom(foregroundColor: Palette.red),
+              icon: const Icon(Icons.delete_forever_outlined, size: 18),
+              label: const Text('حذف حساب کاربری'),
+              onPressed: () => _confirmDelete(context, app),
+            ),
+          ),
+          const SizedBox(height: 10),
           Center(child: Text('QUAD EV · نسخهٔ ${fa('1.1.0')}', style: TextStyle(fontSize: 12, color: c.muted))),
         ]);
       },
     );
+  }
+}
+
+Future<void> _confirmDelete(BuildContext context, AppState app) async {
+  final ok = await showDialog<bool>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: const Text('حذف حساب کاربری'),
+      content: const Text('اطلاعات شخصی، خودروها و کارت‌های RFID شما حذف یا غیرفعال می‌شود و دیگر امکان ورود با این حساب وجود ندارد. این کار قابل بازگشت نیست.'),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('انصراف')),
+        FilledButton(style: FilledButton.styleFrom(backgroundColor: Palette.red), onPressed: () => Navigator.pop(ctx, true), child: const Text('حذف دائمی')),
+      ],
+    ),
+  );
+  if (ok != true) return;
+  try {
+    await app.deleteAccount();
+  } on ApiException catch (e) {
+    if (context.mounted) toast(context, e.message, error: true);
   }
 }
 

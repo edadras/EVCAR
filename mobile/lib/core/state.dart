@@ -142,6 +142,12 @@ class AppState extends ChangeNotifier {
     await logoutLocal();
   }
 
+  Future<void> deleteAccount() async {
+    await api.delete('account');
+    await notifications.stop();
+    await logoutLocal();
+  }
+
   Future<void> logoutLocal() async {
     kNavKey.currentState?.popUntil((r) => r.isFirst);
     api.token = null;

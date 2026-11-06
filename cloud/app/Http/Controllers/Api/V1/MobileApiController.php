@@ -30,7 +30,9 @@ use App\Services\Navigator\EvNavigatorService;
 use App\Services\Notifications\FcmPushService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 /**
  * API اپ موبایل (Flutter). داده‌ها از همان سرویس‌های وب‌اپ مشتری خوانده می‌شوند و
@@ -100,6 +102,34 @@ class MobileApiController extends Controller
         $request->user()?->currentAccessToken()?->delete();
 
         return response()->json(['ok' => true, 'message' => 'خروج انجام شد.']);
+    }
+
+    /** حذف حساب از داخل اپ (الزام App Store): اطلاعات هویتی پاک و حساب غیرفعال می‌شود؛ سوابق مالی بی‌نام باقی می‌ماند. */
+    public function deleteAccount(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        if (ChargingSession::where('user_id', $user->id)->whereIn('status', ['pending', 'active'])->exists()) {
+            return response()->json(['ok' => false, 'message' => 'ابتدا جلسهٔ شارژ فعال را متوقف کنید.'], 422);
+        }
+
+        DB::transaction(function () use ($user) {
+            RfidCard::where('user_id', $user->id)->update(['status' => 'blocked']);
+            DeviceToken::where('user_id', $user->id)->delete();
+            Vehicle::where('user_id', $user->id)->update(['plate_two' => null, 'plate_letter' => null, 'plate_three' => null, 'plate_province' => null, 'plate_normalized' => null]);
+            $user->tokens()->delete();
+            $user->forceFill([
+                'name' => 'کاربر حذف‌شده',
+                'email' => null,
+                'phone' => null,
+                'national_code' => null,
+                'avatar_path' => null,
+                'password' => Str::random(48),
+                'status' => 'deleted',
+                'meta' => ['deleted_at' => now()->toIso8601String()],
+            ])->save();
+        });
+
+        return response()->json(['ok' => true, 'message' => 'حساب کاربری شما حذف شد.']);
     }
 
     public function me(Request $request): JsonResponse

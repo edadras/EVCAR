@@ -48,6 +48,7 @@ Route::prefix('v1')->group(function () {
         Route::middleware(['auth:sanctum', MobileJsonResponses::class])->group(function () {
             Route::post('auth/logout', [MobileApiController::class, 'logout']);
             Route::get('me', [MobileApiController::class, 'me']);
+            Route::delete('account', [MobileApiController::class, 'deleteAccount']);
             Route::post('devices', [MobileApiController::class, 'registerDevice']);
             Route::delete('devices', [MobileApiController::class, 'unregisterDevice']);
             Route::post('location', [MobileApiController::class, 'updateLocation']);

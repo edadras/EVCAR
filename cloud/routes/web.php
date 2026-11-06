@@ -9,6 +9,8 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', LandingController::class)->name('welcome');
 Route::get('/download', [DownloadController::class, 'page'])->name('download');
 Route::get('/download/android', [DownloadController::class, 'android'])->name('download.android');
+Route::view('/privacy', 'public-page', ['page' => 'privacy'])->name('privacy.public');
+Route::view('/support', 'public-page', ['page' => 'support'])->name('support.public');
 
 Route::get('payment/callback/{payment:uuid}', PaymentCallbackController::class)->name('payment.callback');
 
