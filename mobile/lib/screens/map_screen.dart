@@ -9,6 +9,7 @@ import '../core/nav.dart';
 import '../core/state.dart';
 import '../core/theme.dart';
 import '../widgets/common.dart';
+import '../widgets/external_station.dart';
 import '../widgets/fx.dart';
 import '../widgets/station_card.dart';
 
@@ -59,6 +60,17 @@ class _MapTabState extends State<MapTab> {
         final codes = stations.map((s) => s['code']).toSet();
         final center = asMap(d['center']);
         final stats = asMap(d['stats']);
+        final ext = asList(d['external_stations']).where((s) => s['lat'] != null && s['lng'] != null).toList();
+        final extShown = ext.where((s) => extMatches(s, filter, search.text)).toList();
+        final refLat = me?.latitude ?? asDouble(center['lat'], 35.6997);
+        final refLng = me?.longitude ?? asDouble(center['lng'], 51.338);
+        final extNear = [for (final s in extShown) (s, distanceKm(refLat, refLng, asDouble(s['lat']), asDouble(s['lng'])))]
+          ..sort((a, b) => a.$2.compareTo(b.$2));
+        final extList = extNear.take(filter == 'others' ? 30 : 8).toList();
+        void focusExt(Map<String, dynamic> s) {
+          mapCtl.move(LatLng(asDouble(s['lat']), asDouble(s['lng'])), 14);
+          showExternalStation(context, s);
+        }
 
         return Stack(children: [
           FlutterMap(
@@ -77,16 +89,28 @@ class _MapTabState extends State<MapTab> {
                     height: 22,
                     child: Container(decoration: BoxDecoration(color: const Color(0xFF2563EB), shape: BoxShape.circle, border: Border.all(color: Colors.white, width: 3), boxShadow: const [BoxShadow(color: Color(0x552563EB), blurRadius: 10, spreadRadius: 4)])),
                   ),
+                for (final s in extShown)
+                  Marker(
+                    point: LatLng(asDouble(s['lat']), asDouble(s['lng'])),
+                    width: 24,
+                    height: 24,
+                    child: GestureDetector(onTap: () => focusExt(s), child: ExtPin(s)),
+                  ),
                 for (final s in all)
                   if (s['lat'] != null && s['lng'] != null && codes.contains(s['code']))
                     Marker(
                       point: LatLng(asDouble(s['lat']), asDouble(s['lng'])),
-                      width: 40,
-                      height: 48,
+                      width: 50,
+                      height: 58,
                       alignment: Alignment.topCenter,
                       child: GestureDetector(
                         onTap: () => openScreen(context, 'charger', {'station': s['code']}),
-                        child: _Pin(color: s['has_free'] == true ? Palette.green : Palette.amber),
+                        child: _Pin(color: switch ('${s['state']}') {
+                          'free' => Palette.green,
+                          'fault' => Palette.red,
+                          'offline' => const Color(0xFF64748B),
+                          _ => Palette.amber,
+                        }),
                       ),
                     ),
               ]),
@@ -131,7 +155,15 @@ class _MapTabState extends State<MapTab> {
                 height: 40,
                 child: ListView(scrollDirection: Axis.horizontal, children: [
                   _Chip('مسیریاب برقی', gradient: true, onTap: () => openScreen(context, 'navigator')),
-                  for (final (v, l) in const [('all', 'همه'), ('fast', 'شارژ سریع'), ('free', 'آزاد اکنون'), ('fav', 'علاقه‌مندی‌ها'), ('public', 'عمومی')])
+                  for (final (v, l) in [
+                    ('all', 'همه'),
+                    ('fast', 'شارژ سریع'),
+                    ('free', 'آزاد اکنون'),
+                    ('fav', 'علاقه‌مندی‌ها'),
+                    ('public', 'عمومی'),
+                    ('quad', 'ایستگاه‌های QUAD EV'),
+                    if (ext.isNotEmpty) ('others', 'سایر اپراتورها'),
+                  ])
                     _Chip(l, selected: filter == v, onTap: () => setState(() => filter = v)),
                 ]),
               ),
@@ -156,11 +188,16 @@ class _MapTabState extends State<MapTab> {
                 Center(child: Container(width: 44, height: 5, decoration: BoxDecoration(color: c.border, borderRadius: BorderRadius.circular(4)))),
                 const SizedBox(height: 14),
                 Row(children: [
-                  Expanded(child: Text('${fa(stations.length)} ایستگاه در این محدوده', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800))),
+                  Expanded(
+                    child: Text(
+                      filter == 'others' ? '${fa(extShown.length)} ایستگاه از سایر اپراتورها' : '${fa(stations.length)} ایستگاه در این محدوده',
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+                    ),
+                  ),
                   Pill('${fa(stats['free'])} آزاد', dot: true),
                 ]),
                 const SizedBox(height: 14),
-                if (stations.isEmpty) const EmptyState('ایستگاهی یافت نشد.', art: Art.station),
+                if (stations.isEmpty && extList.isEmpty) const EmptyState('ایستگاهی یافت نشد.', art: Art.station),
                 for (final s in stations)
                   StationCard(
                     station: s,
@@ -169,6 +206,14 @@ class _MapTabState extends State<MapTab> {
                       openScreen(context, 'charger', {'station': s['code']});
                     },
                   ),
+                if (extList.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  const Text('ایستگاه‌های سایر اپراتورها', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800)),
+                  const SizedBox(height: 4),
+                  Text('فقط برای اطلاع — رزرو و پرداخت این ایستگاه‌ها از QUAD EV انجام نمی‌شود.', style: TextStyle(fontSize: 12, color: c.muted)),
+                  const SizedBox(height: 10),
+                  for (final (s, km) in extList) ExtStationTile(s, km: km, onTap: () => focusExt(s)),
+                ],
               ]),
             ),
           ),
@@ -218,15 +263,20 @@ class _Pin extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(mainAxisSize: MainAxisSize.min, children: [
       Container(
-        width: 36,
-        height: 36,
+        width: 46,
+        height: 46,
+        padding: const EdgeInsets.all(4),
         decoration: BoxDecoration(
           color: color,
           shape: BoxShape.circle,
-          border: Border.all(color: Colors.white, width: 2.5),
-          boxShadow: const [BoxShadow(color: Color(0x40000000), blurRadius: 6, offset: Offset(0, 3))],
+          border: Border.all(color: const Color(0xFFFACC15), width: 3),
+          boxShadow: const [BoxShadow(color: Color(0x59000000), blurRadius: 10, offset: Offset(0, 4))],
         ),
-        child: const Icon(Icons.bolt_rounded, color: Colors.white, size: 20),
+        child: Container(
+          padding: const EdgeInsets.all(2),
+          decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+          child: ClipOval(child: Image.asset(Art.icon, fit: BoxFit.contain)),
+        ),
       ),
       CustomPaint(size: const Size(10, 8), painter: _Tail(color)),
     ]);

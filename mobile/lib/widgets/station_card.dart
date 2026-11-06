@@ -50,6 +50,14 @@ class StationCard extends StatelessWidget {
             ]),
             const SizedBox(height: 4),
             Text('${s['type'] ?? ''}', style: TextStyle(fontSize: 12, color: c.muted)),
+            if ((s['hours'] ?? '') != '') ...[
+              const SizedBox(height: 4),
+              Row(children: [
+                const Icon(Icons.schedule_rounded, size: 13, color: Palette.green),
+                const SizedBox(width: 4),
+                Flexible(child: Text('${s['hours']}', style: const TextStyle(fontSize: 11.5, color: Palette.green, fontWeight: FontWeight.w700))),
+              ]),
+            ],
             const SizedBox(height: 8),
             Row(children: [
               Icon(Icons.near_me_outlined, size: 15, color: c.text2),
@@ -76,6 +84,7 @@ List<Map<String, dynamic>> filterStations(List<Map<String, dynamic>> list, Strin
       'public' => s['cat'] == 'public',
       'free' => s['has_free'] == true,
       'fav' => s['favorite'] == true,
+      'others' => false,
       _ => true,
     };
     final okQuery = q.isEmpty || '${s['name']} ${s['type']} ${s['code']}'.contains(q);

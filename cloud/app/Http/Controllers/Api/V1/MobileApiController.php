@@ -175,9 +175,12 @@ class MobileApiController extends Controller
         $stationCode = $request->query('station');
         $connectorId = $request->query('connector') ? (int) $request->query('connector') : null;
         // QR فیزیکی ممکن است فقط توکن را داشته باشد؛ ایستگاه و کانکتور از خود توکن خوانده می‌شود.
-        if ($qr && ! $stationCode && ($token = QrToken::with('station')->where('token', $qr)->first())) {
-            $stationCode = $token->station?->code;
-            $connectorId ??= $token->connector_id;
+        if ($qr && ($token = QrToken::findActiveByCode($qr))) {
+            $qr = $token->token;
+            if (! $stationCode) {
+                $stationCode = $token->station?->code;
+                $connectorId ??= $token->connector_id;
+            }
         }
         $grant = $auth->tryGrantFromQrToken($qr);
         $d = $this->app->charger($stationCode, $connectorId);

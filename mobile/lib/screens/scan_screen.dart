@@ -15,6 +15,8 @@ Map<String, String>? parseChargerQr(String raw) {
   final value = raw.trim();
   if (value.isEmpty) return null;
   final uri = Uri.tryParse(value);
+  final short = uri == null ? null : RegExp(r'^/q/([A-Za-z0-9]+)/?$').firstMatch(uri.path);
+  if (short != null) return {'qr': short.group(1)!.toUpperCase()};
   if (uri != null && uri.hasScheme && uri.queryParameters.isNotEmpty) {
     final q = uri.queryParameters;
     if (q['qr'] == null && q['station'] == null) return null;

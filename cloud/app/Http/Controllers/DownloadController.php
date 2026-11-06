@@ -12,7 +12,7 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
  */
 class DownloadController extends Controller
 {
-    public const VERSION = '1.1.0';
+    public const VERSION = '1.1.1';
 
     /** معماری => [فایل، برچسب] */
     public const BUILDS = [

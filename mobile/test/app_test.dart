@@ -38,6 +38,7 @@ void main() {
           {'station': 'ST-1', 'connector': '7', 'qr': 'QR-ABC'});
     });
     test('bare token', () => expect(parseChargerQr('QR-M1'), {'qr': 'QR-M1'}));
+    test('short /q/ link', () => expect(parseChargerQr('https://ev.edadras.com/q/ab12cd'), {'qr': 'AB12CD'}));
     test('foreign QR is rejected', () {
       expect(parseChargerQr('https://example.com/?a=1'), isNull);
       expect(parseChargerQr('سلام دنیا'), isNull);
