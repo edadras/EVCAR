@@ -15,9 +15,6 @@ class EvCatalogVehicleSeeder extends Seeder
         'WLTP' => [0.90, 0.78, 0.64],
         'EPA' => [0.95, 0.82, 0.68],
     ];
-
-    private const PENDING_NOTE = 'بخش دوم فهرست: عرضه و مشخصات نسخه نیازمند تأیید است.';
-
     public function run(): void
     {
         if (EvCatalogVehicle::query()->withTrashed()->exists()) {
@@ -71,12 +68,6 @@ class EvCatalogVehicleSeeder extends Seeder
             $frontal = round($entry['dims'][1] * $entry['dims'][2] * 0.84 / 1_000_000, 2);
         }
 
-        $active = (bool) ($entry['active'] ?? true);
-        $notes = $entry['notes'] ?? null;
-        if (! $active) {
-            $notes = trim(self::PENDING_NOTE.' '.($notes ?? ''));
-        }
-
         return [
             'uuid' => (string) Str::uuid(),
             'slug' => $slug,
@@ -99,15 +90,15 @@ class EvCatalogVehicleSeeder extends Seeder
             'range_real_min_km' => $realMin ?: null,
             'range_real_max_km' => $realMax ?: null,
             'range_worst_km' => $worst ?: null,
-            'dc_connector' => $entry['dc_connector'] ?? null,
-            'ac_connector' => $entry['ac_connector'] ?? null,
+            'dc_connector' => $entry['dc_connector'] ?? 'GBT',
+            'ac_connector' => $entry['ac_connector'] ?? 'GBT',
             'dc_max_kw' => $entry['dc_max_kw'] ?? null,
             'ac_max_kw' => $entry['ac_max_kw'] ?? null,
             'consumption' => $consumption,
             'aliases' => $entry['aliases'] ?? [],
-            'notes' => $notes,
+            'notes' => $entry['notes'] ?? null,
             'sort_order' => $sort,
-            'is_active' => $active,
+            'is_active' => (bool) ($entry['active'] ?? true),
         ];
     }
 }
