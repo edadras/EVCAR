@@ -67,10 +67,10 @@
 .ms-station .si{width:50px;height:50px;border-radius:13px;flex:none;display:grid;place-items:center}
 .ms-station .si:not([class*="ic-"]){background:var(--surface-3);color:var(--muted)}
 .ms-station .si svg{width:23px;height:23px}
-.sc-pin{width:38px;height:38px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);display:grid;place-items:center;box-shadow:0 2px 8px rgba(0,0,0,.3);padding:3px}
-.sc-pin img{transform:rotate(45deg);width:100%!important;height:100%!important;border-radius:50%;background:#fff;object-fit:contain}
-.sc-pin.green{background:var(--green)}.sc-pin.amber{background:var(--amber)}.sc-pin.red{background:var(--red)}.sc-pin.gray{background:#94a3b8}
-.op-pin{width:30px;height:30px;border-radius:50%;background:#fff;border:2px solid #fff;box-shadow:0 2px 7px rgba(0,0,0,.3);overflow:hidden;display:grid;place-items:center}
+.sc-pin{width:50px;height:50px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);display:grid;place-items:center;padding:4px;box-shadow:0 0 0 3px #facc15,0 6px 16px rgba(0,0,0,.35)}
+.sc-pin img{transform:rotate(45deg);width:100%!important;height:100%!important;border-radius:50%;background:#fff;object-fit:contain;padding:2px}
+.sc-pin.green{background:var(--green)}.sc-pin.amber{background:var(--amber)}.sc-pin.red{background:var(--red)}.sc-pin.gray{background:#64748b}
+.op-pin{width:22px;height:22px;border-radius:50%;background:#fff;border:1.5px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.25);overflow:hidden;display:grid;place-items:center;opacity:.9}
 .op-pin img{width:100%!important;height:100%!important;object-fit:contain}
 .ext-detail{position:relative;background:var(--surface-2);border:1px solid var(--border-2);border-radius:16px;padding:12px;margin-bottom:16px}
 .ext-detail .ex-close{position:absolute;top:8px;inset-inline-end:8px;width:28px;height:28px;border-radius:50%;border:none;background:var(--surface-3);color:var(--text-2);font-size:16px;cursor:pointer;font-family:inherit}
@@ -110,14 +110,14 @@
     return L.divIcon({
       className:'',
       html:'<div class="sc-pin '+color+'"><img src="'+quadLogo+'" alt=""></div>',
-      iconSize:[38,38],iconAnchor:[19,38],popupAnchor:[0,-36]
+      iconSize:[50,50],iconAnchor:[25,54],popupAnchor:[0,-50]
     });
   }
   function opIcon(s){
     return L.divIcon({
       className:'',
       html:'<div class="op-pin" style="border-color:'+(s.color||'#fff')+'"><img src="'+s.logo+'" alt=""></div>',
-      iconSize:[30,30],iconAnchor:[15,15],popupAnchor:[0,-14]
+      iconSize:[22,22],iconAnchor:[11,11],popupAnchor:[0,-10]
     });
   }
   function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
