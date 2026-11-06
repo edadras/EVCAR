@@ -67,10 +67,10 @@
 .ms-station .si:not([class*="ic-"]){background:var(--surface-3);color:var(--muted)}
 .ms-station .si svg{width:23px;height:23px}
 .sc-pin{width:38px;height:38px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);display:grid;place-items:center;box-shadow:0 2px 8px rgba(0,0,0,.3);padding:3px}
-.sc-pin img{transform:rotate(45deg);width:100%;height:100%;border-radius:50%;background:#fff;object-fit:contain}
+.sc-pin img{transform:rotate(45deg);width:100%!important;height:100%!important;border-radius:50%;background:#fff;object-fit:contain}
 .sc-pin.green{background:var(--green)}.sc-pin.amber{background:var(--amber)}.sc-pin.red{background:var(--red)}.sc-pin.gray{background:#94a3b8}
 .op-pin{width:30px;height:30px;border-radius:50%;background:#fff;border:2px solid #fff;box-shadow:0 2px 7px rgba(0,0,0,.3);overflow:hidden;display:grid;place-items:center}
-.op-pin img{width:100%;height:100%;object-fit:contain}
+.op-pin img{width:100%!important;height:100%!important;object-fit:contain}
 .ext-pop{min-width:220px;max-width:260px;direction:rtl;text-align:right;font-size:12.5px;line-height:1.7}
 .ext-pop .eh{display:flex;gap:9px;align-items:center;margin-bottom:6px}
 .ext-pop .eh img{width:36px;height:36px;border-radius:9px;object-fit:contain;background:#fff;border:1px solid #e5e7eb;flex:none}

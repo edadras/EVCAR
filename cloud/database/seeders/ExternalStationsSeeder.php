@@ -75,17 +75,33 @@ class ExternalStationsSeeder extends Seeder
         }
 
         $rows = require __DIR__.'/data/external_stations_mapna.php';
-        $created = 0;
+        $created = $updated = 0;
         foreach ($rows as $row) {
-            $slug = $row['operator'];
+            $row['ev_operator_id'] = $operators[$row['operator']]->id;
             unset($row['operator']);
-            $station = ExternalStation::firstOrCreate(
-                ['source' => 'emapna', 'source_ref' => $row['source_ref']],
-                $row + ['ev_operator_id' => $operators[$slug]->id, 'is_active' => true],
-            );
-            $created += $station->wasRecentlyCreated ? 1 : 0;
+            $station = ExternalStation::where('source', 'emapna')->where('source_ref', $row['source_ref'])->first();
+            if (! $station) {
+                ExternalStation::create($row + ['source' => 'emapna', 'is_active' => true]);
+                $created++;
+            } elseif ($this->untouched($station)) {
+                $station->timestamps = false;
+                $station->fill($row)->save();
+                $updated++;
+            }
         }
 
-        $this->command?->info("External stations: {$created} new, ".count($rows).' in source.');
+        $stale = ExternalStation::where('source', 'emapna')
+            ->whereNotIn('source_ref', array_column($rows, 'source_ref'))
+            ->get()
+            ->filter(fn (ExternalStation $s) => $this->untouched($s));
+        $stale->each->delete();
+
+        $this->command?->info("External stations: {$created} new, {$updated} synced, {$stale->count()} removed, ".count($rows).' in source.');
+    }
+
+    /** Imported rows the admin never edited keep updated_at equal to created_at. */
+    private function untouched(ExternalStation $station): bool
+    {
+        return $station->updated_at && $station->created_at && $station->updated_at->eq($station->created_at);
     }
 }
