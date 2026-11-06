@@ -47,9 +47,9 @@
             <tbody>
                 @forelse($stations as $s)
                 <tr>
-                    <td>
+                    <td style="white-space:normal;min-width:260px;max-width:360px">
                         <div class="fw7">{{ $s->name }}</div>
-                        <div class="muted fs11" style="max-width:320px">{{ $s->address }}</div>
+                        <div class="muted fs11 mt-4" style="line-height:1.6">{{ $s->address }}</div>
                     </td>
                     <td>
                         <div class="flex items-center gap-8">
