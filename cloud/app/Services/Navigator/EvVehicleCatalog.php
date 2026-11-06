@@ -158,6 +158,8 @@ class EvVehicleCatalog
             'range_real_min_km' => isset($entry['range_real_min_km']) ? (int) $entry['range_real_min_km'] : null,
             'range_real_max_km' => isset($entry['range_real_max_km']) ? (int) $entry['range_real_max_km'] : null,
             'range_worst_km' => isset($entry['range_worst_km']) ? (int) $entry['range_worst_km'] : null,
+            'dc_connector' => $entry['dc_connector'] ?? null,
+            'max_dc_kw' => isset($entry['dc_max_kw']) ? (float) $entry['dc_max_kw'] : null,
         ];
     }
 

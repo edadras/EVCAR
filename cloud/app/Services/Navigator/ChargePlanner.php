@@ -17,6 +17,8 @@ class ChargePlanner
 
     private const MAX_STOPS = 12;
 
+    private const EXTERNAL_PENALTY_KM = 30;
+
     /** @var list<float> */
     private array $kmPoints = [];
 
@@ -96,9 +98,12 @@ class ChargePlanner
                 if ($arrive < $batteryKwh * self::ARRIVAL_BUFFER_SOC / 100) {
                     continue;
                 }
-                // دورترین؛ در فاصلهٔ برابر (±۵ کیلومتر) ایستگاه پرقدرت‌تر.
-                if ($best === null || $km > (float) $best['route_km'] + 5
-                    || (abs($km - (float) $best['route_km']) <= 5 && (int) $ch['max_power_kw'] > (int) $best['max_power_kw'])) {
+                // دورترین؛ در فاصلهٔ برابر (±۵ کیلومتر) ایستگاه پرقدرت‌تر. ایستگاه سایر اپراتورها فقط وقتی
+                // جای ایستگاه QUAD EV را می‌گیرد که دست‌کم EXTERNAL_PENALTY_KM جلوتر باشد.
+                $score = $km - (empty($ch['external']) ? 0 : self::EXTERNAL_PENALTY_KM);
+                $bestScore = $best === null ? 0 : (float) $best['route_km'] - (empty($best['external']) ? 0 : self::EXTERNAL_PENALTY_KM);
+                if ($best === null || $score > $bestScore + 5
+                    || (abs($score - $bestScore) <= 5 && (int) $ch['max_power_kw'] > (int) $best['max_power_kw'])) {
                     $best = $ch;
                     $bestArrive = $arrive;
                 }
@@ -132,7 +137,9 @@ class ChargePlanner
             $arriveSoc = $bestArrive / $batteryKwh * 100;
             $chargedKwh = max(0, $departKwh - $bestArrive);
             $minutes = $this->chargeMinutes($arriveSoc, $departSoc, $batteryKwh, min((float) ($best['max_power_kw'] ?: 22), $vehicleMaxKw));
-            $cost = $chargedKwh * $pricePerKwh + $sessionFee;
+            $cost = empty($best['external'])
+                ? $chargedKwh * $pricePerKwh + $sessionFee
+                : $chargedKwh * (float) ($best['price_per_kwh_rial'] ?? $pricePerKwh);
             $minSoc = min($minSoc, $arriveSoc);
 
             $result['stops'][] = array_merge($best, [

@@ -2,6 +2,7 @@
 
 namespace App\Services\Navigator;
 
+use App\Models\ExternalStation;
 use App\Models\Station;
 use App\Models\Tariff;
 use App\Models\User;
@@ -361,7 +362,7 @@ class EvNavigatorService
 
         $segments = $this->buildSegments($points, $elevations, $vehicleForSegments, $weatherSamples, $avgSpeedKmh);
         $segments = $this->attachSocToSegments($segments, $batteryKwh, $soc);
-        $corridorChargers = $this->stationsAlongRoute($points);
+        $corridorChargers = $this->stationsAlongRoute($points, $vehicle['dc_connector'] ?? null);
         $chargerContext = $this->planCharging($corridorChargers, $segments, $vehicle, $batteryKwh, $soc, $targetSoc);
         $chargeSimulation = $chargerContext['simulation'];
 
@@ -373,7 +374,7 @@ class EvNavigatorService
             'chargers' => $chargerContext['display'],
             'candidates' => $chargerContext['candidates'],
             'corridor_charger_count' => count($corridorChargers),
-            'route_stations' => collect($corridorChargers)->sortBy('route_km')->take(20)->values()->all(),
+            'route_stations' => $this->routeStationList($corridorChargers, $chargeSimulation['stops'] ?? []),
             'needs_charge' => $chargerContext['needs_charge'],
             'stations_missing' => $chargerContext['stations_missing'],
             'estimated_charge_stops' => $chargerContext['estimated_charge_stops'],
@@ -863,7 +864,7 @@ class EvNavigatorService
 
     /** @param  list<array{0:float,1:float}>  $points */
     /** @return list<array<string, mixed>> */
-    private function stationsAlongRoute(array $points): array
+    private function stationsAlongRoute(array $points, ?string $dcConnector = null): array
     {
         if ($points === []) {
             return [];
@@ -873,11 +874,27 @@ class EvNavigatorService
         $lats = array_column($points, 0);
         $lngs = array_column($points, 1);
         $pad = 0.15;
+        $latRange = [min($lats) - $pad, max($lats) + $pad];
+        $lngRange = [min($lngs) - $pad, max($lngs) + $pad];
+
+        $nearest = function (float $lat, float $lng) use ($points): array {
+            $bestIdx = 0;
+            $minDist = PHP_FLOAT_MAX;
+            foreach ($points as $idx => $pt) {
+                $d = Geo::haversineKm($pt[0], $pt[1], $lat, $lng);
+                if ($d < $minDist) {
+                    $minDist = $d;
+                    $bestIdx = $idx;
+                }
+            }
+
+            return [$bestIdx, $minDist];
+        };
 
         $stations = Station::query()
             ->where('status', 'active')
-            ->whereBetween('latitude', [min($lats) - $pad, max($lats) + $pad])
-            ->whereBetween('longitude', [min($lngs) - $pad, max($lngs) + $pad])
+            ->whereBetween('latitude', $latRange)
+            ->whereBetween('longitude', $lngRange)
             ->with(['chargers.connectors'])
             ->get();
 
@@ -887,15 +904,7 @@ class EvNavigatorService
                 continue;
             }
 
-            $bestIdx = 0;
-            $minDist = PHP_FLOAT_MAX;
-            foreach ($points as $idx => $pt) {
-                $d = Geo::haversineKm($pt[0], $pt[1], (float) $st->latitude, (float) $st->longitude);
-                if ($d < $minDist) {
-                    $minDist = $d;
-                    $bestIdx = $idx;
-                }
-            }
+            [$bestIdx, $minDist] = $nearest((float) $st->latitude, (float) $st->longitude);
             if ($minDist > 25) {
                 continue;
             }
@@ -914,12 +923,78 @@ class EvNavigatorService
                 'free_ports' => $free,
                 'max_power_kw' => (int) $st->chargers->max('max_power_kw'),
                 'url' => route('app.charger', ['station' => $st->code]),
+                'external' => false,
+            ];
+        }
+
+        $external = ExternalStation::query()
+            ->where('is_active', true)
+            ->whereNotNull('dc_max_kw')
+            ->whereHas('operator', fn ($q) => $q->where('is_active', true))
+            ->whereBetween('latitude', $latRange)
+            ->whereBetween('longitude', $lngRange)
+            ->with('operator')
+            ->get();
+
+        foreach ($external as $es) {
+            if ($dcConnector && $es->dc_connectors && ! in_array($dcConnector, $es->dc_connectors, true)) {
+                continue;
+            }
+            [$bestIdx, $minDist] = $nearest($es->latitude, $es->longitude);
+            if ($minDist > 10) {
+                continue;
+            }
+
+            $result[] = [
+                'uuid' => 'ext-'.$es->id,
+                'code' => null,
+                'name' => $es->name,
+                'lat' => $es->latitude,
+                'lng' => $es->longitude,
+                'route_km' => round($cumKm[$bestIdx], 1),
+                'offset_km' => round($minDist, 1),
+                'free_ports' => null,
+                'max_power_kw' => (int) round((float) $es->dc_max_kw),
+                'url' => null,
+                'external' => true,
+                'operator' => $es->operator->name,
+                'operator_logo' => $es->operator->logoUrl(),
+                'connectors' => $es->connectorLabel(),
+                'price_per_kwh_rial' => $es->tariff_toman ? $es->tariff_toman * 10 : null,
             ];
         }
 
         usort($result, fn ($a, $b) => $a['route_km'] <=> $b['route_km']);
 
-        return array_slice($result, 0, 15);
+        return array_slice($result, 0, 80);
+    }
+
+    /**
+     * ایستگاه‌های خود مجموعه همه نمایش داده می‌شوند؛ از سایر اپراتورها در هر ۲۵ کیلومتر مسیر
+     * فقط پرقدرت‌ترین (و همیشه ایستگاه‌های انتخاب‌شده در برنامهٔ شارژ).
+     *
+     * @param  list<array<string, mixed>>  $corridor
+     * @param  list<array<string, mixed>>  $stops
+     * @return list<array<string, mixed>>
+     */
+    private function routeStationList(array $corridor, array $stops): array
+    {
+        $planned = array_flip(array_column($stops, 'station_uuid'));
+        $buckets = [];
+        $list = [];
+        foreach ($corridor as $st) {
+            if (empty($st['external']) || isset($planned[$st['uuid']])) {
+                $list[] = $st;
+
+                continue;
+            }
+            $b = (int) floor($st['route_km'] / 25);
+            if (! isset($buckets[$b]) || $st['max_power_kw'] > $buckets[$b]['max_power_kw']) {
+                $buckets[$b] = $st;
+            }
+        }
+
+        return collect($list)->merge(array_values($buckets))->unique('uuid')->sortBy('route_km')->take(25)->values()->all();
     }
 
     /** @return array<string, mixed> */
@@ -934,7 +1009,7 @@ class EvNavigatorService
         $route = $this->fetchOsrmRoute($origin, $destination);
         $points = $this->smartSampleRoute($route['coordinates'], 80);
         $geometry = $this->analyzeGeometry($points, $route, $vehicle, $batteryKwh, $soc, $targetSoc);
-        $corridorChargers = $this->stationsAlongRoute($points);
+        $corridorChargers = $this->stationsAlongRoute($points, $vehicle['dc_connector'] ?? null);
         $chargerContext = $this->planCharging($corridorChargers, $geometry['segments'], $vehicle, $batteryKwh, $soc, $targetSoc);
 
         return [

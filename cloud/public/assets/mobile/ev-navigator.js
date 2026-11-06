@@ -293,18 +293,20 @@
       var mk = L.circleMarker([stop.lat, stop.lng], {
         radius: 10, color: '#fff', fillColor: '#EF9F27', fillOpacity: 1, weight: 3,
       }).addTo(map).bindPopup(
-        '<b>⚡ توقف ' + fa(i + 1) + ': ' + stop.name + '</b><br>' + (stop.reason || 'شارژ در مسیر')
+        '<b>⚡ توقف ' + fa(i + 1) + ': ' + esc(stop.name) + '</b><br>' +
+        (stop.external ? 'ایستگاه ' + esc(stop.operator) + '<br>' : '') + (stop.reason || 'شارژ در مسیر')
       );
       mk.on('click', function () { if (stop.url) window.location.href = stop.url; });
       chargerMarkers.push(mk);
     });
 
-    (data.chargers || []).forEach(function (ch) {
+    (data.route_stations || data.chargers || []).forEach(function (ch) {
       if (plannedUuids[ch.uuid]) return;
       var mk = L.circleMarker([ch.lat, ch.lng], {
-        radius: 6, color: '#fff', fillColor: '#1D9E75', fillOpacity: 0.85, weight: 2,
+        radius: 6, color: '#fff', fillColor: ch.external ? '#3B82F6' : '#1D9E75', fillOpacity: 0.85, weight: 2,
       }).addTo(map).bindPopup(
-        '<b>' + ch.name + '</b><br>کیلومتر ' + fa(ch.route_km) + '<br>' + fa(ch.free_ports) + ' کانکتور آزاد'
+        '<b>' + esc(ch.name) + '</b><br>کیلومتر ' + fa(ch.route_km) + '<br>' +
+        (ch.external ? 'ایستگاه ' + esc(ch.operator) : fa(ch.free_ports) + ' کانکتور آزاد')
       );
       mk.on('click', function () { if (ch.url) window.location.href = ch.url; });
       chargerMarkers.push(mk);
@@ -533,16 +535,38 @@
       return;
     }
     el.innerHTML = chargers.map(function (ch, i) {
-      return '<a class="nav-plan-item" href="' + (ch.url || '#') + '">' +
-        '<div class="pi">' + fa(i + 1) + '</div>' +
-        '<div style="flex:1"><div class="fw7">' + ch.name + '</div>' +
+      var pill = ch.external
+        ? '<span class="pill" style="background:#e0edff;color:#1d4f91">' + esc(ch.operator || 'سایر اپراتورها') + '</span>'
+        : (ch.free_ports > 0
+          ? '<span class="pill pill-green">' + fa(ch.free_ports) + ' آزاد</span>'
+          : '<span class="pill" style="background:var(--surface-3);color:var(--muted)">پر / خاموش</span>');
+      return '<a class="nav-plan-item" href="' + stationHref(ch) + '"' + (ch.external ? ' target="_blank" rel="noopener"' : '') + '>' +
+        stationBadge(ch, fa(i + 1)) +
+        '<div style="flex:1"><div class="fw7">' + esc(ch.name) + '</div>' +
         '<div class="fs12 muted mt4">کیلومتر ' + fa(Math.round(ch.route_km)) + ' مسیر' +
           (ch.offset_km >= 1 ? ' · ' + fa(ch.offset_km) + ' کیلومتر از جاده' : '') +
           (ch.max_power_kw ? ' · ' + fa(ch.max_power_kw) + ' کیلووات' : '') + '</div></div>' +
-        (ch.free_ports > 0
-          ? '<span class="pill pill-green">' + fa(ch.free_ports) + ' آزاد</span>'
-          : '<span class="pill" style="background:var(--surface-3);color:var(--muted)">پر / خاموش</span>') + '</a>';
+        pill + '</a>';
     }).join('');
+  }
+
+  function esc(v) {
+    return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+
+  function stationHref(st) {
+    if (!st.external) return st.url || '#';
+    return 'https://www.google.com/maps/dir/?api=1&destination=' + st.lat + ',' + st.lng;
+  }
+
+  function stationBadge(st, fallback) {
+    if (st.external && st.operator_logo) {
+      return '<div class="pi" style="background:#fff;border:1px solid var(--border-2);overflow:hidden;padding:2px">' +
+        '<img src="' + esc(st.operator_logo) + '" alt="" style="width:100%;height:100%;object-fit:contain"></div>';
+    }
+    return '<div class="pi">' + fallback + '</div>';
   }
 
   function renderVerdict(data) {
@@ -595,11 +619,12 @@
     var planEl = document.getElementById('chargePlan');
     planWrap.hidden = !stops.length;
     planEl.innerHTML = stops.map(function (p, i) {
-      return '<a class="nav-plan-item" href="' + (p.url || '#') + '">' +
-        '<div class="pi">' + (window.icon ? window.icon('plug') : '⚡') + '</div>' +
-        '<div style="flex:1"><div class="fw7">' + fa(i + 1) + '. ' + p.name + '</div>' +
+      return '<a class="nav-plan-item" href="' + stationHref(p) + '"' + (p.external ? ' target="_blank" rel="noopener"' : '') + '>' +
+        stationBadge(p, window.icon ? window.icon('plug') : '⚡') +
+        '<div style="flex:1"><div class="fw7">' + fa(i + 1) + '. ' + esc(p.name) + '</div>' +
         '<div class="fs12 muted mt4">کیلومتر ' + fa(Math.round(p.km)) + ' مسیر' +
           (p.duration_min ? ' · حدود ' + fa(p.duration_min) + ' دقیقه شارژ' : '') + '</div>' +
+        (p.external ? '<div class="fs11 mt4" style="color:#1d4f91">ایستگاه ' + esc(p.operator) + ' — پرداخت در اپ همان اپراتور</div>' : '') +
         '</div>' +
         '<span class="pill pill-accent">تا ' + fa(p.charge_to_soc || TRIP.charge_to_soc) + '٪</span></a>';
     }).join('');
