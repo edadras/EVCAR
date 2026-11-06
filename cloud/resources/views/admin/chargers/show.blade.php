@@ -6,6 +6,7 @@
   <a href="{{ route('admin.stations.show', $charger->station) }}" class="btn btn-sm">بازگشت به ایستگاه</a>
   <div class="flex gap-8">
     <a href="{{ route('admin.remote', ['station' => $charger->station_id]) }}" class="btn btn-sm">کنترل از راه دور</a>
+    <a href="{{ route('admin.chargers.config', $charger) }}" class="btn btn-sm">تنظیمات دستگاه (OCPP)</a>
     <a href="{{ route('admin.chargers.edit', $charger) }}" class="btn btn-sm btn-primary">ویرایش شارژر و کانکتورها</a>
   </div>
 </div>

@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\AlertController;
 use App\Http\Controllers\Admin\ApiController;
 use App\Http\Controllers\Admin\AuthController;
+use App\Http\Controllers\Admin\ChargerConfigController;
 use App\Http\Controllers\Admin\ChargerController;
 use App\Http\Controllers\Admin\ChargingSessionController;
 use App\Http\Controllers\Admin\DashboardController;
@@ -67,6 +68,9 @@ Route::middleware(['auth', 'staff'])->group(function () {
     Route::post('stations/{station}/chargers', [ChargerController::class, 'store'])->name('stations.chargers.store');
     Route::get('chargers/{charger}', [ChargerController::class, 'show'])->name('chargers.show');
     Route::get('chargers/{charger}/edit', [ChargerController::class, 'edit'])->name('chargers.edit');
+    Route::get('chargers/{charger}/config', [ChargerConfigController::class, 'show'])->name('chargers.config');
+    Route::post('chargers/{charger}/config/refresh', [ChargerConfigController::class, 'refresh'])->name('chargers.config.refresh');
+    Route::post('chargers/{charger}/config', [ChargerConfigController::class, 'update'])->name('chargers.config.update');
     Route::put('chargers/{charger}', [ChargerController::class, 'update'])->name('chargers.update');
     Route::delete('chargers/{charger}', [ChargerController::class, 'destroy'])->name('chargers.destroy');
     Route::delete('connectors/{connector}', [ChargerController::class, 'destroyConnector'])->name('connectors.destroy');
