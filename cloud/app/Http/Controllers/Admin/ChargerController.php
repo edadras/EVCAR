@@ -8,6 +8,7 @@ use App\Models\ChargingSession;
 use App\Models\Connector;
 use App\Models\QrToken;
 use App\Models\Station;
+use App\Services\Ocpp\CloudOcppCommander;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -42,6 +43,7 @@ class ChargerController extends Controller
                 'meta' => array_filter([
                     'name' => $data['name'] ?? null,
                     'ocpp_password' => $data['ocpp_password'] ?? null,
+                    'clock_mode' => $data['clock_mode'] ?? 'local',
                 ]),
             ]);
             $this->addConnectors($charger, 1, (int) $data['connector_count']);
@@ -73,10 +75,12 @@ class ChargerController extends Controller
     {
         $charger->load('connectors');
         $data = $this->validated($request, $charger);
+        $clockChanged = isset($data['clock_mode']) && ($charger->meta['clock_mode'] ?? 'utc') !== $data['clock_mode'];
 
         DB::transaction(function () use ($data, $charger) {
             $meta = $charger->meta ?? [];
             $meta['name'] = $data['name'] ?? null;
+            $meta['clock_mode'] = $data['clock_mode'] ?? $meta['clock_mode'] ?? 'utc';
             if (! empty($data['ocpp_password'])) {
                 $meta['ocpp_password'] = $data['ocpp_password'];
             } elseif (! empty($data['clear_ocpp_password'])) {
@@ -114,6 +118,11 @@ class ChargerController extends Controller
                 $this->addConnectors($charger, $current + 1, (int) $data['connector_count']);
             }
         });
+
+        if ($clockChanged && $charger->is_online) {
+            // پاسخ Heartbeat ساعت جدید را به دستگاه می‌رساند.
+            app(CloudOcppCommander::class)->dispatch($charger->charge_point_id, 'TriggerMessage', ['requestedMessage' => 'Heartbeat']);
+        }
 
         return redirect()
             ->route('admin.chargers.show', $charger)
@@ -192,6 +201,7 @@ class ChargerController extends Controller
             'status' => ['nullable', 'in:active,inactive,maintenance'],
             'ocpp_password' => ['nullable', 'string', 'min:8', 'max:40'],
             'clear_ocpp_password' => ['nullable', 'boolean'],
+            'clock_mode' => ['nullable', 'in:'.implode(',', array_keys(Charger::CLOCK_MODES))],
             'connectors' => ['nullable', 'array'],
             'connectors.*.name' => ['nullable', 'string', 'max:40'],
             'connectors.*.max_power_kw' => ['nullable', 'integer', 'min:1', 'max:500'],

@@ -42,6 +42,14 @@
               @endforeach
             </select>
           </div>
+          <div class="ffield"><label>ساعت و تاریخ دستگاه</label>
+            <select class="fselect" name="clock_mode">
+              @foreach(\App\Models\Charger::CLOCK_MODES as $v => $l)
+              <option value="{{ $v }}" @selected(old('clock_mode', $editing ? ($cmeta['clock_mode'] ?? 'utc') : 'local')===$v)>{{ $l }}</option>
+              @endforeach
+            </select>
+            <span class="fhint">اگر صفحهٔ شارژر ساعت را ۳:۳۰ عقب نشان می‌دهد «وقت تهران» را انتخاب کنید؛ زمان‌های گزارش‌ها خودکار اصلاح می‌شوند.</span>
+          </div>
           @if($editing)
           <div class="ffield"><label>وضعیت شارژر</label>
             <select class="fselect" name="status">

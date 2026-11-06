@@ -7,6 +7,7 @@ use App\Models\OcppCall;
 use App\Models\OcppMessageLog;
 use App\Services\Ocpp\WebSocket\Connection;
 use App\Services\Ocpp\WebSocket\WebSocketHandler;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
@@ -298,9 +299,26 @@ class CloudCentralSystem implements WebSocketHandler
                 'call_id' => $call->id,
                 'sent_at' => microtime(true),
             ];
-            $payload = $call->payload ?: (object) [];
+            $payload = $this->toDeviceClock($chargePointId, $call->payload ?: []) ?: (object) [];
             $this->sendRaw($connection, $chargePointId, [self::CALL, $messageId, $call->action, $payload], $call->action);
         }
+    }
+
+    /** @param array<string, mixed> $payload @return array<string, mixed> */
+    private function toDeviceClock(string $chargePointId, array $payload): array
+    {
+        $fields = array_intersect(array_keys($payload), ['expiryDate', 'retrieveDate']);
+        if ($fields === [] || ! Charger::where('charge_point_id', $chargePointId)->first()?->usesLocalClock()) {
+            return $payload;
+        }
+        foreach ($fields as $field) {
+            try {
+                $payload[$field] = CarbonImmutable::parse((string) $payload[$field])->setTimezone(Charger::DEVICE_TIMEZONE)->format('Y-m-d\TH:i:s\Z');
+            } catch (\Throwable) {
+            }
+        }
+
+        return $payload;
     }
 
     private function expireOutstanding(): void

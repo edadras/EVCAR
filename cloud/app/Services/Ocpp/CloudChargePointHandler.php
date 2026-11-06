@@ -21,6 +21,9 @@ use Illuminate\Support\Facades\Log;
  */
 class CloudChargePointHandler
 {
+    /** ساعت دستگاه به وقت محلی است ولی با پسوند Z گزارش می‌شود. */
+    private bool $localClock = false;
+
     public function __construct(
         private DirectChargingService $charging,
         private CloudOcppCommander $commander,
@@ -37,6 +40,7 @@ class CloudChargePointHandler
         if (! $charger) {
             throw new OcppError('SecurityError', 'Unknown charge point');
         }
+        $this->localClock = $charger->usesLocalClock();
 
         return match ($action) {
             'BootNotification' => $this->boot($charger, $payload),
@@ -151,7 +155,7 @@ class CloudChargePointHandler
 
         return [
             'status' => 'Accepted',
-            'currentTime' => now()->utc()->format('Y-m-d\TH:i:s.v\Z'),
+            'currentTime' => $this->deviceNow(),
             'interval' => max(10, (int) $this->commander->setting('heartbeat_interval', 60)),
         ];
     }
@@ -161,7 +165,7 @@ class CloudChargePointHandler
     {
         $charger->update(['last_heartbeat_at' => now(), 'is_online' => true]);
 
-        return ['currentTime' => now()->utc()->format('Y-m-d\TH:i:s.v\Z')];
+        return ['currentTime' => $this->deviceNow()];
     }
 
     /** @return array<string, mixed> */
@@ -430,6 +434,13 @@ class CloudChargePointHandler
             : null;
     }
 
+    private function deviceNow(): string
+    {
+        $now = $this->localClock ? now(Charger::DEVICE_TIMEZONE) : now()->utc();
+
+        return $now->format('Y-m-d\TH:i:s.v\Z');
+    }
+
     private function markLost(ChargingSession $session, string $reason): void
     {
         $meta = $session->meta ?? [];
@@ -476,7 +487,11 @@ class CloudChargePointHandler
     private function timestamp(mixed $value): CarbonInterface
     {
         try {
-            $time = CarbonImmutable::parse((string) $value)->setTimezone(config('app.timezone'));
+            $time = CarbonImmutable::parse((string) $value);
+            if ($this->localClock) {
+                $time = CarbonImmutable::parse($time->utc()->format('Y-m-d H:i:s.u'), Charger::DEVICE_TIMEZONE);
+            }
+            $time = $time->setTimezone(config('app.timezone'));
         } catch (\Throwable) {
             return now();
         }

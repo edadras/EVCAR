@@ -22,6 +22,19 @@ class Charger extends Model
         'Type1' => 'AC Type1',
     ];
 
+    /** ساعتی که در BootNotification/Heartbeat به دستگاه فرستاده می‌شود. */
+    public const CLOCK_MODES = [
+        'local' => 'وقت تهران (برای نمایش درست روی صفحهٔ شارژر)',
+        'utc' => 'UTC استاندارد OCPP',
+    ];
+
+    public const DEVICE_TIMEZONE = 'Asia/Tehran';
+
+    public function usesLocalClock(): bool
+    {
+        return ($this->meta['clock_mode'] ?? 'utc') === 'local';
+    }
+
     protected $fillable = [
         'uuid', 'station_id', 'charge_point_id', 'vendor', 'model',
         'serial_number', 'firmware_version', 'max_power_kw', 'connector_type',
