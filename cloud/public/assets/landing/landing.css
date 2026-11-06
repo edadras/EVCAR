@@ -262,6 +262,7 @@ footer{background:var(--navy);color:rgba(255,255,255,.72);padding:70px 0 30px;fo
 @media (max-width:720px){
   .wrap{width:calc(100% - 32px)}
   .rv.rv-l:not(.in),.rv.rv-r:not(.in){transform:translateY(30px)}
+  .store-row .btn{flex:1 1 100%;height:56px!important}
   .nav-cta .btn-glass{display:none}
   .hero-inner{padding:110px 0 120px}
   .hero::before{background:linear-gradient(0deg,rgba(6,22,41,.98) 0%,rgba(6,22,41,.86) 48%,rgba(6,22,41,.25) 78%,rgba(6,22,41,.45) 100%)}
