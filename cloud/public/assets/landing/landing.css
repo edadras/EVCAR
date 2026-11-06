@@ -53,7 +53,7 @@ a{color:inherit;text-decoration:none}
   linear-gradient(270deg,rgba(6,22,41,.94) 0%,rgba(6,22,41,.78) 32%,rgba(6,22,41,.25) 62%,rgba(6,22,41,.05) 100%),
   linear-gradient(0deg,rgba(6,22,41,.95) 0%,transparent 35%)}
 .hero-grid{position:absolute;inset:0;z-index:-1;background-image:linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px);background-size:64px 64px;mask-image:radial-gradient(ellipse at 75% 40%,#000 0%,transparent 60%)}
-.hero-inner{position:relative;padding:130px 0 120px;width:100%}
+.hero-inner{position:relative;padding:130px 0 120px}
 .hero-copy{max-width:600px}
 .eyebrow{display:inline-flex;align-items:center;gap:10px;padding:7px 14px 7px 16px;border-radius:40px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);font-size:13.5px;font-weight:700;backdrop-filter:blur(8px)}
 .eyebrow .live{width:9px;height:9px;border-radius:50%;background:#22c55e;box-shadow:0 0 0 0 rgba(34,197,94,.7);animation:livep 2s infinite}
@@ -251,8 +251,8 @@ footer{background:var(--navy);color:rgba(255,255,255,.72);padding:70px 0 30px;fo
   .feat.wide{grid-column:span 2}
   .split{grid-template-columns:1fr;gap:50px}
   .phones{height:560px}
-  .fc-free{left:auto;right:8%;top:auto;bottom:30%}
-  .fc-pay{display:none}
+  .fc-free,.fc-pay{display:none!important}
+  .fc-charge{bottom:12%}
   .cta-box{grid-template-columns:1fr;padding:50px 34px}
   .cta-art{display:none}
   .foot{grid-template-columns:1fr 1fr}
