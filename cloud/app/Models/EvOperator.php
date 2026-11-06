@@ -28,6 +28,6 @@ class EvOperator extends Model
     {
         $path = $this->logo_path ?: self::DEFAULT_LOGO;
 
-        return str_starts_with($path, 'http') ? $path : asset(ltrim($path, '/'));
+        return str_starts_with($path, 'http') ? $path : '/'.ltrim($path, '/');
     }
 }

@@ -98,7 +98,7 @@
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(map);
     var bounds = [];
     ours.forEach(function (m) {
-        L.marker([m.lat, m.lng], { icon: window.scLogoPin(@json(asset('assets/brand/quad-icon-256.png')), 'quad'), zIndexOffset: 1000 })
+        L.marker([m.lat, m.lng], { icon: window.scLogoPin('/assets/brand/quad-icon-256.png', 'quad'), zIndexOffset: 1000 })
             .addTo(map).bindPopup('<b>' + m.name + '</b><br>ایستگاه QUAD EV');
     });
     ext.forEach(function (m) {

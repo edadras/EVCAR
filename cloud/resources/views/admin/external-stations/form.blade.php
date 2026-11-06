@@ -166,7 +166,7 @@
     var map = L.map('pickMap').setView(hasPos ? [+latIn.value, +lngIn.value] : [35.70, 51.40], hasPos ? 15 : 11);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(map);
     ours.forEach(function (m) {
-        L.marker([m.lat, m.lng], { icon: window.scLogoPin(@json(asset('assets/brand/quad-icon-256.png')), 'quad') }).addTo(map).bindTooltip(m.name);
+        L.marker([m.lat, m.lng], { icon: window.scLogoPin('/assets/brand/quad-icon-256.png', 'quad') }).addTo(map).bindTooltip(m.name);
     });
     var marker = null;
     function logo() { var o = opSel && opSel.selectedOptions[0]; return o ? o.getAttribute('data-logo') : ''; }

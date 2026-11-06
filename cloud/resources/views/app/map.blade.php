@@ -93,7 +93,7 @@
   var markers=@json($mapMarkers);
   var stations=@json($mapStations);
   var ext=@json($externalStations);
-  var quadLogo=@json(asset('assets/brand/quad-icon-256.png'));
+  var quadLogo='/assets/brand/quad-icon-256.png';
   var center=@json($mapCenter);
   var userLat=center.lat,userLng=center.lng;
   var filter='all',searchQ='';

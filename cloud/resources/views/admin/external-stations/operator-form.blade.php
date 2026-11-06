@@ -65,7 +65,7 @@
                 <div class="card-head"><h3>لوگو</h3></div>
                 <div class="card-pad">
                     <div style="display:grid;place-items:center;margin-bottom:12px">
-                        <img id="logoPrev" src="{{ $operator?->logoUrl() ?? asset('assets/operators/generic.png') }}" alt="" style="width:96px;height:96px;object-fit:contain;border-radius:50%;background:#fff;border:2px solid var(--border-2)">
+                        <img id="logoPrev" src="{{ $operator?->logoUrl() ?? '/assets/operators/generic.png' }}" alt="" style="width:96px;height:96px;object-fit:contain;border-radius:50%;background:#fff;border:2px solid var(--border-2)">
                     </div>
                     <input class="finput" type="file" name="logo" accept="image/png,image/jpeg,image/webp" id="logoIn">
                     <div class="fhint">PNG/JPG/WebP، حداکثر ۱ مگابایت — مربعی و با پس‌زمینهٔ شفاف بهتر دیده می‌شود</div>
