@@ -14,11 +14,11 @@
 </head>
 <body data-no-tab>
 <div class="phone login-phone">
-    <div class="login-bg" aria-hidden="true">
-        <img class="fx-kenburns" src="/assets/app-img/login-hero.webp" alt="">
-        <div class="login-particles"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
-    </div>
     <div class="login-top">
+        <div class="login-bg" aria-hidden="true">
+            <img class="fx-kenburns" src="/assets/app-img/login-hero.webp" alt="">
+            <div class="login-particles"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        </div>
         <img class="logo-img" src="/assets/brand/quad-logo-white.png" alt="QUAD EV">
         <div class="logo-sub">شارژ هوشمند خودرو برقی</div>
         <div class="login-feats">
@@ -110,15 +110,15 @@
 
 <style>
 .login-phone{background:#071a2c;position:relative}
-.login-bg{position:absolute;inset:0;overflow:hidden;z-index:0}
-.login-bg img{width:100%;height:100%;object-fit:cover;object-position:50% 70%}
-.login-bg::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(5,20,38,.55) 0%,rgba(5,20,38,.1) 38%,rgba(5,20,38,.35) 62%,rgba(5,20,38,.85) 100%)}
+.login-bg{position:absolute;top:0;left:0;right:0;bottom:-34px;overflow:hidden;z-index:-1}
+.login-bg img{width:100%;height:100%;object-fit:cover;object-position:50% 78%}
+.login-bg::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(5,20,38,.6) 0%,rgba(5,20,38,.15) 45%,rgba(5,20,38,0) 70%,rgba(5,20,38,.25) 100%)}
 .login-particles{position:absolute;inset:0;z-index:1;pointer-events:none}
 .login-particles i{position:absolute;bottom:-10px;width:6px;height:6px;border-radius:50%;background:#7cc8ff;box-shadow:0 0 10px 2px rgba(124,200,255,.8);opacity:0}
 .login-particles i:nth-child(even){background:#ffb36b;box-shadow:0 0 10px 2px rgba(255,160,80,.8)}
 .login-particles i:nth-child(1){left:12%}.login-particles i:nth-child(2){left:26%;width:4px;height:4px}.login-particles i:nth-child(3){left:41%}.login-particles i:nth-child(4){left:55%;width:4px;height:4px}
 .login-particles i:nth-child(5){left:68%}.login-particles i:nth-child(6){left:79%;width:5px;height:5px}.login-particles i:nth-child(7){left:88%;width:3px;height:3px}.login-particles i:nth-child(8){left:34%;width:3px;height:3px}
-.login-top{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;gap:6px;position:relative;z-index:2;padding:20px;text-shadow:0 2px 12px rgba(0,0,0,.35)}
+.login-top{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:12% 20px 20px;color:#fff;gap:6px;position:relative;z-index:1;isolation:isolate;text-shadow:0 2px 12px rgba(0,0,0,.35);min-height:300px}
 .login-sheet{position:relative;z-index:2}
 .login-feats{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:14px}
 .login-feats span{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:7px 12px;border-radius:30px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.22);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}

@@ -106,7 +106,7 @@
 <style>
 .active-card{
   display:block; border-radius:24px; padding:18px; color:#fff; position:relative; overflow:hidden;
-  background:linear-gradient(140deg,var(--accent),color-mix(in srgb,var(--accent) 48%,var(--orange)));
+  background:radial-gradient(circle at 0% 100%,rgba(249,115,22,.55),transparent 50%),linear-gradient(140deg,color-mix(in srgb,var(--accent) 55%,#020d1a),var(--accent) 55%,color-mix(in srgb,var(--accent) 70%,#7dd3fc));
   box-shadow:0 16px 34px rgba(var(--accent-rgb),.4);
 }
 .active-card::after{content:"";position:absolute;inset:0;background:radial-gradient(circle at 88% 6%,rgba(255,255,255,.22),transparent 42%)}

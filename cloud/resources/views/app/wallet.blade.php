@@ -84,7 +84,7 @@
 
 @push('styles')
 <style>
-.wcard{position:relative;overflow:hidden;border-radius:24px;padding:20px;color:#fff;background:linear-gradient(140deg,var(--accent),color-mix(in srgb,var(--accent) 45%,var(--orange)));box-shadow:0 16px 34px rgba(var(--accent-rgb),.4)}
+.wcard{position:relative;overflow:hidden;border-radius:24px;padding:20px;color:#fff;background:radial-gradient(circle at 0% 100%,rgba(249,115,22,.6),transparent 48%),linear-gradient(140deg,color-mix(in srgb,var(--accent) 55%,#020d1a),var(--accent) 55%,color-mix(in srgb,var(--accent) 70%,#7dd3fc));box-shadow:0 16px 34px rgba(var(--accent-rgb),.4)}
 .wcard::after{content:"";position:absolute;inset:0;background:radial-gradient(circle at 86% 0%,rgba(255,255,255,.22),transparent 45%)}
 .wbal{font-size:32px;font-weight:800;margin:14px 0 18px;position:relative;z-index:1}
 .wcard-art{position:absolute;left:-6px;bottom:-14px;width:128px;height:128px;z-index:0;opacity:.95;filter:drop-shadow(0 10px 18px rgba(0,0,0,.25));pointer-events:none}

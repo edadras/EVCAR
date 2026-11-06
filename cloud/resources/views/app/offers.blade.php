@@ -63,6 +63,14 @@
     </div>
     @endif
 
+    @if(! $hero && count($active) === 0 && count($others) === 0)
+    <div class="fx-empty" style="padding-top:30px">
+        <div class="fx-art" style="width:190px;height:190px"><img class="fx-float" src="/assets/app-img/offers.webp" alt=""></div>
+        <b>فعلاً طرح فعالی نیست</b>
+        <span>به‌محض فعال شدن تخفیف یا اعتبار هدیه، همین‌جا و در اعلان‌ها خبرتان می‌کنیم.</span>
+        <a href="{{ route('app.map') }}" class="btn btn-sm mt16" style="text-decoration:none">مشاهدهٔ ایستگاه‌ها</a>
+    </div>
+    @else
     <div class="sec-title" style="margin-top:20px">طرح‌های دارای اعتبار</div>
     <div style="display:flex;flex-direction:column;gap:11px" id="active">
         @forelse($active as $c)
@@ -96,6 +104,7 @@
             <div class="ocard" style="justify-content:center"><span class="muted fs13">پیشنهاد دیگری موجود نیست.</span></div>
         @endforelse
     </div>
+    @endif
 </div>
 @endsection
 
