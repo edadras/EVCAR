@@ -60,7 +60,7 @@
                     <td class="fs12">{{ $s->city ?? '—' }}</td>
                     <td class="fs12">
                         <div>{{ $s->connectorLabel() ?: '—' }}</div>
-                        <div class="muted">{{ $s->maxKw() ? Persian::num($s->maxKw()).' kW' : '' }}{{ $s->ports ? ' · '.Persian::digits($s->ports).' درگاه' : '' }}</div>
+                        <div class="muted">@if($s->maxKw())<bdi>{{ Persian::num($s->maxKw()) }} kW</bdi>@endif @if($s->ports){{ $s->maxKw() ? '· ' : '' }}<bdi>{{ Persian::digits($s->ports) }} درگاه</bdi>@endif</div>
                     </td>
                     <td class="fs12 tnum">{{ $s->tariff_toman ? Persian::num($s->tariff_toman).' ت/kWh' : '—' }}</td>
                     <td>
