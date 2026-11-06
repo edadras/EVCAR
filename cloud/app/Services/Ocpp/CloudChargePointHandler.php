@@ -58,6 +58,16 @@ class CloudChargePointHandler
         if ($call->action === 'RemoteStartTransaction' && ($response['status'] ?? null) === 'Rejected') {
             $this->cancelPendingRemoteStart($call, 'RemoteStartRejected');
         }
+        if ($call->action === 'GetConfiguration' && empty($call->payload['key']) && is_array($response['configurationKey'] ?? null)) {
+            $config = [];
+            foreach ($response['configurationKey'] as $item) {
+                if (is_array($item) && isset($item['key'])) {
+                    $config[(string) $item['key']] = ['value' => $item['value'] ?? null, 'readonly' => (bool) ($item['readonly'] ?? false)];
+                }
+            }
+            $charger = Charger::where('charge_point_id', $call->charge_point_id)->first();
+            $charger?->update(['meta' => array_merge($charger->meta ?? [], ['ocpp_config' => $config, 'ocpp_config_at' => now()->toIso8601String()])]);
+        }
     }
 
     public function onCallFailed(OcppCall $call): void
@@ -137,6 +147,7 @@ class CloudChargePointHandler
             'key' => 'MeterValuesSampledData',
             'value' => 'Energy.Active.Import.Register,Power.Active.Import,Current.Import,Voltage,SoC,Temperature',
         ]);
+        $this->commander->dispatch($charger->charge_point_id, 'GetConfiguration', []);
 
         return [
             'status' => 'Accepted',
