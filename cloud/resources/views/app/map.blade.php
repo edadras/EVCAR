@@ -78,7 +78,8 @@
 .ext-pop .eo{color:#64748b;font-size:11.5px}
 .ext-pop .er{display:flex;justify-content:space-between;gap:8px;border-top:1px dashed #e5e7eb;padding:3px 0}
 .ext-pop .er span:first-child{color:#64748b;flex:none}
-.ext-pop .ei{width:100%;height:96px;object-fit:cover;border-radius:10px;margin:4px 0}
+.ext-pop .er span:last-child{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.ext-pop .ei{width:100%;height:80px;object-fit:cover;border-radius:10px;margin:4px 0}
 .ext-pop .enote{background:#fff7ed;color:#c2410c;border-radius:8px;padding:6px 8px;font-size:11.5px;margin-top:6px}
 .ext-pop .ego{display:block;text-align:center;margin-top:8px;background:var(--accent);color:#fff!important;border-radius:10px;padding:7px;text-decoration:none;font-weight:700}
 .ms-ext .si{background:#fff!important;border:1px solid var(--border-2);overflow:hidden}
@@ -145,7 +146,7 @@
     extLayer.clearLayers();extMarkers={};
     ext.forEach(function(s){
       if(!extVisible(s))return;
-      var mk=L.marker([s.lat,s.lng],{icon:opIcon(s)}).addTo(extLayer).bindPopup(extPopup(s),{maxWidth:270});
+      var mk=L.marker([s.lat,s.lng],{icon:opIcon(s)}).addTo(extLayer).bindPopup(extPopup(s),{maxWidth:270,maxHeight:300,autoPanPaddingTopLeft:[10,170]});
       extMarkers[s.id]=mk;
     });
   }
@@ -217,7 +218,11 @@
       a.addEventListener('click',function(e){
         e.preventDefault();
         var mk=extMarkers[a.getAttribute('data-ext')];
-        if(mk){map.setView(mk.getLatLng(),15);mk.openPopup();}
+        if(!mk)return;
+        var sheet=document.querySelector('.sheet');
+        map.setView(mk.getLatLng(),15,{animate:false});
+        if(sheet)map.panBy([0,Math.min(sheet.offsetHeight,window.innerHeight*0.46)/2+60],{animate:false});
+        mk.openPopup();
       });
     });
   }
