@@ -145,8 +145,8 @@ class AppButton extends StatelessWidget {
         SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: fg))
       else if (icon != null)
         Icon(icon, size: 19, color: fg),
-      if (loading || icon != null) const SizedBox(width: 8),
-      Flexible(child: Text(label, overflow: TextOverflow.ellipsis, style: TextStyle(color: fg, fontSize: 14.5, fontWeight: FontWeight.w800))),
+      if ((loading || icon != null) && label.isNotEmpty) const SizedBox(width: 8),
+      if (label.isNotEmpty) Flexible(child: Text(label, overflow: TextOverflow.ellipsis, style: TextStyle(color: fg, fontSize: 14.5, fontWeight: FontWeight.w800))),
     ]);
     return Opacity(
       opacity: disabled && !loading ? .5 : 1,
@@ -163,7 +163,7 @@ class AppButton extends StatelessWidget {
             borderRadius: BorderRadius.circular(16),
             onTap: disabled ? null : onPressed,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
+              padding: EdgeInsets.symmetric(horizontal: label.isEmpty ? 0 : 20),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(16),
                 border: kind == BtnKind.ghost ? Border.all(color: c.border) : null,
