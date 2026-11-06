@@ -28,6 +28,7 @@
 
 <div class="sheet">
     <div class="sheet-grip"></div>
+    <div id="extDetail" class="ext-detail" style="display:none"></div>
     <div class="row between" style="margin-bottom:12px">
         <div class="fw8" style="font-size:16px" id="mapCount">{{ Persian::digits($mapStats['total']) }} ایستگاه در این محدوده</div>
         <span class="pill pill-green"><span class="pdot"></span><span id="freeCount">{{ Persian::digits($mapStats['free']) }}</span> آزاد</span>
@@ -71,15 +72,17 @@
 .sc-pin.green{background:var(--green)}.sc-pin.amber{background:var(--amber)}.sc-pin.red{background:var(--red)}.sc-pin.gray{background:#94a3b8}
 .op-pin{width:30px;height:30px;border-radius:50%;background:#fff;border:2px solid #fff;box-shadow:0 2px 7px rgba(0,0,0,.3);overflow:hidden;display:grid;place-items:center}
 .op-pin img{width:100%!important;height:100%!important;object-fit:contain}
-.ext-pop{min-width:220px;max-width:260px;direction:rtl;text-align:right;font-size:12.5px;line-height:1.7}
+.ext-detail{position:relative;background:var(--surface-2);border:1px solid var(--border-2);border-radius:16px;padding:12px;margin-bottom:16px}
+.ext-detail .ex-close{position:absolute;top:8px;inset-inline-end:8px;width:28px;height:28px;border-radius:50%;border:none;background:var(--surface-3);color:var(--text-2);font-size:16px;cursor:pointer;font-family:inherit}
+.ext-pop{direction:rtl;text-align:right;font-size:12.5px;line-height:1.7;color:var(--text)}
 .ext-pop .eh{display:flex;gap:9px;align-items:center;margin-bottom:6px}
 .ext-pop .eh img{width:36px;height:36px;border-radius:9px;object-fit:contain;background:#fff;border:1px solid #e5e7eb;flex:none}
 .ext-pop .en{font-weight:800;font-size:13.5px;line-height:1.5}
-.ext-pop .eo{color:#64748b;font-size:11.5px}
-.ext-pop .er{display:flex;justify-content:space-between;gap:8px;border-top:1px dashed #e5e7eb;padding:3px 0}
-.ext-pop .er span:first-child{color:#64748b;flex:none}
+.ext-pop .eo{color:var(--muted);font-size:11.5px}
+.ext-pop .er{display:flex;justify-content:space-between;gap:8px;border-top:1px dashed var(--border);padding:3px 0}
+.ext-pop .er span:first-child{color:var(--muted);flex:none}
 .ext-pop .er span:last-child{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
-.ext-pop .ei{width:100%;height:80px;object-fit:cover;border-radius:10px;margin:4px 0}
+.ext-pop .ei{width:100%;height:110px;object-fit:cover;border-radius:10px;margin:4px 0}
 .ext-pop .enote{background:#fff7ed;color:#c2410c;border-radius:8px;padding:6px 8px;font-size:11.5px;margin-top:6px}
 .ext-pop .ego{display:block;text-align:center;margin-top:8px;background:var(--accent);color:#fff!important;border-radius:10px;padding:7px;text-decoration:none;font-weight:700}
 .ms-ext .si{background:#fff!important;border:1px solid var(--border-2);overflow:hidden}
@@ -141,14 +144,24 @@
     if(searchQ&&(s.name+' '+s.operator+' '+(s.city||'')+' '+(s.address||'')).indexOf(searchQ)===-1)return false;
     return true;
   }
-  var extLayer=L.layerGroup().addTo(map),extMarkers={};
+  var extLayer=L.layerGroup().addTo(map);
   function renderExt(){
-    extLayer.clearLayers();extMarkers={};
+    extLayer.clearLayers();
     ext.forEach(function(s){
       if(!extVisible(s))return;
-      var mk=L.marker([s.lat,s.lng],{icon:opIcon(s)}).addTo(extLayer).bindPopup(extPopup(s),{maxWidth:270,maxHeight:300,autoPanPaddingTopLeft:[10,170]});
-      extMarkers[s.id]=mk;
+      var mk=L.marker([s.lat,s.lng],{icon:opIcon(s)}).addTo(extLayer);
+      mk.on('click',function(){showExt(s);});
     });
+  }
+  function showExt(s){
+    var box=document.getElementById('extDetail'),sheet=document.querySelector('.sheet');
+    box.innerHTML='<button type="button" class="ex-close" aria-label="بستن">×</button>'+extPopup(s);
+    box.style.display='';
+    box.querySelector('.ex-close').addEventListener('click',function(){box.style.display='none';});
+    sheet.scrollTop=0;
+    var top=170,bottom=window.innerHeight-sheet.offsetHeight;
+    map.setView([s.lat,s.lng],Math.max(map.getZoom(),14),{animate:false});
+    map.panBy([0,map.getSize().y/2-(top+bottom)/2],{animate:false});
   }
 
   function renderMarkers(){
@@ -217,12 +230,9 @@
     document.querySelectorAll('#extList [data-ext]').forEach(function(a){
       a.addEventListener('click',function(e){
         e.preventDefault();
-        var mk=extMarkers[a.getAttribute('data-ext')];
-        if(!mk)return;
-        var sheet=document.querySelector('.sheet');
-        map.setView(mk.getLatLng(),15,{animate:false});
-        if(sheet)map.panBy([0,Math.min(sheet.offsetHeight,window.innerHeight*0.46)/2+60],{animate:false});
-        mk.openPopup();
+        var id=+a.getAttribute('data-ext');
+        var s=ext.find(function(x){return x.id===id;});
+        if(s)showExt(s);
       });
     });
   }
