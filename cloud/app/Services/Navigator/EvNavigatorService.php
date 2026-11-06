@@ -1041,6 +1041,107 @@ class EvNavigatorService
 
         $reserveSoc = max(10, $targetSoc);
         $chargeThreshold = max($reserveSoc, min(35, $targetSoc));
+        $usableKwh = $batteryKwh * max(0, ($startSoc - $reserveSoc) / 100);
+
+        $rangeFromSim = $this->kmWhereSocDropsBelow($segments, $batteryKwh, $startSoc, (float) $reserveSoc);
+        $rangeKm = $rangeFromSim !== null
+            ? round($rangeFromSim, 1)
+            : ($kwhPerKm > 0 ? round($usableKwh / $kwhPerKm, 1) : 0.0);
+
+        $firstFromSegments = $this->kmWhereSocDropsBelow($segments, $batteryKwh, $startSoc, (float) $chargeThreshold);
+        $firstChargeKm = $firstFromSegments !== null
+            ? round($firstFromSegments, 1)
+            : ($rangeKm > 0 ? $rangeKm : null);
+
+        $rechargeSoc = (int) min(90, max(70, $chargeThreshold + 40));
+        $startKwh = $batteryKwh * ($startSoc / 100);
+        $arrivalTargetKwh = $batteryKwh * ($targetSoc / 100);
+        $energyFromCharging = max(0, $totalKwh - $startKwh + $arrivalTargetKwh);
+        $kwhPerStop = $batteryKwh * max(0.01, ($rechargeSoc - $chargeThreshold) / 100);
+        $stops = $energyFromCharging <= 0.01 ? 0 : (int) ceil($energyFromCharging / $kwhPerStop);
+
+        if (! $this->tripNeedsCharge($segments, $startSoc, $targetSoc)) {
+            $stops = 0;
+        }
+
+        return [
+            'range_km_on_start' => $rangeKm,
+            'first_charge_km' => $firstChargeKm,
+            'estimated_charge_stops' => $stops,
+            'consumption_per_100km' => round($kwhPerKm * 100, 1),
+            'energy_from_charging_kwh' => round($energyFromCharging, 1),
+        ];
+    }
+
+    /** @param  list<array<string, mixed>>  $segments */
+    private function tripNeedsCharge(array $segments, int $startSoc, int $targetSoc): bool
+    {
+        if ($segments === []) {
+            return false;
+        }
+
+        $arrivalSoc = (float) end($segments)['soc_after'];
+        $minSoc = (float) $startSoc;
+        $reserveSoc = max(10, $targetSoc);
+
+        foreach ($segments as $seg) {
+            $minSoc = min($minSoc, (float) ($seg['soc_after'] ?? $startSoc));
+        }
+
+        return $arrivalSoc < $reserveSoc || $minSoc < $reserveSoc;
+    }
+
+    /** @param  list<array<string, mixed>>  $segments */
+    private function kmWhereSocDropsBelow(
+        array $segments,
+        float $batteryKwh,
+        int $startSoc,
+        float $threshold,
+    ): ?float {
+        $energy = $batteryKwh * ($startSoc / 100);
+
+        foreach ($segments as $seg) {
+            $energy -= $seg['consumption_kwh'];
+            $socNow = max(0, ($energy / $batteryKwh) * 100);
+            if ($socNow < $threshold) {
+                return (float) $seg['from_km'];
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $chargers
+     * @param  list<array<string, mixed>>  $chargePlan
+     * @param  list<array<string, mixed>>  $segments
+     * @return array<string, mixed>
+     */
+    private function buildVerdict(
+        float $arrivalSocDirect,
+        float $arrivalSocPlanned,
+        int $targetSoc,
+        int $startSoc,
+        array $chargers,
+        array $chargePlan,
+        array $segments,
+        int $corridorChargerCount = 0,
+        ?float $firstChargeKm = null,
+        int $estimatedChargeStops = 0,
+        float $batteryKwh = 60.0,
+        ?float $rangeKmOnStart = null,
+    ): array {
+        $minSoc = $arrivalSocDirect;
+        foreach ($segments as $seg) {
+            $minSoc = min($minSoc, (float) ($seg['soc_after'] ?? $startSoc));
+        }
+
+        $chargerCount = count($chargers);
+        $reserveSoc = max(10, $targetSoc);
+        $canReachDirect = $arrivalSocDirect >= $reserveSoc && $minSoc >= $reserveSoc;
+        $canReachWithPlan = count($chargePlan) > 0 && $arrivalSocPlanned >= $targetSoc;
+        $needsCharge = ! $canReachDirect;
+        $warnings = [];
         $startLabel = $startSoc >= 100 ? 'با باتری پر' : 'با شارژ '.$startSoc.'٪';
         $arrivalDirect = (int) round(max(0, $arrivalSocDirect));
         $arrivalPlanned = (int) round(max(0, $arrivalSocPlanned));
