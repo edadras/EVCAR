@@ -46,7 +46,7 @@ class NotificationsService {
 
   static const _channel = AndroidNotificationDetails(
     'safircharge',
-    'SafirCharge',
+    'QUAD EV',
     channelDescription: 'پایان شارژ، کیف پول و پیام‌های پشتیبانی',
     importance: Importance.high,
     priority: Priority.high,
@@ -95,7 +95,7 @@ class NotificationsService {
         // پیام‌هایی که در حالت باز بودن اپ می‌رسند را سیستم نشان نمی‌دهد؛ اعلان محلی می‌سازیم.
         FirebaseMessaging.onMessage.listen((m) {
           final n = m.notification;
-          if (n != null) show(m.hashCode, n.title ?? 'SafirCharge', n.body ?? '');
+          if (n != null) show(m.hashCode, n.title ?? 'QUAD EV', n.body ?? '');
         });
         _fcmActive = true;
       } catch (e) {

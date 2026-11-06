@@ -8,6 +8,7 @@ import '../core/nav.dart';
 import '../core/state.dart';
 import '../core/theme.dart';
 import '../widgets/common.dart';
+import '../widgets/fx.dart';
 
 /// کیف پول: موجودی، اعتبار پاداش، باشگاه مشتریان و تراکنش‌ها با جست‌وجو و فیلتر.
 class WalletTab extends StatefulWidget {
@@ -46,31 +47,48 @@ class _WalletTabState extends State<WalletTab> {
             RoundIconButton(Icons.receipt_long_outlined, onTap: () => openScreen(context, 'history')),
           ]),
           const SizedBox(height: 14),
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(26),
-              gradient: LinearGradient(colors: [c.accent, Color.lerp(c.accent, const Color(0xFF8B6A4E), .7)!], begin: Alignment.topRight, end: Alignment.bottomLeft),
-              boxShadow: [BoxShadow(color: c.accent.withValues(alpha: .3), blurRadius: 30, offset: const Offset(0, 14))],
+          Reveal(
+            child: Container(
+              clipBehavior: Clip.antiAlias,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(26),
+                gradient: Brand.gradient,
+                boxShadow: [BoxShadow(color: const Color(0xFF0F4C75).withValues(alpha: .35), blurRadius: 30, offset: const Offset(0, 14))],
+              ),
+              child: Stack(children: [
+                const Positioned.fill(child: Sparks(count: 12)),
+                PositionedDirectional(
+                  end: -6,
+                  bottom: -8,
+                  child: Opacity(opacity: .95, child: Floating(child: Image.asset(Art.wallet, width: 118, height: 118))),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Row(children: [
+                      Text('موجودی کیف پول', style: TextStyle(color: Colors.white.withValues(alpha: .85), fontSize: 13)),
+                      const Spacer(),
+                      const QuadLogo(height: 20),
+                    ]),
+                    const SizedBox(height: 18),
+                    Row(crossAxisAlignment: CrossAxisAlignment.baseline, textBaseline: TextBaseline.alphabetic, children: [
+                      CountUp(
+                        value: (d['balance'] as num?) ?? 0,
+                        format: (v) => money(v),
+                        style: const TextStyle(color: Colors.white, fontSize: 34, fontWeight: FontWeight.w800),
+                      ),
+                      Text(' تومان', style: TextStyle(color: Colors.white.withValues(alpha: .85), fontSize: 14)),
+                    ]),
+                    const SizedBox(height: 20),
+                    Row(children: [
+                      _kv('اعتبار پاداش', money(d['bonus_balance'] as num?)),
+                      const SizedBox(width: 34),
+                      _kv('کارت RFID', '${d['rfid_masked'] ?? '—'}'),
+                    ]),
+                  ]),
+                ),
+              ]),
             ),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Row(children: [
-                Text('موجودی کیف پول', style: TextStyle(color: Colors.white.withValues(alpha: .85), fontSize: 13)),
-                const Spacer(),
-                const Text('SafirCharge', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 15)),
-              ]),
-              const SizedBox(height: 18),
-              Text.rich(TextSpan(children: [
-                TextSpan(text: money(d['balance'] as num?), style: const TextStyle(color: Colors.white, fontSize: 34, fontWeight: FontWeight.w800)),
-                TextSpan(text: ' تومان', style: TextStyle(color: Colors.white.withValues(alpha: .85), fontSize: 14)),
-              ])),
-              const SizedBox(height: 20),
-              Row(children: [
-                _kv('اعتبار پاداش', money(d['bonus_balance'] as num?)),
-                const SizedBox(width: 34),
-                _kv('کارت RFID', '${d['rfid_masked'] ?? '—'}'),
-              ]),
-            ]),
           ),
           const SizedBox(height: 16),
           Row(children: [
@@ -102,7 +120,7 @@ class _WalletTabState extends State<WalletTab> {
               const SizedBox(width: 12),
               Expanded(
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  const Text('باشگاه SafirCharge', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800)),
+                  const Text('باشگاه QUAD EV', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800)),
                   Text('${loyalty['label'] ?? ''}', style: TextStyle(color: Colors.white.withValues(alpha: .9), fontSize: 12)),
                   const SizedBox(height: 8),
                   ClipRRect(
@@ -132,7 +150,7 @@ class _WalletTabState extends State<WalletTab> {
           ),
           const SizedBox(height: 12),
           if (txs.isEmpty)
-            const EmptyState('تراکنشی با این جستجو یافت نشد.', icon: Icons.receipt_outlined)
+            const EmptyState('تراکنشی با این جستجو یافت نشد.', art: Art.wallet)
           else
             AppCard(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
@@ -529,7 +547,7 @@ class TopupResultScreen extends StatelessWidget {
                     const SizedBox(width: 10),
                     SizedBox(
                       width: 56,
-                      child: AppButton('', icon: Icons.ios_share_rounded, kind: BtnKind.ghost, onPressed: () => shareText(context, 'رسید پرداخت SafirCharge\nمبلغ: ${money(asInt(p['amount'], amount ?? 0))} تومان\nشمارهٔ پیگیری: ${fa(p['reference'] ?? '—')}\nتاریخ: ${fa('${paidAt.year}/${two(paidAt.month)}/${two(paidAt.day)} ${two(paidAt.hour)}:${two(paidAt.minute)}')}')),
+                      child: AppButton('', icon: Icons.ios_share_rounded, kind: BtnKind.ghost, onPressed: () => shareText(context, 'رسید پرداخت QUAD EV\nمبلغ: ${money(asInt(p['amount'], amount ?? 0))} تومان\nشمارهٔ پیگیری: ${fa(p['reference'] ?? '—')}\nتاریخ: ${fa('${paidAt.year}/${two(paidAt.month)}/${two(paidAt.day)} ${two(paidAt.hour)}:${two(paidAt.minute)}')}')),
                     ),
                   ],
                 ]),

@@ -8,6 +8,7 @@ import '../core/nav.dart';
 import '../core/state.dart';
 import '../core/theme.dart';
 import '../widgets/common.dart';
+import '../widgets/fx.dart';
 import 'scan_screen.dart';
 
 // ───────────────────────── اعلان‌ها ─────────────────────────
@@ -85,7 +86,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                       const SizedBox(height: 12),
                     ]);
                 return ListView(padding: const EdgeInsets.fromLTRB(18, 8, 18, 24), children: [
-                  if (today.isEmpty && earlier.isEmpty) EmptyState('اعلانی ندارید.', icon: Icons.notifications_off_outlined, action: Text('اعلان‌های شارژ، پرداخت و طرح‌ها اینجا نمایش داده می‌شوند.', style: TextStyle(color: c.muted, fontSize: 12))),
+                  if (today.isEmpty && earlier.isEmpty) EmptyState('اعلانی ندارید.', art: Art.assistant, action: Text('اعلان‌های شارژ، پرداخت و طرح‌ها اینجا نمایش داده می‌شوند.', style: TextStyle(color: c.muted, fontSize: 12))),
                   if (today.isNotEmpty) group('امروز', today),
                   if (earlier.isNotEmpty) group('قبل‌تر', earlier),
                 ]);
@@ -115,7 +116,7 @@ class OffersScreen extends StatelessWidget {
       if (o['bonus_amount'] != null) '${money(asInt(o['bonus_amount']))} تومان اعتبار',
       if (o['ends_at'] != null) 'تا ${fa(o['ends_at'])}',
     ];
-    return parts.isEmpty ? '${o['summary'] ?? 'طرح فعال SafirCharge'}' : parts.join(' · ');
+    return parts.isEmpty ? '${o['summary'] ?? 'طرح فعال QUAD EV'}' : parts.join(' · ');
   }
 
   @override
@@ -132,7 +133,7 @@ class OffersScreen extends StatelessWidget {
                 final list = asList(d['campaigns'])..sort((a, b) => asInt(b['discount_percent']).compareTo(asInt(a['discount_percent'])));
                 final hero = list.firstOrNull;
                 return ListView(padding: const EdgeInsets.fromLTRB(18, 8, 18, 24), children: [
-                  if (hero == null) const EmptyState('در حال حاضر طرح فعالی وجود ندارد.', icon: Icons.card_giftcard_outlined),
+                  if (hero == null) const EmptyState('در حال حاضر طرح فعالی وجود ندارد.', art: Art.offers),
                   if (hero != null)
                     Container(
                       padding: const EdgeInsets.all(20),
@@ -366,7 +367,7 @@ class _ArrivalScreenState extends State<ArrivalScreen> {
 
 // ───────────────────────── آدرس سرور ─────────────────────────
 
-/// آدرس سرور ابری SafirCharge (برای استقرارهای اختصاصی یا محیط تست).
+/// آدرس سرور ابری QUAD EV (برای استقرارهای اختصاصی یا محیط تست).
 class ServerSettingsScreen extends StatefulWidget {
   const ServerSettingsScreen({super.key});
 

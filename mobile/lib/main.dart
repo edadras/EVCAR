@@ -32,7 +32,7 @@ class SafirChargeApp extends StatelessWidget {
         builder: (context, _) {
           SystemChrome.setSystemUIOverlayStyle(state.dark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark);
           return MaterialApp(
-            title: 'SafirCharge',
+            title: 'QUAD EV',
             navigatorKey: kNavKey,
             navigatorObservers: [_shellObserver],
             debugShowCheckedModeBanner: false,

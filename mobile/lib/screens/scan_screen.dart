@@ -5,6 +5,7 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import '../core/fmt.dart';
 import '../core/state.dart';
 import '../widgets/common.dart';
+import '../widgets/fx.dart';
 import 'charger_screen.dart';
 import 'edge_screens.dart';
 
@@ -83,7 +84,7 @@ class _ScanScreenState extends State<ScanScreen> {
       final parsed = b.rawValue == null ? null : parseChargerQr(b.rawValue!);
       if (parsed != null) return _open(parsed);
     }
-    toast(context, 'این QR متعلق به شارژرهای SafirCharge نیست.', error: true);
+    toast(context, 'این QR متعلق به شارژرهای QUAD EV نیست.', error: true);
   }
 
   Future<void> _manual() async {
@@ -145,6 +146,7 @@ class _ScanScreenState extends State<ScanScreen> {
                         ),
                       ),
                       const _Corners(),
+                      const ScanLine(),
                     ]),
                   ),
                 ),

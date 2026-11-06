@@ -16,6 +16,8 @@
         'wifi' => '<path d="M5 12.5a10 10 0 0 1 14 0M8.5 16a5 5 0 0 1 7 0M2 9a15 15 0 0 1 20 0"/><path d="M12 19.5h.01"/>',
         'menu' => '<path d="M4 7h16M4 12h16M4 17h16"/>',
         'phone' => '<rect x="6" y="2" width="12" height="20" rx="3"/><path d="M11 18h2"/>',
+        'android' => '<path fill="currentColor" stroke="none" d="M17.6 9.48l1.84-3.18c.16-.31.04-.69-.26-.85a.64.64 0 0 0-.83.22l-1.88 3.24a11.43 11.43 0 0 0-8.94 0L5.65 5.67a.64.64 0 0 0-.87-.2c-.28.18-.37.54-.22.83L6.4 9.48A10.81 10.81 0 0 0 1 18h22a10.81 10.81 0 0 0-5.4-8.52zM7 15.25a1.25 1.25 0 1 1 0-2.5 1.25 1.25 0 0 1 0 2.5zm10 0a1.25 1.25 0 1 1 0-2.5 1.25 1.25 0 0 1 0 2.5z"/>',
+        'apple' => '<path fill="currentColor" stroke="none" d="M16.37 12.6c-.02-2.3 1.88-3.4 1.96-3.46-1.07-1.56-2.73-1.77-3.32-1.8-1.41-.14-2.76.83-3.48.83-.72 0-1.82-.81-3-.79-1.54.02-2.97.9-3.76 2.28-1.6 2.78-.41 6.9 1.15 9.16.76 1.1 1.67 2.34 2.86 2.3 1.15-.05 1.58-.74 2.97-.74 1.38 0 1.77.74 2.98.72 1.23-.02 2.01-1.12 2.76-2.23.87-1.28 1.23-2.52 1.25-2.58-.03-.01-2.4-.92-2.42-3.65zM14.1 5.86c.63-.77 1.06-1.83.94-2.89-.91.04-2.01.6-2.66 1.37-.58.67-1.09 1.76-.95 2.79 1.01.08 2.04-.51 2.67-1.27z"/>',
     ];
     $svg = fn ($k) => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'.$ic[$k].'</svg>';
     $n = fn ($v) => Persian::digits(number_format((int) $v));
@@ -51,6 +53,7 @@
             <a href="#network">نقشهٔ شبکه</a>
             <a href="#business">کسب‌وکارها</a>
             <a href="#faq">سؤالات</a>
+            <a href="{{ route('download') }}" class="nl-dl">{!! $svg('android') !!} دانلود اپ</a>
         </nav>
         <div class="nav-cta">
             <a href="/partner/login" class="btn btn-glass">پنل شرکا</a>
@@ -161,17 +164,18 @@
 <section class="sec showcase" id="app">
     <div class="wrap split">
         <div class="rv rv-r">
-            <span class="kicker">وب‌اپ QUAD EV</span>
-            <h2>اپی که نیاز به نصب ندارد</h2>
-            <p class="lead">در مرورگر گوشی باز کنید و به صفحهٔ اصلی اضافه کنید؛ مثل یک اپ واقعی، با اعلان‌ها و حالت آفلاین.</p>
+            <span class="kicker">اپلیکیشن QUAD EV</span>
+            <h2>روی گوشی نصب کنید، همه‌جا شارژ کنید</h2>
+            <p class="lead">اپ اندروید را مستقیم دانلود کنید؛ روی آیفون هم وب‌اپ QUAD EV با یک لمس به صفحهٔ اصلی اضافه می‌شود — با اعلان‌ها و حالت آفلاین.</p>
             <ul class="checks">
                 <li><i>{!! $svg('check') !!}</i><div>ورود با شمارهٔ موبایل<small>کد تأیید یا رمز عبور؛ در کمتر از ۳۰ ثانیه.</small></div></li>
                 <li><i>{!! $svg('check') !!}</i><div>رزرو شارژر پیش از رسیدن<small>جای خود را نگه دارید و بی‌دغدغه برانید.</small></div></li>
                 <li><i>{!! $svg('check') !!}</i><div>رسید و سوابق کامل<small>هر جلسهٔ شارژ با جزئیات انرژی و هزینه.</small></div></li>
             </ul>
             <div class="store-row">
-                <a href="/app/login" class="btn btn-primary">{!! $svg('phone') !!} باز کردن وب‌اپ</a>
-                <a href="#faq" class="btn btn-glass">نحوهٔ نصب روی گوشی</a>
+                <a href="{{ route('download.android') }}" class="store-badge android" download>{!! $svg('android') !!}<span class="sb-t"><small>دانلود مستقیم</small><b>اپ اندروید</b></span></a>
+                <a href="{{ route('download') }}#ios" class="store-badge ios">{!! $svg('apple') !!}<span class="sb-t"><small>نصب از سافاری</small><b>آیفون (iOS)</b></span></a>
+                <a href="/app/login" class="btn btn-glass" style="height:60px">{!! $svg('phone') !!} وب‌اپ</a>
             </div>
         </div>
         <div class="phones rv rv-z" id="phones">
@@ -232,7 +236,7 @@
             <h2>پاسخ سؤال‌های رایج</h2>
         </div>
         <div class="faq">
-            <details class="rv" open><summary>برای استفاده باید اپ نصب کنم؟</summary><div class="ans">خیر. وب‌اپ QUAD EV در مرورگر گوشی کار می‌کند. برای تجربهٔ بهتر، در کروم (اندروید) گزینهٔ «افزودن به صفحهٔ اصلی» و در سافاری (آیفون) دکمهٔ اشتراک‌گذاری و سپس «Add to Home Screen» را بزنید.</div></details>
+            <details class="rv" open><summary>اپ QUAD EV را از کجا نصب کنم؟</summary><div class="ans">اپ اندروید را مستقیم از <a href="{{ route('download') }}" style="color:var(--blue);font-weight:700">صفحهٔ دانلود</a> بگیرید و نصب کنید. روی آیفون، وب‌اپ را در سافاری باز کنید و از دکمهٔ اشتراک‌گذاری گزینهٔ «Add to Home Screen» را بزنید. بدون نصب هم وب‌اپ در مرورگر هر گوشی کار می‌کند.</div></details>
             <details class="rv"><summary>هزینهٔ شارژ چطور محاسبه و پرداخت می‌شود؟</summary><div class="ans">بر اساس تعرفهٔ هر ایستگاه (معمولاً به ازای هر کیلووات‌ساعت) که پیش از شروع در اپ نمایش داده می‌شود. پس از پایان شارژ، مبلغ به‌صورت خودکار از کیف پول شما کسر و رسید آن در سوابق ثبت می‌شود.</div></details>
             <details class="rv"><summary>ایستگاه‌های سایر اپراتورها را هم می‌بینم؟</summary><div class="ans">بله. نقشهٔ QUAD ایستگاه‌های اپراتورهای دیگر را هم با مشخصات و راه ارتباطی نشان می‌دهد تا همیشه نزدیک‌ترین گزینه را داشته باشید. شروع شارژ و پرداخت درون‌اپ برای ایستگاه‌های شبکهٔ QUAD فعال است.</div></details>
             <details class="rv"><summary>اگر اینترنت ایستگاه قطع باشد چه می‌شود؟</summary><div class="ans">ایستگاه‌های QUAD سرور محلی دارند؛ با اتصال به WiFi ایستگاه، شارژ بدون اینترنت هم شروع می‌شود و اطلاعات بعداً با مرکز همگام می‌شود.</div></details>
@@ -249,7 +253,7 @@
                 <p>با شمارهٔ موبایل وارد شوید و نزدیک‌ترین ایستگاه را همین حالا پیدا کنید.</p>
                 <div class="store-row">
                     <a href="/app/login" class="btn btn-primary">{!! $svg('bolt') !!} شروع رایگان</a>
-                    <a href="/partner/login" class="btn btn-glass">همکاری با QUAD</a>
+                    <a href="{{ route('download') }}" class="btn btn-glass">{!! $svg('android') !!} دانلود اپ</a>
                 </div>
             </div>
             <div class="cta-art"><img src="/assets/app-img/battery.webp" alt="" loading="lazy"></div>
@@ -266,7 +270,7 @@
             </div>
             <div><h4>رانندگان</h4><ul><li><a href="/app/login">ورود به وب‌اپ</a></li><li><a href="#network">نقشهٔ ایستگاه‌ها</a></li><li><a href="#features">امکانات</a></li></ul></div>
             <div><h4>کسب‌وکارها</h4><ul><li><a href="/partner/login">پنل شرکا</a></li><li><a href="#business">اتصال ایستگاه</a></li><li><a href="/admin/login">پنل مدیریت</a></li></ul></div>
-            <div><h4>راهنما</h4><ul><li><a href="#how">چطور کار می‌کند</a></li><li><a href="#faq">سؤالات متداول</a></li><li><a href="#app">نصب وب‌اپ</a></li></ul></div>
+            <div><h4>راهنما</h4><ul><li><a href="#how">چطور کار می‌کند</a></li><li><a href="#faq">سؤالات متداول</a></li><li><a href="{{ route('download') }}">دانلود اپ اندروید و iOS</a></li></ul></div>
         </div>
         <div class="foot-bot"><span>© {{ Persian::dateTime(now(), 'yyyy') }} QUAD EV — همهٔ حقوق محفوظ است.</span><span>ساخته‌شده برای آیندهٔ برقی ایران ⚡</span></div>
     </div>

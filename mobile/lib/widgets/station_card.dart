@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../core/fmt.dart';
+import '../core/state.dart';
 import '../core/theme.dart';
 import 'common.dart';
+import 'fx.dart';
 
 /// کارت ایستگاه (stationCards سرور): نام، نوع، فاصله، کانکتور آزاد و قیمت هر kWh.
 class StationCard extends StatelessWidget {
@@ -21,7 +23,23 @@ class StationCard extends StatelessWidget {
       padding: const EdgeInsets.all(14),
       onTap: onTap,
       child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        IconTile(Icons.ev_station_outlined, tone: hasFree ? 'green' : 'amber', size: 58, iconSize: 28),
+        Stack(clipBehavior: Clip.none, children: [
+          StationImage(url: s['image'] as String?, baseUrl: context.app.baseUrl, width: 74, height: 74),
+          PositionedDirectional(
+            bottom: -4,
+            end: -4,
+            child: Container(
+              width: 22,
+              height: 22,
+              decoration: BoxDecoration(
+                color: hasFree ? Palette.green : Palette.amber,
+                shape: BoxShape.circle,
+                border: Border.all(color: c.surface, width: 2.5),
+              ),
+              child: const Icon(Icons.bolt_rounded, color: Colors.white, size: 12),
+            ),
+          ),
+        ]),
         const SizedBox(width: 13),
         Expanded(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [

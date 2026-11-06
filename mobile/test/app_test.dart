@@ -14,6 +14,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 http.Response _json(Object body, [int status = 200]) =>
     http.Response.bytes(utf8.encode(jsonEncode(body)), status, headers: {'content-type': 'application/json; charset=utf-8'});
 
+/// انیمیشن‌های تکرارشونده (Ken Burns، جرقه‌ها) بدون این، pumpAndSettle را هرگز تمام نمی‌کنند.
+void _reduceMotion(WidgetTester tester) {
+  tester.platformDispatcher.accessibilityFeaturesTestValue = const FakeAccessibilityFeatures(disableAnimations: true);
+  addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+}
+
 void main() {
   group('fmt', () {
     test('Persian digits and money grouping like the web app', () {
@@ -63,6 +69,7 @@ void main() {
   });
 
   testWidgets('logged-out app shows the login wizard (RTL)', (tester) async {
+    _reduceMotion(tester);
     SharedPreferences.setMockInitialValues({});
     final state = AppState(await SharedPreferences.getInstance());
     await tester.pumpWidget(SafirChargeApp(state: state));
@@ -73,6 +80,7 @@ void main() {
   });
 
   testWidgets('logged-in app renders home from the mobile API', (tester) async {
+    _reduceMotion(tester);
     SharedPreferences.setMockInitialValues({'token': 'T', 'base_url': 'http://api'});
     final client = MockClient((r) async {
       final path = r.url.path.replaceFirst('/api/v1/mobile/', '');

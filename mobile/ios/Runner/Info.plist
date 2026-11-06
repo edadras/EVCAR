@@ -41,7 +41,7 @@
 		<true/>
 	</dict>
 	<key>CFBundleDisplayName</key>
-	<string>SafirCharge</string>
+	<string>QUAD EV</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>

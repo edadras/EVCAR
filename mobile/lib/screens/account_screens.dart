@@ -5,6 +5,7 @@ import '../core/nav.dart';
 import '../core/state.dart';
 import '../core/theme.dart';
 import '../widgets/common.dart';
+import '../widgets/fx.dart';
 
 /// حساب کاربری: پروفایل، خودروها، شارژ خودکار با پلاک، روش‌های شروع شارژ، تنظیمات و خروج.
 class AccountTab extends StatelessWidget {
@@ -146,7 +147,7 @@ class AccountTab extends StatelessWidget {
             if (ok == true) await app.logout();
           }),
           const SizedBox(height: 16),
-          Center(child: Text('SafirCharge · نسخهٔ ${fa('1.0.0')}', style: TextStyle(fontSize: 12, color: c.muted))),
+          Center(child: Text('QUAD EV · نسخهٔ ${fa('1.1.0')}', style: TextStyle(fontSize: 12, color: c.muted))),
         ]);
       },
     );
@@ -536,7 +537,7 @@ class _VehiclesScreenState extends State<VehiclesScreen> {
                 final vehicles = asList(d['vehicles']);
                 final audit = asList(d['audit']);
                 return ListView(padding: const EdgeInsets.fromLTRB(18, 8, 18, 24), children: [
-                  if (vehicles.isEmpty) const EmptyState('خودرویی ثبت نشده است.', icon: Icons.directions_car_outlined),
+                  if (vehicles.isEmpty) const EmptyState('خودرویی ثبت نشده است.', art: Art.battery),
                   for (final v in vehicles)
                     AppCard(
                       margin: const EdgeInsets.only(bottom: 12),
@@ -981,7 +982,7 @@ class SettingsScreen extends StatelessWidget {
         child: ListRow(icon: Icons.dns_outlined, title: 'آدرس سرور', subtitle: app.baseUrl, chevron: true, onTap: () => openScreen(context, 'server')),
       ),
       const SizedBox(height: 16),
-      Center(child: Text('SafirCharge · نسخهٔ ${fa('1.0.0')}', style: TextStyle(fontSize: 12, color: c.muted))),
+      Center(child: Text('QUAD EV · نسخهٔ ${fa('1.1.0')}', style: TextStyle(fontSize: 12, color: c.muted))),
     ]);
   }
 }

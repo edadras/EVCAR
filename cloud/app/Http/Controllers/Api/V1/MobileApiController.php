@@ -181,6 +181,7 @@ class MobileApiController extends Controller
                 'amenities' => array_values((array) ($station->meta['amenities'] ?? [])),
                 'hours' => is_array($station->operating_hours) && ! empty($station->operating_hours['label'])
                     ? $station->operating_hours['label'] : '۲۴ ساعته',
+                'image' => $station->imageUrl() ? url($station->imageUrl()) : null,
             ],
             'connectors' => $connectors,
             'free_count' => $d['freeCount'],

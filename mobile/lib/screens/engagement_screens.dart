@@ -5,7 +5,6 @@ import '../core/nav.dart';
 import '../core/state.dart';
 import '../core/theme.dart';
 import '../widgets/common.dart';
-
 const _star = Color(0xFFF59E0B);
 
 /// رسید جلسهٔ شارژ: جزئیات هزینه، نمودار توان و امتیازدهی به ایستگاه (معادل /app/history/{uuid}).
@@ -45,7 +44,7 @@ class _SessionReceiptScreenState extends State<SessionReceiptScreen> {
 
   void _share(Map<String, dynamic> r) {
     shareText(context, [
-      'رسید شارژ SafirCharge',
+      'رسید شارژ QUAD EV',
       '${asMap(r['station'])['name']} — ${r['started_label']}',
       'انرژی: ${kwh(asDouble(r['energy_kwh']), 2)} kWh · مدت: ${fa(r['duration_min'])} دقیقه',
       for (final l in asList(r['lines'])) '${l['label']}: ${money(asInt(l['amount']))} تومان',
@@ -173,7 +172,7 @@ class _SessionReceiptScreenState extends State<SessionReceiptScreen> {
                         margin: const EdgeInsets.only(top: 8),
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(color: c.surface2, borderRadius: BorderRadius.circular(10)),
-                        child: Text('پاسخ SafirCharge: ${review['reply']}', style: const TextStyle(fontSize: 12.5)),
+                        child: Text('پاسخ QUAD EV: ${review['reply']}', style: const TextStyle(fontSize: 12.5)),
                       ),
                   ]),
                 ),
@@ -472,7 +471,7 @@ class StationReviewsSection extends StatelessWidget {
               margin: const EdgeInsets.only(top: 6),
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(color: c.surface2, borderRadius: BorderRadius.circular(10)),
-              child: Text('پاسخ SafirCharge: ${rv['reply']}', style: const TextStyle(fontSize: 12.5)),
+              child: Text('پاسخ QUAD EV: ${rv['reply']}', style: const TextStyle(fontSize: 12.5)),
             ),
           Text('${rv['date']}', style: TextStyle(fontSize: 11.5, color: c.muted)),
         ],

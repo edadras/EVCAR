@@ -6,6 +6,7 @@ import '../core/nav.dart';
 import '../core/state.dart';
 import '../core/theme.dart';
 import '../widgets/common.dart';
+import '../widgets/fx.dart';
 
 const _categories = [
   ('payment', 'پرداخت و کیف پول', Icons.account_balance_wallet_outlined, 'orange'),
@@ -333,7 +334,7 @@ class _TicketScreenState extends State<TicketScreen> {
                           borderRadius: BorderRadius.circular(16),
                         ),
                         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                          if (m['staff'] == true) Text('پشتیبانی SafirCharge', style: TextStyle(fontSize: 11, color: c.accent, fontWeight: FontWeight.w700)),
+                          if (m['staff'] == true) Text('پشتیبانی QUAD EV', style: TextStyle(fontSize: 11, color: c.accent, fontWeight: FontWeight.w700)),
                           Text('${m['message']}', style: TextStyle(color: m['staff'] == true ? c.text : Colors.white, height: 1.7, fontSize: 13.5)),
                           const SizedBox(height: 4),
                           Text(fa(m['time']), style: TextStyle(fontSize: 10.5, color: m['staff'] == true ? c.muted : Colors.white70)),
@@ -502,7 +503,9 @@ class _AssistantScreenState extends State<AssistantScreen> {
                 ? const Center(child: CircularProgressIndicator())
                 : ListView(controller: scroll, padding: const EdgeInsets.fromLTRB(16, 4, 16, 16), children: [
                     if (messages.isEmpty) ...[
-                      bubble('سلام! من دستیار هوشمند SafirCharge هستم ✦\nدربارهٔ شارژ، کیف پول، ایستگاه‌ها یا هر مشکلی بپرسید؛ اطلاعات حساب شما را هم بررسی می‌کنم.', me: false),
+                      const Center(child: EmptyArt(image: Art.assistant, size: 130)),
+                      const SizedBox(height: 8),
+                      bubble('سلام! من دستیار هوشمند QUAD EV هستم ✦\nدربارهٔ شارژ، کیف پول، ایستگاه‌ها یا هر مشکلی بپرسید؛ اطلاعات حساب شما را هم بررسی می‌کنم.', me: false),
                       const SizedBox(height: 12),
                       Wrap(spacing: 8, runSpacing: 8, children: [
                         for (final s in suggestions)

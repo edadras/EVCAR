@@ -104,6 +104,7 @@
 
         <div class="center-col mt20">
             <span class="fs12 muted">با ورود، <a href="{{ route('app.terms') }}" style="color:var(--accent);font-weight:600;text-decoration:none">قوانین و مقررات</a> را می‌پذیرید.</span>
+            <a href="{{ route('download') }}" class="get-app" id="getApp"><span data-ic="download"></span> دانلود اپ اندروید و نصب روی آیفون</a>
         </div>
     </div>
 </div>
@@ -150,6 +151,9 @@
 .txt-back{background:none;border:none;color:var(--accent);font-weight:600;font-size:13px;display:inline-flex;align-items:center;gap:4px;padding:0;cursor:pointer;font-family:inherit}
 .txt-back svg{width:16px;height:16px}
 .pill-blue{background:var(--accent-soft);color:var(--accent-strong)}
+.get-app{display:inline-flex;align-items:center;gap:6px;margin-top:12px;padding:8px 14px;border-radius:30px;background:var(--accent-soft);color:var(--accent-strong);font-size:12.5px;font-weight:700;text-decoration:none}
+.get-app svg{width:15px;height:15px}
+@media (display-mode: standalone){.get-app{display:none}}
 #otpCells{position:relative}
 #authOtpValue{position:absolute;inset:0;width:100%;height:100%;opacity:0;font-size:16px;border:0;background:transparent;color:transparent;caret-color:transparent;z-index:2}
 </style>

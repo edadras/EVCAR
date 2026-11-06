@@ -4,6 +4,7 @@ import 'package:share_plus/share_plus.dart';
 
 import '../core/api.dart';
 import '../core/theme.dart';
+import 'fx.dart';
 
 /// کارت سفید با گوشهٔ گرد و سایهٔ ملایم (کلاس card وب‌اپ).
 class AppCard extends StatelessWidget {
@@ -19,7 +20,7 @@ class AppCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.c;
-    return Container(
+    final card = Container(
       margin: margin,
       decoration: BoxDecoration(
         color: color ?? c.surface,
@@ -36,6 +37,7 @@ class AppCard extends StatelessWidget {
         ),
       ),
     );
+    return onTap == null ? card : PressScale(child: card);
   }
 }
 
@@ -148,7 +150,9 @@ class AppButton extends StatelessWidget {
     ]);
     return Opacity(
       opacity: disabled && !loading ? .5 : 1,
-      child: SizedBox(
+      child: PressScale(
+        enabled: !disabled,
+        child: SizedBox(
         height: height,
         width: expand ? double.infinity : null,
         child: Material(
@@ -163,8 +167,11 @@ class AppButton extends StatelessWidget {
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(16),
                 border: kind == BtnKind.ghost ? Border.all(color: c.border) : null,
-                boxShadow: kind == BtnKind.orange || kind == BtnKind.red
-                    ? [BoxShadow(color: bg.withValues(alpha: .35), blurRadius: 16, offset: const Offset(0, 6))]
+                gradient: kind == BtnKind.primary
+                    ? LinearGradient(colors: [c.accent, Color.lerp(c.accent, const Color(0xFF22D3EE), .45)!])
+                    : null,
+                boxShadow: kind == BtnKind.orange || kind == BtnKind.red || kind == BtnKind.primary
+                    ? [BoxShadow(color: bg.withValues(alpha: .32), blurRadius: 16, offset: const Offset(0, 6))]
                     : null,
               ),
               alignment: Alignment.center,
@@ -173,8 +180,35 @@ class AppButton extends StatelessWidget {
           ),
         ),
       ),
+      ),
     );
   }
+}
+
+/// کوچک‌شدن ملایم هنگام لمس، بدون گرفتن رویداد tap از فرزند.
+class PressScale extends StatefulWidget {
+  const PressScale({super.key, required this.child, this.enabled = true});
+  final Widget child;
+  final bool enabled;
+
+  @override
+  State<PressScale> createState() => _PressScaleState();
+}
+
+class _PressScaleState extends State<PressScale> {
+  bool _down = false;
+
+  void _set(bool v) {
+    if (widget.enabled && _down != v) setState(() => _down = v);
+  }
+
+  @override
+  Widget build(BuildContext context) => Listener(
+        onPointerDown: (_) => _set(true),
+        onPointerUp: (_) => _set(false),
+        onPointerCancel: (_) => _set(false),
+        child: AnimatedScale(scale: _down ? .97 : 1, duration: const Duration(milliseconds: 130), child: widget.child),
+      );
 }
 
 /// ردیف فهرست (lrow): آیکون، عنوان، توضیح و انتهای ردیف.
@@ -325,11 +359,12 @@ class RoundIconButton extends StatelessWidget {
 }
 
 class EmptyState extends StatelessWidget {
-  const EmptyState(this.text, {super.key, this.icon = Icons.inbox_outlined, this.action});
+  const EmptyState(this.text, {super.key, this.icon = Icons.inbox_outlined, this.action, this.art});
 
   final String text;
   final IconData icon;
   final Widget? action;
+  final String? art;
 
   @override
   Widget build(BuildContext context) {
@@ -337,7 +372,7 @@ class EmptyState extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 24),
       child: Column(children: [
-        Icon(icon, size: 44, color: c.muted),
+        if (art != null) EmptyArt(image: art!) else Icon(icon, size: 44, color: c.muted),
         const SizedBox(height: 12),
         Text(text, textAlign: TextAlign.center, style: TextStyle(color: c.text2, fontSize: 14, height: 1.7)),
         if (action != null) ...[const SizedBox(height: 16), action!],

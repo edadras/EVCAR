@@ -8,7 +8,29 @@ import '../core/nav.dart';
 import '../core/state.dart';
 import '../core/theme.dart';
 import '../widgets/common.dart';
+import '../widgets/fx.dart';
 import 'misc_screens.dart';
+
+class _Chip extends StatelessWidget {
+  const _Chip(this.icon, this.label);
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: .12),
+          borderRadius: BorderRadius.circular(99),
+          border: Border.all(color: Colors.white.withValues(alpha: .18)),
+        ),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          Icon(icon, size: 15, color: Brand.cyan),
+          const SizedBox(width: 6),
+          Text(label, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600)),
+        ]),
+      );
+}
 
 enum _Step { phone, password, otp, register }
 
@@ -103,7 +125,7 @@ class _AuthScreenState extends State<AuthScreen> {
 
   Future<void> _login() async {
     if (password.text.isEmpty) return _msg('رمز عبور را وارد کنید.', error: true);
-    final res = await _guard(() => context.api.post('auth/login', {'phone': normalized, 'password': password.text, 'device_name': 'SafirCharge app'}));
+    final res = await _guard(() => context.api.post('auth/login', {'phone': normalized, 'password': password.text, 'device_name': 'QUAD EV app'}));
     if (res != null && mounted) await context.app.signIn(res);
   }
 
@@ -125,7 +147,7 @@ class _AuthScreenState extends State<AuthScreen> {
           'password': newPass.text,
           'password_confirmation': newPass2.text,
           'registration_token': registrationToken,
-          'device_name': 'SafirCharge app',
+          'device_name': 'QUAD EV app',
         }));
     if (res != null && mounted) await context.app.signIn(res);
   }
@@ -134,47 +156,99 @@ class _AuthScreenState extends State<AuthScreen> {
   Widget build(BuildContext context) {
     final c = context.c;
     return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(colors: [c.accent, Color.lerp(c.accent, Palette.orange, .5)!], begin: Alignment.topRight, end: Alignment.bottomLeft),
+      backgroundColor: Brand.navy,
+      body: Stack(children: [
+        Positioned.fill(
+          child: KenBurns(
+            seconds: 22,
+            child: Image.asset(Art.loginHero, fit: BoxFit.cover, alignment: const Alignment(0, -.4)),
+          ),
         ),
-        child: SafeArea(
+        const Positioned.fill(
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Color(0x6607131F), Color(0x2207131F), Color(0xCC07131F), Brand.navy],
+                stops: [0, .25, .55, .75],
+              ),
+            ),
+          ),
+        ),
+        const Positioned.fill(child: Sparks(count: 22)),
+        SafeArea(
           bottom: false,
           child: Column(children: [
-            Align(
-              alignment: AlignmentDirectional.topEnd,
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: RoundIconButton(Icons.dns_outlined, dark: true, onTap: () => push(context, const ServerSettingsScreen())),
-              ),
-            ),
-            Expanded(
-              child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                Container(
-                  width: 84,
-                  height: 84,
-                  decoration: BoxDecoration(color: Colors.white.withValues(alpha: .16), borderRadius: BorderRadius.circular(26)),
-                  child: const Icon(Icons.bolt_rounded, color: Colors.white, size: 48),
-                ),
-                const SizedBox(height: 14),
-                const Text('SafirCharge', style: TextStyle(color: Colors.white, fontSize: 30, fontWeight: FontWeight.w800)),
-                const SizedBox(height: 4),
-                Text('شارژ هوشمند خودرو برقی', style: TextStyle(color: Colors.white.withValues(alpha: .9), fontSize: 14)),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 10, 12, 0),
+              child: Row(children: [
+                const QuadLogo(height: 30),
+                const Spacer(),
+                RoundIconButton(Icons.dns_outlined, dark: true, onTap: () => push(context, const ServerSettingsScreen())),
               ]),
             ),
-            Container(
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: c.surface,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
-                boxShadow: const [BoxShadow(color: Color(0x2E000000), blurRadius: 40, offset: Offset(0, -10))],
+            Expanded(
+              child: ClipRect(
+                child: OverflowBox(
+                alignment: AlignmentDirectional.bottomStart,
+                maxHeight: double.infinity,
+                child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  const Reveal(
+                    child: Text('شارژ هوشمند\nخودروی برقی',
+                        style: TextStyle(color: Colors.white, fontSize: 30, height: 1.35, fontWeight: FontWeight.w800)),
+                  ),
+                  const SizedBox(height: 8),
+                  Reveal(
+                    index: 1,
+                    child: Text('ایستگاه پیدا کن، اسکن کن، شارژ کن — همه در یک اپ.',
+                        style: TextStyle(color: Colors.white.withValues(alpha: .82), fontSize: 13.5)),
+                  ),
+                  const SizedBox(height: 14),
+                  const Reveal(
+                    index: 2,
+                    child: Wrap(spacing: 8, runSpacing: 8, children: [
+                      _Chip(Icons.map_outlined, 'نقشهٔ زنده'),
+                      _Chip(Icons.qr_code_scanner_rounded, 'شروع با اسکن'),
+                      _Chip(Icons.account_balance_wallet_outlined, 'کیف پول'),
+                    ]),
+                  ),
+                  const SizedBox(height: 22),
+                ]),
               ),
-              padding: EdgeInsets.fromLTRB(24, 26, 24, 26 + MediaQuery.of(context).padding.bottom),
-              child: AnimatedSize(duration: const Duration(milliseconds: 200), child: _sheet(c)),
+              ),
+              ),
+            ),
+            Reveal(
+              index: 3,
+              offset: 60,
+              child: Container(
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: c.surface,
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+                  boxShadow: const [BoxShadow(color: Color(0x55000000), blurRadius: 40, offset: Offset(0, -10))],
+                ),
+                padding: EdgeInsets.fromLTRB(24, 26, 24, 26 + MediaQuery.of(context).padding.bottom),
+                child: AnimatedSize(
+                  duration: const Duration(milliseconds: 260),
+                  curve: Curves.easeOutCubic,
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 280),
+                    transitionBuilder: (child, a) => FadeTransition(
+                      opacity: a,
+                      child: SlideTransition(position: Tween(begin: const Offset(.06, 0), end: Offset.zero).animate(a), child: child),
+                    ),
+                    child: KeyedSubtree(key: ValueKey(step), child: _sheet(c)),
+                  ),
+                ),
+              ),
             ),
           ]),
         ),
-      ),
+      ]),
     );
   }
 

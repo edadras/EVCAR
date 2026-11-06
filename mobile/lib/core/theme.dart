@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart' show CupertinoPageTransitionsBuilder;
 import 'package:flutter/material.dart';
 
 /// توکن‌های رنگی دقیقاً مطابق `public/assets/mobile/app.css` وب‌اپ.
@@ -108,6 +109,10 @@ ThemeData buildTheme(Color accent, {required bool dark}) {
     fontFamily: 'Vazirmatn',
     scaffoldBackgroundColor: p.bg,
     extensions: [p],
+    pageTransitionsTheme: const PageTransitionsTheme(builders: {
+      TargetPlatform.android: FadeForwardsPageTransitionsBuilder(),
+      TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+    }),
   );
 
   OutlineInputBorder border(Color c, [double w = 1]) =>

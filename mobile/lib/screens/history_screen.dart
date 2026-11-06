@@ -5,6 +5,7 @@ import '../core/nav.dart';
 import '../core/state.dart';
 import '../core/theme.dart';
 import '../widgets/common.dart';
+import '../widgets/fx.dart';
 
 /// سوابق شارژ: خلاصهٔ ماه، صرفه‌جویی CO₂ و جلسات اخیر با جست‌وجو.
 class HistoryScreen extends StatefulWidget {
@@ -100,7 +101,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     decoration: const InputDecoration(hintText: 'جستجو در جلسات (ایستگاه، تاریخ، روش…)', prefixIcon: Icon(Icons.search_rounded)),
                   ),
                   const SizedBox(height: 12),
-                  if (list.isEmpty) EmptyState(q.isEmpty ? 'هنوز جلسهٔ شارژی ثبت نشده است.' : 'جلسه‌ای با این جستجو یافت نشد.', icon: Icons.history_rounded),
+                  if (list.isEmpty) EmptyState(q.isEmpty ? 'هنوز جلسهٔ شارژی ثبت نشده است.' : 'جلسه‌ای با این جستجو یافت نشد.', art: Art.battery),
                   for (final h in list) _session(c, h),
                 ]);
               },

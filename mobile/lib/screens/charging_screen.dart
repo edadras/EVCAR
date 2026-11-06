@@ -9,6 +9,7 @@ import '../core/nav.dart';
 import '../core/state.dart';
 import '../core/theme.dart';
 import '../widgets/common.dart';
+import '../widgets/fx.dart';
 import '../widgets/gauge.dart';
 
 /// شارژ در حال انجام: درصد باتری، انرژی، توان، مدت، هزینه و زمان باقی‌مانده.
@@ -302,7 +303,7 @@ class _ChargingScreenState extends State<ChargingScreen> {
               track: Colors.white.withValues(alpha: .12),
               colors: const [Color(0xFF16A34A), Color(0xFF7EE2A6), Color(0xFF16A34A)],
               child: Column(mainAxisSize: MainAxisSize.min, children: [
-                const Icon(Icons.bolt_rounded, color: Color(0xFF7EE2A6), size: 34),
+                Floating(amplitude: 4, child: Image.asset(Art.battery, width: 58, height: 58)),
                 Text('${fa(pct)}٪', style: const TextStyle(color: Colors.white, fontSize: 56, fontWeight: FontWeight.w800, height: 1.1)),
                 const Text('شارژ باتری', style: TextStyle(color: Color(0xFF9FB4C8), fontSize: 13)),
                 const SizedBox(height: 8),
@@ -365,7 +366,7 @@ class _ChargingScreenState extends State<ChargingScreen> {
         decoration: BoxDecoration(color: const Color(0xFF0E2233), border: Border(top: BorderSide(color: Colors.white.withValues(alpha: .08)))),
         child: Column(children: [
           Row(children: [
-            const Expanded(child: Text('پرداخت از: کیف پول SafirCharge', style: TextStyle(color: Color(0xFFCFE0F0), fontSize: 12.5))),
+            const Expanded(child: Text('پرداخت از: کیف پول QUAD EV', style: TextStyle(color: Color(0xFFCFE0F0), fontSize: 12.5))),
             Text('موجودی: ${money(balance)}', style: const TextStyle(color: Colors.white, fontSize: 12.5, fontWeight: FontWeight.w800)),
           ]),
           const SizedBox(height: 12),

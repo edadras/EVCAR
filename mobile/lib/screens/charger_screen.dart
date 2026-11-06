@@ -6,6 +6,7 @@ import '../core/nav.dart';
 import '../core/state.dart';
 import '../core/theme.dart';
 import '../widgets/common.dart';
+import '../widgets/fx.dart';
 import 'engagement_screens.dart';
 
 /// جزئیات ایستگاه/شارژر و شروع شارژ — همان منطق صفحهٔ charger وب‌اپ:
@@ -36,7 +37,7 @@ class _ChargerScreenState extends State<ChargerScreen> {
   void _share(Map<String, dynamic> st) {
     final lat = st['lat'], lng = st['lng'];
     shareText(context, [
-      'ایستگاه شارژ ${st['name']} — SafirCharge',
+      'ایستگاه شارژ ${st['name']} — QUAD EV',
       if (st['address'] != null) '${st['city'] ?? ''}، ${st['address']}',
       if (lat != null) 'https://www.google.com/maps/search/?api=1&query=$lat,$lng',
     ].join('\n'));
@@ -109,10 +110,26 @@ class _ChargerScreenState extends State<ChargerScreen> {
           return Stack(children: [
             ListView(padding: EdgeInsets.zero, children: [
               Container(
-                height: 200 + MediaQuery.of(context).padding.top,
-                decoration: BoxDecoration(gradient: LinearGradient(colors: [c.accent, Color.lerp(c.accent, Palette.orange, .5)!], begin: Alignment.topRight, end: Alignment.bottomLeft)),
+                height: 230 + MediaQuery.of(context).padding.top,
+                color: Brand.navy,
                 child: Stack(children: [
-                  Center(child: Icon(Icons.ev_station_outlined, size: 72, color: Colors.white.withValues(alpha: .5))),
+                  Positioned.fill(
+                    child: KenBurns(
+                      child: StationImage(url: st['image'] as String?, baseUrl: context.app.baseUrl, radius: 0),
+                    ),
+                  ),
+                  const Positioned.fill(
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [Color(0x8807131F), Color(0x0007131F), Color(0xAA07131F)],
+                          stops: [0, .4, 1],
+                        ),
+                      ),
+                    ),
+                  ),
                   PositionedDirectional(
                     top: MediaQuery.of(context).padding.top + 12,
                     start: 18,

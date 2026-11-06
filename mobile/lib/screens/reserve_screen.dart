@@ -4,6 +4,7 @@ import '../core/fmt.dart';
 import '../core/state.dart';
 import '../core/theme.dart';
 import '../widgets/common.dart';
+import '../widgets/fx.dart';
 
 /// رزرو شارژر: انتخاب ایستگاه، وضعیت زندهٔ کانکتورها، روز و بازهٔ ۳۰ دقیقه‌ای (۸ تا ۲۰).
 class ReserveScreen extends StatefulWidget {
@@ -106,7 +107,7 @@ class _ReserveScreenState extends State<ReserveScreen> {
               const PageHeader('رزرو شارژ'),
               Expanded(
                 child: ListView(padding: const EdgeInsets.fromLTRB(18, 8, 18, 20), children: [
-                  if (stations.isEmpty) const EmptyState('ایستگاه فعالی برای رزرو وجود ندارد.', icon: Icons.ev_station_outlined),
+                  if (stations.isEmpty) const EmptyState('ایستگاه فعالی برای رزرو وجود ندارد.', art: Art.station),
                   if (st != null) ...[
                     AppCard(
                       padding: const EdgeInsets.all(14),

@@ -9,6 +9,7 @@ import '../core/nav.dart';
 import '../core/state.dart';
 import '../core/theme.dart';
 import '../widgets/common.dart';
+import '../widgets/fx.dart';
 import '../widgets/station_card.dart';
 
 const kTileUrl = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
@@ -159,7 +160,7 @@ class _MapTabState extends State<MapTab> {
                   Pill('${fa(stats['free'])} آزاد', dot: true),
                 ]),
                 const SizedBox(height: 14),
-                if (stations.isEmpty) const EmptyState('ایستگاهی یافت نشد.', icon: Icons.search_off_rounded),
+                if (stations.isEmpty) const EmptyState('ایستگاهی یافت نشد.', art: Art.station),
                 for (final s in stations)
                   StationCard(
                     station: s,

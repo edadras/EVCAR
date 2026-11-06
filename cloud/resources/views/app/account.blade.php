@@ -80,6 +80,7 @@
         <div class="srow"><span class="sr-ic" data-ic="eye"></span><span class="l-title" style="flex:1">حالت تیره</span><span class="switch" data-sw id="darkSw"><i></i></span></div>
         <a class="srow" href="{{ route('app.privacy') }}"><span class="sr-ic" data-ic="shield"></span><span class="l-title" style="flex:1">حریم خصوصی و امنیت</span><span class="chev" data-ic="chevron"></span></a>
         <a class="srow" href="{{ route('app.password') }}"><span class="sr-ic" data-ic="key"></span><span class="l-title" style="flex:1">تغییر رمز عبور</span><span class="chev" data-ic="chevron"></span></a>
+        <a class="srow" href="{{ route('download') }}"><span class="sr-ic" data-ic="download"></span><span class="l-title" style="flex:1">دانلود اپ اندروید / نصب روی آیفون</span><span class="chev" data-ic="chevron"></span></a>
         <a class="srow" href="{{ route('app.support') }}"><span class="sr-ic" data-ic="headset"></span><span class="l-title" style="flex:1">پشتیبانی و تماس با ما</span><span class="chev" data-ic="chevron"></span></a>
         <a class="srow" href="{{ route('app.terms') }}" style="border-bottom:none"><span class="sr-ic" data-ic="receipt"></span><span class="l-title" style="flex:1">قوانین و مقررات</span><span class="chev" data-ic="chevron"></span></a>
     </div>
