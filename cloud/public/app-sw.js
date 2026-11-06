@@ -1,5 +1,5 @@
 /* QUAD EV PWA service worker — فقط دارایی‌های ثابت کش می‌شوند؛ داده‌ها همیشه از شبکه. */
-const VERSION = 'sc-v3';
+const VERSION = 'sc-v4';
 const STATIC = ['/offline.html', '/assets/mobile/app-mobile.css', '/assets/mobile/app-mobile.js', '/assets/mobile/app-fx.css', '/assets/mobile/app-fx.js', '/assets/pwa/icon-192.png'];
 
 self.addEventListener('install', (event) => {

@@ -206,7 +206,10 @@
         '<div style="flex:1;min-width:0">'+
           '<div class="row between"><span class="fw7" style="font-size:14px">'+s.name+'</span><span class="pill '+s.status_pill+'"><span class="pdot"></span>'+s.status+'</span></div>'+
           '<div class="fs12 muted mt4">'+s.type+' · '+s.free+'</div>'+
-          '<div class="row mt8" style="gap:5px;color:var(--text-2);font-size:12px;font-weight:600">'+window.icon('nav')+s.distance+'</div>'+
+          '<div class="row mt8" style="gap:5px;color:var(--text-2);font-size:12px;font-weight:600">'+window.icon('nav')+s.distance+
+            (s.hours?'<span style="margin-inline-start:10px;display:inline-flex;gap:4px;align-items:center;color:var(--green)">'+window.icon('clock')+s.hours+'</span>':'')+
+            (s.price&&s.price!=='—'?'<span class="tnum" style="margin-inline-start:auto">'+s.price+' <span class="muted fs12">ت/kWh</span></span>':'')+
+          '</div>'+
         '</div></a>';
     }).join('');
     document.querySelectorAll('.ms-station .row svg').forEach(function(s){s.style.width='13px';s.style.height='13px';});

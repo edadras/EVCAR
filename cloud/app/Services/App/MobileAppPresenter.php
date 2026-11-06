@@ -107,6 +107,8 @@ class MobileAppPresenter
                 'has_free' => $free > 0,
                 'url' => route('app.charger', ['station' => $st->code]),
                 'image' => $st->imageUrl(),
+                'hours' => $st->hoursLabel(),
+                'amenities' => $st->amenities(),
             ];
         })->values()->all();
     }

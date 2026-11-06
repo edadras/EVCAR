@@ -32,7 +32,21 @@
               @if($station)
               <div class="ffield"><label>وضعیت</label><select class="fselect" id="stStatus" name="status">@foreach(['active'=>'فعال','inactive'=>'غیرفعال','maintenance'=>'تعمیرات'] as $v=>$l)<option value="{{ $v }}" @selected(old('status', $station->status)===$v)>{{ $l }}</option>@endforeach</select></div>
               @endif
-              <div class="ffield"><label>ساعات کاری</label><select class="fselect"><option>۲۴ ساعته</option><option>۶ صبح تا ۱۲ شب</option><option>اداری</option></select></div>
+              @php
+                  $hrs = is_array($station?->operating_hours) ? $station->operating_hours : [];
+                  $hrsPreset = old('hours_preset', $station?->hoursPreset() ?? '24h');
+              @endphp
+              <div class="ffield"><label>ساعات کاری</label>
+                <select class="fselect" id="stHours" name="hours_preset">
+                  @foreach(\App\Models\Station::HOURS_PRESETS as $k => $p)<option value="{{ $k }}" @selected($hrsPreset === $k)>{{ $p['label'] }}</option>@endforeach
+                  <option value="custom" @selected($hrsPreset === 'custom')>ساعت دلخواه…</option>
+                </select>
+                <div class="flex items-center gap-8 mt-8" id="stHoursCustom" @if($hrsPreset !== 'custom') hidden @endif>
+                  <span class="fs12 muted">از</span><input class="finput tnum" type="time" name="hours_open" id="stHoursOpen" value="{{ old('hours_open', $hrs['open'] ?? '08:00') }}" dir="ltr">
+                  <span class="fs12 muted">تا</span><input class="finput tnum" type="time" name="hours_close" id="stHoursClose" value="{{ old('hours_close', $hrs['close'] ?? '22:00') }}" dir="ltr">
+                </div>
+                @error('hours_open')<div class="fs12 mt-4" style="color:var(--red)">{{ $message }}</div>@enderror
+              </div>
             </div>
           </div>
         </div>
@@ -107,7 +121,29 @@
           <div class="card-head"><h3>تعرفه و امکانات</h3></div>
           <div class="card-pad">
             <div class="form-grid">
-              <div class="ffield"><label>تعرفهٔ پیش‌فرض</label><select class="fselect"><option>تعرفهٔ استاندارد DC — ۳٬۲۰۰ ت/kWh</option><option>تعرفهٔ AC اقتصادی — ۹۸۰ ت/دقیقه</option><option>تعرفهٔ اعضای ویژه</option></select></div>
+              @php
+                  $tariffList = $tariffs ?? collect();
+                  $assignedIds = $station ? $station->tariffs->pluck('id')->all() : [];
+                  $netDefault = $tariffList->firstWhere('is_default', true);
+                  $tariffSel = (string) old('tariff_id', count($assignedIds) > 1 ? 'keep' : ($assignedIds[0] ?? ''));
+                  $tariffPrice = function ($t) {
+                      $perMin = $t->pricing_model === 'per_minute';
+                      $v = (float) ($perMin ? $t->price_per_minute : $t->price_per_kwh);
+                      return $v > 0 ? Persian::money((int) round($v / 10)).($perMin ? ' ت/دقیقه' : ' ت/kWh') : null;
+                  };
+              @endphp
+              <div class="ffield col-span"><label>تعرفهٔ پیش‌فرض</label>
+                <select class="fselect" name="tariff_id" id="stTariff">
+                  @if(count($assignedIds) > 1)
+                  <option value="keep" @selected($tariffSel === 'keep')>حفظ تخصیص فعلی ({{ Persian::digits(count($assignedIds)) }} تعرفه — {{ $station->tariffs->pluck('name')->implode('، ') }})</option>
+                  @endif
+                  <option value="" data-price="{{ $netDefault ? $tariffPrice($netDefault) : '' }}" @selected($tariffSel === '')>پیش‌فرض شبکه{{ $netDefault ? ' — '.$netDefault->name.($tariffPrice($netDefault) ? ' · '.$tariffPrice($netDefault) : '') : '' }}</option>
+                  @foreach($tariffList as $t)
+                  <option value="{{ $t->id }}" data-price="{{ $tariffPrice($t) }}" @selected($tariffSel === (string) $t->id)>{{ $t->name }}{{ $tariffPrice($t) ? ' — '.$tariffPrice($t) : '' }}{{ ($t->meta['connector_scope'] ?? 'all') !== 'all' ? ' ('.strtoupper($t->meta['connector_scope']).')' : '' }}</option>
+                  @endforeach
+                </select>
+                <span class="fhint">مبنای محاسبهٔ هزینهٔ شارژ در این ایستگاه و قیمتی که مشتری در اپ می‌بیند. تعرفه‌ها از <a href="{{ route('admin.tariffs.index') }}" style="color:var(--accent)">صفحهٔ تعرفه‌ها</a> تعریف می‌شوند.</span>
+              </div>
             </div>
             @if($station)
             <div class="ffield col-span mt-12" id="anprConfig">
@@ -133,15 +169,13 @@
             <div class="fs12 muted mt-8">پس از ثبت ایستگاه و اتصال Edge، پیکربندی پلاک‌خوان از همین فرم در دسترس است.</div>
             @endif
             <div class="ffield col-span mt-8"><label>امکانات رفاهی</label>
+              @php $amenSel = old('amenities', $station?->amenities() ?? []); @endphp
               <div class="chips" id="amenChips">
-                <button type="button" class="chip active">پارکینگ</button>
-                <button type="button" class="chip active">۲۴ ساعته</button>
-                <button type="button" class="chip">کافه</button>
-                <button type="button" class="chip">سرویس بهداشتی</button>
-                <button type="button" class="chip">WiFi رایگان</button>
-                <button type="button" class="chip">نگهبانی</button>
-                <button type="button" class="chip">سرپوشیده</button>
+                @foreach(array_keys(\App\Models\Station::AMENITIES) as $am)
+                <label class="chip"><input type="checkbox" name="amenities[]" value="{{ $am }}" @checked(in_array($am, $amenSel, true))>{{ $am }}</label>
+                @endforeach
               </div>
+              <span class="fhint">موارد انتخاب‌شده در صفحهٔ ایستگاه در اپ مشتری نمایش داده می‌شوند.</span>
             </div>
           </div>
         </div>
@@ -172,6 +206,8 @@
                   <div><b>{{ $pvMaxKw >= 50 ? 'DC' : ($pvMaxKw ? 'AC' : '—') }}</b><span>{{ $pvMaxKw >= 50 ? 'شارژ سریع' : 'نوع شارژ' }}</span></div>
                 </div>
                 @if($pvTypes)<div class="fs12 muted mt-8">سوکت: {{ $pvTypes }}</div>@endif
+                <div class="pv-meta"><span class="pv-h" id="pvHours">{{ $station?->hoursLabel() ?? '۲۴ ساعته' }}</span><span class="pv-p" id="pvPrice" hidden></span></div>
+                <div class="pv-meta" id="pvAmen"></div>
               </div>
             </div>
             <div class="flex between items-center mt-16" style="margin-bottom:8px">
@@ -199,7 +235,17 @@
 .bic{display:inline-grid;width:16px;height:16px}.bic svg{width:16px;height:16px}
 .chips{display:flex;flex-wrap:wrap;gap:8px}
 .chip{border:1px solid var(--border);background:var(--surface-2);border-radius:30px;padding:8px 14px;font-size:12.5px;font-weight:600;color:var(--text-2)}
-.chip.active{background:var(--accent-soft);color:var(--accent-strong);border-color:color-mix(in srgb,var(--accent) 30%,transparent)}
+.chip.active,.chip:has(input:checked){background:var(--accent-soft);color:var(--accent-strong);border-color:color-mix(in srgb,var(--accent) 30%,transparent)}
+label.chip{cursor:pointer;user-select:none;display:inline-flex;align-items:center;gap:6px}
+label.chip input{position:absolute;opacity:0;pointer-events:none}
+label.chip:has(input:checked)::before{content:"✓";font-weight:800}
+label.chip:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:2px}
+#stHoursCustom[hidden]{display:none!important}
+#stHoursCustom .finput{max-width:130px}
+.pv-meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.pv-meta span{font-size:11.5px;font-weight:700;border-radius:20px;padding:3px 9px;background:var(--surface);border:1px solid var(--border-2);color:var(--text-2)}
+.pv-meta .pv-h{background:var(--green-soft,#e7f7ee);color:var(--green);border-color:transparent}
+.pv-meta .pv-p{color:var(--accent-strong)}
 .conn-edit{display:flex;align-items:center;gap:11px;border:1px solid var(--border);border-radius:13px;padding:11px 13px;background:var(--surface-2)}
 .conn-edit .ce-ic{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;flex:none}.conn-edit .ce-ic svg{width:19px;height:19px}
 .conn-edit select{height:38px;border:1px solid var(--border);background:var(--surface);border-radius:9px;font-family:inherit;font-size:12.5px;color:var(--text);padding:0 10px}
@@ -274,7 +320,32 @@
     document.getElementById('pvHeroIc').hidden=true;
     var rm=document.getElementById('stImgRemove');if(rm)rm.checked=false;
   });
-  document.querySelectorAll('#amenChips .chip').forEach(function(c){c.addEventListener('click',function(){c.classList.toggle('active');});});
+  function faDigits(s){return String(s).replace(/\d/g,function(d){return '۰۱۲۳۴۵۶۷۸۹'[d];});}
+  var hrsSel=document.getElementById('stHours'), hrsBox=document.getElementById('stHoursCustom'),
+      hOpen=document.getElementById('stHoursOpen'), hClose=document.getElementById('stHoursClose');
+  function syncHours(){
+    var custom=hrsSel.value==='custom';
+    hrsBox.hidden=!custom;
+    document.getElementById('pvHours').textContent=custom
+      ? faDigits((hOpen.value||'--:--')+' تا '+(hClose.value||'--:--'))
+      : hrsSel.options[hrsSel.selectedIndex].text;
+  }
+  [hrsSel,hOpen,hClose].forEach(function(el){el.addEventListener('change',syncHours);el.addEventListener('input',syncHours);});
+  syncHours();
+
+  var trSel=document.getElementById('stTariff');
+  function syncPrice(){
+    var o=trSel.options[trSel.selectedIndex], p=o&&o.getAttribute('data-price'), el=document.getElementById('pvPrice');
+    el.hidden=!p;el.textContent=p||'';
+  }
+  trSel.addEventListener('change',syncPrice);syncPrice();
+
+  function syncAmen(){
+    var box=document.getElementById('pvAmen');box.innerHTML='';
+    document.querySelectorAll('#amenChips input:checked').forEach(function(c){var s=document.createElement('span');s.textContent=c.value;box.appendChild(s);});
+  }
+  document.querySelectorAll('#amenChips input').forEach(function(c){c.addEventListener('change',syncAmen);});
+  syncAmen();
 
   var anprCb=document.querySelector('input[name="anpr_enabled"]');
   if(anprCb){

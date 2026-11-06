@@ -10,6 +10,7 @@ use App\Models\Tariff;
 use App\Services\Admin\AdminMetricsService;
 use App\Services\Admin\AdminViewDataService;
 use App\Services\Stations\StationAnprService;
+use App\Support\Persian;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
@@ -19,6 +20,69 @@ use Illuminate\View\View;
 class StationController extends Controller
 {
     private const IMAGE_RULE = ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'];
+
+    private const TARIFF_KEEP = 'keep';
+
+    /** @return array<string, array<int, mixed>> */
+    private function profileRules(): array
+    {
+        return [
+            'hours_preset' => ['nullable', 'in:'.implode(',', array_keys(Station::HOURS_PRESETS)).',custom'],
+            'hours_open' => ['nullable', 'required_if:hours_preset,custom', 'date_format:H:i'],
+            'hours_close' => ['nullable', 'required_if:hours_preset,custom', 'date_format:H:i'],
+            'tariff_id' => ['nullable', 'string'],
+            'amenities' => ['nullable', 'array'],
+            'amenities.*' => ['string', 'in:'.implode(',', array_keys(Station::AMENITIES))],
+        ];
+    }
+
+    /**
+     * ساعات کاری و امکانات را روی $data می‌نویسد و کلیدهای فرم را حذف می‌کند.
+     *
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    private function applyProfile(array $data, array $meta): array
+    {
+        $preset = $data['hours_preset'] ?? '24h';
+        if ($preset === 'custom') {
+            $open = $data['hours_open'];
+            $close = $data['hours_close'];
+            $data['operating_hours'] = [
+                'preset' => 'custom',
+                'label' => Persian::digits($open).' تا '.Persian::digits($close),
+                'open' => $open,
+                'close' => $close,
+            ];
+        } else {
+            $p = Station::HOURS_PRESETS[$preset] ?? Station::HOURS_PRESETS['24h'];
+            $data['operating_hours'] = ['preset' => $preset] + $p;
+        }
+
+        $amenities = array_values(array_intersect(array_keys(Station::AMENITIES), $data['amenities'] ?? []));
+        if ($amenities) {
+            $meta['amenities'] = $amenities;
+        } else {
+            unset($meta['amenities']);
+        }
+        $data['meta'] = $meta;
+
+        unset($data['hours_preset'], $data['hours_open'], $data['hours_close'], $data['amenities'], $data['tariff_id']);
+
+        return $data;
+    }
+
+    private function syncTariff(Station $station, ?string $choice): void
+    {
+        if ($choice === self::TARIFF_KEEP) {
+            return;
+        }
+        $id = $choice !== null && $choice !== '' ? (int) $choice : null;
+        if ($id && ! Tariff::whereKey($id)->where('status', 'active')->exists()) {
+            return;
+        }
+        $station->tariffs()->sync($id ? [$id] : []);
+    }
 
     public function __construct(
         private AdminMetricsService $metrics,
@@ -60,19 +124,21 @@ class StationController extends Controller
             'partner_id' => ['nullable', 'exists:partners,id'],
             'grid_limit_kw' => ['nullable', 'numeric', 'min:0', 'max:100000'],
             'image' => self::IMAGE_RULE,
-        ]);
+        ] + $this->profileRules());
         $gridLimit = $data['grid_limit_kw'] ?? null;
+        $tariffChoice = $data['tariff_id'] ?? null;
         unset($data['grid_limit_kw'], $data['image']);
 
         if (empty($data['code'])) {
             $data['code'] = 'ST-'.Str::upper(Str::random(6));
         }
 
-        $data['meta'] = array_filter([
+        $data = $this->applyProfile($data, array_filter([
             'grid_limit_kw' => $gridLimit !== null ? (float) $gridLimit : null,
             'image' => $this->storeImage($request, $data['code']),
-        ], fn ($v) => $v !== null);
+        ], fn ($v) => $v !== null));
         $station = Station::create($data);
+        $this->syncTariff($station, $tariffChoice);
 
         return redirect()
             ->route('admin.stations.show', $station)
@@ -88,7 +154,7 @@ class StationController extends Controller
 
     public function edit(Station $station): View
     {
-        $station->load(['edgeStation', 'chargers.connectors']);
+        $station->load(['edgeStation', 'chargers.connectors', 'tariffs']);
 
         return view('admin.stations.create', [
             'station' => $station,
@@ -123,7 +189,8 @@ class StationController extends Controller
             'charger_power.*' => ['nullable', 'integer', 'min:1', 'max:500'],
             'image' => self::IMAGE_RULE,
             'remove_image' => ['nullable', 'boolean'],
-        ]);
+        ] + $this->profileRules());
+        $tariffChoice = $data['tariff_id'] ?? null;
         $gridLimit = $data['grid_limit_kw'] ?? null;
         $chargerTypes = $data['charger_types'] ?? [];
         $chargerPower = $data['charger_power'] ?? [];
@@ -157,8 +224,8 @@ class StationController extends Controller
             $this->deleteImage($meta['image'] ?? null);
             unset($meta['image']);
         }
-        $data['meta'] = $meta;
-        $station->update($data);
+        $station->update($this->applyProfile($data, $meta));
+        $this->syncTariff($station, $tariffChoice);
 
         if ($request->has('anpr_enabled')) {
             $cameras = $request->input('anpr_cameras', []);

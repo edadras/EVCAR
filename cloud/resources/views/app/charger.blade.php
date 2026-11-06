@@ -17,11 +17,9 @@
     $rating = $station->meta['rating'] ?? null;
     $reviews = $station->meta['reviews'] ?? null;
     $distance = $station->meta['distance_km'] ?? null;
-    $amenities = $station->meta['amenities'] ?? [];
-    $amenityIcons = ['پارکینگ' => 'car', 'کافه' => 'coins', 'نگهبانی' => 'shield', 'WiFi رایگان' => 'bolt'];
-    $hoursLabel = is_array($station->operating_hours) && !empty($station->operating_hours['label'])
-        ? $station->operating_hours['label']
-        : '۲۴ ساعته';
+    $amenities = $station->amenities();
+    $amenityIcons = \App\Models\Station::AMENITIES;
+    $hoursLabel = $station->hoursLabel();
     $firstConn = collect($connectorsJs)->firstWhere('st', 'free') ?? ($connectorsJs[0] ?? null);
 @endphp
 <div class="hero">
