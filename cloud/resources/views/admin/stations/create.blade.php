@@ -2,7 +2,7 @@
 @extends('admin.layouts.app', ['page' => 'stations', 'title' => $station ? 'ویرایش ایستگاه' : 'ایجاد ایستگاه جدید', 'crumb' => $station ? $station->name : 'ایستگاه‌ها و نقشه'])
 
 @section('content')
-<form method="POST" action="{{ $station ? route('admin.stations.update', $station) : route('admin.stations.store') }}">@csrf
+<form method="POST" action="{{ $station ? route('admin.stations.update', $station) : route('admin.stations.store') }}" enctype="multipart/form-data">@csrf
 @if($station)@method('PUT')@endif
 @php use App\Support\Persian; @endphp
 
@@ -33,6 +33,30 @@
               <div class="ffield"><label>وضعیت</label><select class="fselect" name="status">@foreach(['active'=>'فعال','inactive'=>'غیرفعال','maintenance'=>'تعمیرات'] as $v=>$l)<option value="{{ $v }}" @selected(old('status', $station->status)===$v)>{{ $l }}</option>@endforeach</select></div>
               @endif
               <div class="ffield"><label>ساعات کاری</label><select class="fselect"><option>۲۴ ساعته</option><option>۶ صبح تا ۱۲ شب</option><option>اداری</option></select></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- تصویر -->
+        @php $stImage = $station?->imageUrl(); @endphp
+        <div class="card">
+          <div class="card-head"><div><h3>تصویر ایستگاه</h3><div class="ch-sub">در اپ مشتری بالای صفحهٔ ایستگاه و در فهرست نقشه نمایش داده می‌شود</div></div></div>
+          <div class="card-pad">
+            <div class="st-img-row">
+              <label class="st-img-drop" for="stImage">
+                <img id="stImgPv" src="{{ $stImage ?? '' }}" alt="" @if(! $stImage) hidden @endif>
+                <span class="st-img-empty" id="stImgEmpty" @if($stImage) hidden @endif><span data-ic="camera"></span>انتخاب تصویر</span>
+              </label>
+              <div style="flex:1;min-width:0">
+                <input type="file" id="stImage" name="image" accept="image/jpeg,image/png,image/webp" class="finput" style="padding:8px">
+                <span class="fhint">JPG، PNG یا WebP — حداکثر ۴ مگابایت. تصویر افقی (مثلاً ۱۲۰۰×۶۰۰) بهترین نتیجه را دارد.</span>
+                @error('image')<div class="fs12 mt-4" style="color:var(--red)">{{ $message }}</div>@enderror
+                @if($stImage)
+                <label class="flex items-center gap-8 mt-12" style="cursor:pointer;font-size:13px">
+                  <input type="checkbox" name="remove_image" value="1" id="stImgRemove" style="width:16px;height:16px;accent-color:var(--red)"> حذف تصویر فعلی
+                </label>
+                @endif
+              </div>
             </div>
           </div>
         </div>
@@ -160,6 +184,11 @@
 .conn-edit select{height:38px;border:1px solid var(--border);background:var(--surface);border-radius:9px;font-family:inherit;font-size:12.5px;color:var(--text);padding:0 10px}
 .conn-edit .ce-del{width:34px;height:34px;border-radius:9px;border:1px solid var(--border);background:var(--surface);color:var(--red);display:grid;place-items:center;margin-inline-start:auto}.conn-edit .ce-del svg{width:16px;height:16px}
 .map-panel{display:grid;place-items:center}
+.st-img-row{display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap}
+.st-img-drop{width:220px;height:120px;border:1.5px dashed var(--border);border-radius:14px;background:var(--surface-2);display:grid;place-items:center;overflow:hidden;cursor:pointer;flex:none}
+.st-img-drop img{width:100%;height:100%;object-fit:cover}
+.st-img-drop [hidden]{display:none!important}
+.st-img-empty{display:flex;flex-direction:column;align-items:center;gap:6px;font-size:12.5px;color:var(--text-2)}.st-img-empty svg{width:26px;height:26px}
 .conn-chips{display:flex;flex-wrap:wrap;gap:6px;margin:-4px 4px 4px}
 .conn-chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border);border-radius:20px;padding:4px 6px 4px 10px;font-size:12px;background:var(--surface)}
 .conn-chip button{width:20px;height:20px;border-radius:50%;border:none;background:var(--red-soft,#fde8ea);color:var(--red);display:grid;place-items:center;cursor:pointer;padding:0}.conn-chip button svg{width:12px;height:12px}
@@ -186,6 +215,14 @@
   if(coords)coords.addEventListener('change',function(){
     var p=asciiDigits(this.value).trim().split(/[,\s]+/);
     if(p.length>=2){document.getElementById('stLat').value=p[0];document.getElementById('stLng').value=p[1];}
+  });
+  var imgIn=document.getElementById('stImage');
+  if(imgIn)imgIn.addEventListener('change',function(){
+    var f=this.files&&this.files[0];if(!f)return;
+    var pv=document.getElementById('stImgPv');
+    pv.src=URL.createObjectURL(f);pv.hidden=false;
+    document.getElementById('stImgEmpty').hidden=true;
+    var rm=document.getElementById('stImgRemove');if(rm)rm.checked=false;
   });
   document.querySelectorAll('#amenChips .chip').forEach(function(c){c.addEventListener('click',function(){c.classList.toggle('active');});});
 

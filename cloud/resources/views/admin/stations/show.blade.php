@@ -2,7 +2,10 @@
 
 @section('content')
 <div class="flex between items-center mt-8" style="margin-bottom:18px">
-    <div>
+    <div class="flex items-center gap-12">
+        @if($station->imageUrl())
+        <img src="{{ $station->imageUrl() }}" alt="" style="width:96px;height:56px;object-fit:cover;border-radius:10px;border:1px solid var(--border)">
+        @endif
         <span class="pill">{{ $station->code }}</span>
         <span class="muted fs13" style="margin-right:8px">{{ $station->city }}</span>
     </div>

@@ -67,6 +67,7 @@
 .ms-station .si{width:50px;height:50px;border-radius:13px;flex:none;display:grid;place-items:center}
 .ms-station .si:not([class*="ic-"]){background:var(--surface-3);color:var(--muted)}
 .ms-station .si svg{width:23px;height:23px}
+.ms-station .si.si-img{overflow:hidden;background:var(--surface-3)}.ms-station .si.si-img img{width:100%;height:100%;object-fit:cover}
 .sc-pin{width:50px;height:50px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);display:grid;place-items:center;padding:4px;box-shadow:0 0 0 3px #facc15,0 6px 16px rgba(0,0,0,.35)}
 .sc-pin img{transform:rotate(45deg);width:100%!important;height:100%!important;border-radius:50%;background:#fff;object-fit:contain;padding:2px}
 .sc-pin.green{background:var(--green)}.sc-pin.amber{background:var(--amber)}.sc-pin.red{background:var(--red)}.sc-pin.gray{background:#64748b}
@@ -201,7 +202,7 @@
     list.innerHTML=shown.map(function(s){
       var ic=s.state==='free'?'ic-green':(s.state==='busy'?'ic-orange':(s.state==='fault'?'ic-red':''));
       return '<a href="'+s.url+'" class="ms-station">'+
-        '<div class="si '+ic+'">'+window.icon('plug')+'</div>'+
+        (s.image ? '<div class="si si-img"><img src="'+s.image+'" alt="" loading="lazy"></div>' : '<div class="si '+ic+'">'+window.icon('plug')+'</div>')+
         '<div style="flex:1;min-width:0">'+
           '<div class="row between"><span class="fw7" style="font-size:14px">'+s.name+'</span><span class="pill '+s.status_pill+'"><span class="pdot"></span>'+s.status+'</span></div>'+
           '<div class="fs12 muted mt4">'+s.type+' · '+s.free+'</div>'+

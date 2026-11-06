@@ -12,11 +12,14 @@ use App\Services\Admin\AdminViewDataService;
 use App\Services\Stations\StationAnprService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class StationController extends Controller
 {
+    private const IMAGE_RULE = ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'];
+
     public function __construct(
         private AdminMetricsService $metrics,
         private StationAnprService $anpr,
@@ -56,15 +59,19 @@ class StationController extends Controller
             'local_hostname' => ['nullable', 'string', 'max:128'],
             'partner_id' => ['nullable', 'exists:partners,id'],
             'grid_limit_kw' => ['nullable', 'numeric', 'min:0', 'max:100000'],
+            'image' => self::IMAGE_RULE,
         ]);
         $gridLimit = $data['grid_limit_kw'] ?? null;
-        unset($data['grid_limit_kw']);
+        unset($data['grid_limit_kw'], $data['image']);
 
         if (empty($data['code'])) {
             $data['code'] = 'ST-'.Str::upper(Str::random(6));
         }
 
-        $data['meta'] = array_filter(['grid_limit_kw' => $gridLimit !== null ? (float) $gridLimit : null], fn ($v) => $v !== null);
+        $data['meta'] = array_filter([
+            'grid_limit_kw' => $gridLimit !== null ? (float) $gridLimit : null,
+            'image' => $this->storeImage($request, $data['code']),
+        ], fn ($v) => $v !== null);
         $station = Station::create($data);
 
         return redirect()
@@ -114,11 +121,13 @@ class StationController extends Controller
             'charger_types.*' => ['nullable', 'string', 'max:32'],
             'charger_power' => ['nullable', 'array'],
             'charger_power.*' => ['nullable', 'integer', 'min:1', 'max:500'],
+            'image' => self::IMAGE_RULE,
+            'remove_image' => ['nullable', 'boolean'],
         ]);
         $gridLimit = $data['grid_limit_kw'] ?? null;
         $chargerTypes = $data['charger_types'] ?? [];
         $chargerPower = $data['charger_power'] ?? [];
-        unset($data['grid_limit_kw'], $data['charger_types'], $data['charger_power']);
+        unset($data['grid_limit_kw'], $data['charger_types'], $data['charger_power'], $data['image'], $data['remove_image']);
 
         foreach ($station->chargers as $charger) {
             $changes = [];
@@ -141,6 +150,13 @@ class StationController extends Controller
         } else {
             unset($meta['grid_limit_kw']);
         }
+        if ($image = $this->storeImage($request, $data['code'])) {
+            $this->deleteImage($meta['image'] ?? null);
+            $meta['image'] = $image;
+        } elseif ($request->boolean('remove_image')) {
+            $this->deleteImage($meta['image'] ?? null);
+            unset($meta['image']);
+        }
         $data['meta'] = $meta;
         $station->update($data);
 
@@ -156,5 +172,26 @@ class StationController extends Controller
         return redirect()
             ->route('admin.stations.show', $station)
             ->with('success', 'ایستگاه به‌روزرسانی شد.');
+    }
+
+    private function storeImage(Request $request, string $code): ?string
+    {
+        if (! $request->hasFile('image')) {
+            return null;
+        }
+        $dir = public_path(Station::IMAGE_DIR);
+        File::ensureDirectoryExists($dir);
+        $file = $request->file('image');
+        $name = Str::slug($code).'-'.now()->format('YmdHis').'.'.$file->extension();
+        $file->move($dir, $name);
+
+        return '/'.Station::IMAGE_DIR.'/'.$name;
+    }
+
+    private function deleteImage(?string $path): void
+    {
+        if ($path && str_starts_with($path, '/'.Station::IMAGE_DIR.'/')) {
+            File::delete(public_path(ltrim($path, '/')));
+        }
     }
 }

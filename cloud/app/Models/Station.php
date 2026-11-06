@@ -31,6 +31,15 @@ class Station extends Model
         ];
     }
 
+    public const IMAGE_DIR = 'uploads/stations';
+
+    public function imageUrl(): ?string
+    {
+        $path = $this->meta['image'] ?? null;
+
+        return is_string($path) && $path !== '' ? $path : null;
+    }
+
     public function partner(): BelongsTo
     {
         return $this->belongsTo(Partner::class);

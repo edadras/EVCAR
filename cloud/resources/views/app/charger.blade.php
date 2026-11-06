@@ -25,7 +25,11 @@
     $firstConn = collect($connectorsJs)->firstWhere('st', 'free') ?? ($connectorsJs[0] ?? null);
 @endphp
 <div class="hero">
+    @if($stImage = $station->imageUrl())
+    <img class="hero-img" src="{{ $stImage }}" alt="{{ $station->name }}">
+    @else
     <div class="hero-bg"><span data-ic="plug"></span></div>
+    @endif
     <a href="{{ route('app.map') }}" class="hero-back"><span data-ic="back"></span></a>
     <button class="hero-share" type="button" onclick="if(navigator.share){navigator.share({title:@json($station->name),url:location.href})}"><span data-ic="share"></span></button>
     <span class="hero-pill pill pill-green"><span class="pdot"></span><span id="freeCountTxt">{{ Persian::digits($freeCount) }}</span> کانکتور آزاد</span>
@@ -224,6 +228,9 @@
 .hero{position:relative;height:200px;flex:none}
 .hero-bg{position:absolute;inset:0;background:linear-gradient(140deg,var(--accent),color-mix(in srgb,var(--accent) 50%,var(--orange)));display:grid;place-items:center;color:rgba(255,255,255,.5)}
 .hero-bg svg{width:72px;height:72px}
+.hero-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.hero:has(.hero-img)::after{content:'';position:absolute;inset:auto 0 0;height:70px;background:linear-gradient(transparent,rgba(0,0,0,.35));pointer-events:none}
+.hero-pill{z-index:1}
 .hero-back,.hero-share{position:absolute;top:54px;width:42px;height:42px;border-radius:13px;background:rgba(255,255,255,.92);color:var(--text);display:grid;place-items:center;box-shadow:var(--shadow-sm);border:none;text-decoration:none}
 .hero-back{right:18px}.hero-share{left:18px}
 .hero-back svg,.hero-share svg{width:20px;height:20px}

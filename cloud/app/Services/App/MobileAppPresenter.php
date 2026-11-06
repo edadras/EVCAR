@@ -106,6 +106,7 @@ class MobileAppPresenter
                 'cat' => $cat,
                 'has_free' => $free > 0,
                 'url' => route('app.charger', ['station' => $st->code]),
+                'image' => $st->imageUrl(),
             ];
         })->values()->all();
     }
