@@ -12,8 +12,10 @@
     <span style="width:42px"></span>
 </div>
 <div class="screen" style="padding-bottom:40px">
-    <div style="text-align:center;padding:48px 24px;color:#9fb4c8">
+    <div style="text-align:center;padding:36px 24px;color:#9fb4c8">
+        <img class="charge-empty-art fx-float" src="/assets/app-img/battery.webp" alt="">
         <div style="font-size:15px;line-height:1.8">جلسهٔ شارژ فعالی ندارید.</div>
+        <div style="font-size:12.5px;opacity:.8">کد QR روی شارژر را اسکن کنید تا شارژ شروع شود.</div>
         <a href="{{ route('app.home') }}" class="btn btn-orange mt20" style="display:inline-flex;height:48px;padding:0 28px">بازگشت به خانه</a>
     </div>
 </div>
@@ -100,6 +102,17 @@
 html[data-theme="dark"] .charging-phone{background:linear-gradient(180deg,#0b1d2e,#060e18)}
 .charging-phone .appbar .ab-btn svg{width:20px;height:20px}
 .gauge-big{position:relative;display:grid;place-items:center;margin:14px auto 0;width:260px;height:260px}
+.gauge-big::before{content:"";position:absolute;inset:6px;border-radius:50%;background:conic-gradient(from 0deg,transparent 0 60%,rgba(126,226,166,.55) 80%,transparent 100%);-webkit-mask:radial-gradient(circle,transparent 62%,#000 63%,#000 70%,transparent 71%);mask:radial-gradient(circle,transparent 62%,#000 63%,#000 70%,transparent 71%);opacity:.9}
+.gauge-big::after{content:"";position:absolute;inset:40px;border-radius:50%;background:radial-gradient(circle,rgba(22,163,74,.28),transparent 70%);z-index:-1}
+.gauge-big svg{position:relative}
+.charge-empty-art{width:170px;height:170px;margin:0 auto 6px;filter:drop-shadow(0 16px 30px rgba(22,163,74,.35))}
+@media (prefers-reduced-motion: no-preference){
+  .gauge-big::before{animation:fx-spin 3.2s linear infinite}
+  .gauge-big::after{animation:fx-glow 2.6s ease-in-out infinite}
+  .gb-bolt{animation:fx-pulse 1.8s ease-in-out infinite}
+}
+@keyframes fx-spin{to{transform:rotate(360deg)}}
+@keyframes fx-glow{0%,100%{opacity:.6;transform:scale(.95)}50%{opacity:1;transform:scale(1.06)}}
 .gb-center{position:absolute;text-align:center;color:#fff}
 .gb-bolt{width:34px;height:34px;margin:0 auto 4px;color:#7ee2a6}
 .gb-bolt svg{width:34px;height:34px;fill:#7ee2a6;stroke:#7ee2a6}

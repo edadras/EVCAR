@@ -9,6 +9,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="@v('/assets/mobile/app-mobile.css')">
+    <link rel="stylesheet" href="@v('/assets/mobile/app-fx.css')">
     <link rel="manifest" href="/app.webmanifest">
     <meta name="theme-color" content="#0e63c9">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -80,6 +81,7 @@ window.scLive = function (section, intervalMs, onData, params) {
 };
 </script>
 <script src="@v('/assets/mobile/app-mobile.js')"></script>
+<script src="@v('/assets/mobile/app-fx.js')"></script>
 <script src="@v('/assets/mobile/edge-router.js')"></script>
 @if(auth()->check())
 <script src="@v('/assets/mobile/arrival-monitor.js')"></script>

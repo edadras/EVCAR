@@ -14,6 +14,15 @@
 
 <div class="screen">
 
+    <a href="{{ route('app.map') }}" class="fx-banner home-hero" id="homeHero" @if($activeCard) hidden @endif>
+        <img class="fx-kenburns" src="/assets/app-img/home-hero-sm.webp" srcset="/assets/app-img/home-hero-sm.webp 500w, /assets/app-img/home-hero.webp 1000w" sizes="430px" alt="">
+        <div class="fb-body">
+            <div class="fb-title">شارژ هوشمند،<br>سفر بی‌دغدغه</div>
+            <div class="fb-sub">نزدیک‌ترین شارژر آزاد را پیدا کنید و با یک اسکن شارژ را شروع کنید.</div>
+            <span class="fb-cta"><span data-ic="pin"></span> پیدا کردن ایستگاه</span>
+        </div>
+    </a>
+
     <a href="{{ route('app.charging') }}" class="active-card rise" id="activeCard" @if(!$activeCard) hidden @endif>
         <div class="row between">
             <span class="pill" style="background:rgba(255,255,255,.18);color:#fff"><span class="pdot" style="background:#7ee2a6"></span>در حال شارژ</span>
@@ -41,14 +50,14 @@
         <div class="ws-ic" data-ic="wallet"></div>
         <div style="flex:1">
             <div class="muted fs12">موجودی کیف پول</div>
-            <div class="fw8 tnum" style="font-size:18px"><span id="homeBalance">{{ Persian::money(($user->wallet?->balance ?? 0) / 10) }}</span> <span class="fs12 t2">تومان</span></div>
+            <div class="fw8 tnum" style="font-size:18px"><span id="homeBalance" data-countup>{{ Persian::money(($user->wallet?->balance ?? 0) / 10) }}</span> <span class="fs12 t2">تومان</span></div>
         </div>
         <span class="ws-add"><span data-ic="plus"></span> افزایش</span>
     </a>
 
     @if($featuredOffer)
-    <a href="{{ route('app.offers') }}" class="offer-banner rise" style="animation-delay:.08s">
-        <div class="ob-ic" data-ic="gift"></div>
+    <a href="{{ route('app.offers') }}" class="offer-banner fx-sheen rise" style="animation-delay:.08s">
+        <img class="ob-art fx-float" src="/assets/app-img/offers.webp" alt="" aria-hidden="true">
         <div style="flex:1">
             <div class="fw8" style="font-size:14px">{{ $featuredOffer->name }}@if($featuredOffer->discount_percent) — {{ Persian::digits($featuredOffer->discount_percent) }}٪@endif</div>
             <div class="fs12" style="opacity:.9">{{ Persian::digits($campaigns->count()) }} طرح جدید برای شما فعال است</div>
@@ -57,13 +66,13 @@
     </a>
     @endif
 
-    <a href="{{ route('app.navigator') }}" class="ev-nav-banner rise mt20">
-        <span class="enb-ic" data-ic="nav"></span>
-        <div style="flex:1">
-            <div class="fw8" style="font-size:14px">مسیریاب برقی</div>
-            <div class="fs12 muted">برنامه‌ریزی مسیر، مصرف انرژی و توقف شارژ</div>
+    <a href="{{ route('app.navigator') }}" class="fx-banner nav-banner mt16">
+        <img class="fx-kenburns" src="/assets/app-img/navigator-sm.webp" srcset="/assets/app-img/navigator-sm.webp 500w, /assets/app-img/navigator.webp 1000w" sizes="430px" alt="">
+        <div class="fb-body">
+            <div class="fb-title">مسیریاب برقی</div>
+            <div class="fb-sub">مسیر سفر، مصرف انرژی و توقف‌های شارژ را از قبل ببینید.</div>
+            <span class="fb-cta"><span data-ic="nav"></span> برنامه‌ریزی سفر</span>
         </div>
-        <span class="chev" data-ic="chevron"></span>
     </a>
 
     <div class="qgrid mt16">
@@ -73,7 +82,7 @@
         <a class="qitem" href="{{ route('app.history') }}"><span class="qic ic-orange" data-ic="receipt"></span>سوابق</a>
     </div>
     <a href="{{ route('app.assistant') }}" class="ev-nav-banner mt16">
-        <span class="enb-ic" style="background:linear-gradient(135deg,var(--accent),var(--violet));font-size:20px">✦</span>
+        <span class="fx-art enb-art"><img class="fx-float" src="/assets/app-img/assistant.webp" alt=""></span>
         <div style="flex:1">
             <div class="fw8" style="font-size:14.5px">دستیار هوشمند پشتیبانی</div>
             <div class="fs12 muted">سؤال دارید؟ همین حالا بپرسید — پاسخ فوری</div>
@@ -120,6 +129,14 @@
 .ev-nav-banner{display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:var(--r-lg);background:var(--surface);border:1px solid var(--border);box-shadow:var(--shadow-sm);text-decoration:none;color:inherit}
 .enb-ic{width:44px;height:44px;border-radius:14px;background:linear-gradient(135deg,var(--accent),var(--orange));color:#fff;display:grid;place-items:center;flex:none}
 .enb-ic svg{width:22px;height:22px}
+.enb-art{width:52px;height:52px;flex:none;margin:-6px 0}
+.home-hero{min-height:178px;display:flex;align-items:center}
+.nav-banner{min-height:150px;display:flex;align-items:flex-end}
+.nav-banner::after{background:linear-gradient(0deg,rgba(6,22,40,.85) 0%,rgba(6,22,40,.35) 60%,rgba(6,22,40,.05) 100%)}
+.nav-banner .fb-body{max-width:100%}
+.offer-banner{position:relative;overflow:hidden}
+.ob-art{width:58px;height:58px;flex:none;margin:-8px 0;filter:drop-shadow(0 6px 10px rgba(0,0,0,.25))}
+.station .st-img img{width:100%;height:100%;object-fit:cover}
 </style>
 @endpush
 
@@ -131,6 +148,7 @@
 
   function renderActive(a){
     var card=document.getElementById('activeCard');
+    document.getElementById('homeHero').hidden=!!a;
     if(!a){card.hidden=true;return;}
     card.hidden=false;
     document.getElementById('acStation').textContent=a.station;
@@ -155,7 +173,7 @@
   function renderStations(st){
     document.getElementById('stations').innerHTML=st.map(function(s){
       return '<a href="'+esc(s.url)+'" class="station" data-cat="'+esc(s.cat)+'">'+
-        '<div class="st-img">'+window.icon('plug')+'</div>'+
+        '<div class="st-img"><img src="'+esc(s.image||'/assets/app-img/station-default-sm.webp')+'" alt="" loading="lazy"></div>'+
         '<div style="flex:1">'+
           '<div class="row between"><span class="st-name">'+esc(s.name)+'</span><span class="pill '+esc(s.status_pill)+'"><span class="pdot"></span>'+esc(s.status)+'</span></div>'+
           '<div class="st-meta">'+esc(s.type)+'</div>'+

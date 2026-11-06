@@ -91,7 +91,7 @@ a.hist{display:block;text-decoration:none;color:inherit}
         '<div style="margin-inline-start:auto;text-align:end">هزینه<b class="tnum">'+h.amt+' ت</b></div>'+
       '</div>'+
     '</a>';
-  }).join(''):'<div class="tx-empty">جلسه‌ای ثبت نشده است.</div>';
+  }).join(''):'<div class="fx-empty"><div class="fx-art"><img class="fx-float" src="/assets/app-img/battery.webp" alt=""></div><b>هنوز شارژی ثبت نشده</b><span>اولین شارژ خود را با اسکن QR روی شارژر شروع کنید.</span></div>';
 
   var se=document.getElementById('histSearch');
   se.addEventListener('input',function(){

@@ -37,6 +37,9 @@
 </div>
 
 <div class="screen">
+    @if(empty($grouped['today']) && empty($grouped['earlier']))
+    <div class="fx-empty" style="padding-top:40px"><div class="fx-art"><img class="fx-float" src="/assets/app-img/assistant.webp" alt=""></div><b>اعلانی ندارید</b><span>خبرهای شارژ، کیف پول و طرح‌های جدید اینجا نمایش داده می‌شود.</span></div>
+    @else
     <div class="muted fs12 fw7" style="margin:4px 0 10px">امروز</div>
     <div class="card card-p" id="today">
         @forelse($grouped['today'] ?? [] as $n)
@@ -70,6 +73,7 @@
             <div class="muted fs13" style="padding:8px 0">اعلان قدیمی‌تری نیست.</div>
         @endforelse
     </div>
+    @endif
 </div>
 @endsection
 

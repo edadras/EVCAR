@@ -6,7 +6,7 @@
 <div class="appbar chat-bar" style="padding-top:2px">
     <a href="{{ route('app.support') }}" class="ab-btn"><span data-ic="back"></span></a>
     <div class="chat-agent">
-        <span class="ca-av ai-av">✦</span>
+        <span class="ca-av ai-av"><img src="/assets/app-img/assistant.webp" alt=""></span>
         <div>
             <div class="fw7 fs13">دستیار هوشمند QUAD EV</div>
             <div class="fs12" style="color:var(--green)"><span class="onl"></span><span id="aiState">{{ $initial['ai_enabled'] ? 'پاسخ فوری ۲۴ ساعته' : 'پاسخ از پرسش‌های متداول' }}</span></div>
@@ -31,7 +31,13 @@
 .chat-bar{background:var(--surface);border-bottom:1px solid var(--border);gap:10px}
 .chat-agent{flex:1;display:flex;align-items:center;gap:10px}
 .ca-av{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;flex:none}
-.ai-av{background:linear-gradient(140deg,var(--accent),var(--violet));color:#fff;font-size:20px}
+.ai-av{background:linear-gradient(140deg,var(--accent-soft),var(--surface-3));overflow:hidden}
+.ai-av img{width:118%;height:118%;object-fit:contain;margin-top:6px}
+.ai-hello{align-self:center;width:150px;height:150px;margin:4px 0 -4px}
+@media (prefers-reduced-motion: no-preference){
+  .msg:nth-last-child(-n+2){animation:fx-msg .35s cubic-bezier(.2,.7,.3,1) both}
+}
+@keyframes fx-msg{from{opacity:0;transform:translateY(10px) scale(.97)}}
 .onl{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--green);margin-inline-end:5px}
 .chat-scroll{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px;background:var(--bg)}
 .msg{display:flex;flex-direction:column;max-width:84%}
@@ -73,6 +79,7 @@
   function render(){
     var html='';
     if(!state.messages.length){
+      html+='<div class="fx-art ai-hello"><img class="fx-float" src="/assets/app-img/assistant.webp" alt=""></div>';
       html+='<div class="msg bot"><div class="bub">سلام! من دستیار هوشمند QUAD EV هستم ✦\nدربارهٔ شارژ، کیف پول، ایستگاه‌ها یا هر مشکلی بپرسید؛ اطلاعات حساب شما را هم بررسی می‌کنم.</div></div>';
       html+='<div class="quick">'+state.suggestions.map(function(s){return '<button type="button">'+esc(s)+'</button>';}).join('')+'</div>';
     }

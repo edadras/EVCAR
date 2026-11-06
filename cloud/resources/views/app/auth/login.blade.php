@@ -9,12 +9,23 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="@v('/assets/mobile/app-mobile.css')">
+    <link rel="stylesheet" href="@v('/assets/mobile/app-fx.css')">
+    <link rel="preload" as="image" href="/assets/app-img/login-hero.webp">
 </head>
 <body data-no-tab>
 <div class="phone login-phone">
+    <div class="login-bg" aria-hidden="true">
+        <img class="fx-kenburns" src="/assets/app-img/login-hero.webp" alt="">
+        <div class="login-particles"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+    </div>
     <div class="login-top">
         <img class="logo-img" src="/assets/brand/quad-logo-white.png" alt="QUAD EV">
-        <div class="logo-sub">QUAD EV · شارژ هوشمند خودرو برقی</div>
+        <div class="logo-sub">شارژ هوشمند خودرو برقی</div>
+        <div class="login-feats">
+            <span><i data-ic="map"></i>نقشهٔ ایستگاه‌ها</span>
+            <span><i data-ic="qr"></i>شارژ با QR</span>
+            <span><i data-ic="nav"></i>مسیریاب برقی</span>
+        </div>
     </div>
 
     <div class="login-sheet">
@@ -98,8 +109,37 @@
 </div>
 
 <style>
-.login-phone{background:linear-gradient(165deg,var(--accent),color-mix(in srgb,var(--accent) 50%,var(--orange)))}
-.login-top{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;gap:6px}
+.login-phone{background:#071a2c;position:relative}
+.login-bg{position:absolute;inset:0;overflow:hidden;z-index:0}
+.login-bg img{width:100%;height:100%;object-fit:cover;object-position:50% 70%}
+.login-bg::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(5,20,38,.55) 0%,rgba(5,20,38,.1) 38%,rgba(5,20,38,.35) 62%,rgba(5,20,38,.85) 100%)}
+.login-particles{position:absolute;inset:0;z-index:1;pointer-events:none}
+.login-particles i{position:absolute;bottom:-10px;width:6px;height:6px;border-radius:50%;background:#7cc8ff;box-shadow:0 0 10px 2px rgba(124,200,255,.8);opacity:0}
+.login-particles i:nth-child(even){background:#ffb36b;box-shadow:0 0 10px 2px rgba(255,160,80,.8)}
+.login-particles i:nth-child(1){left:12%}.login-particles i:nth-child(2){left:26%;width:4px;height:4px}.login-particles i:nth-child(3){left:41%}.login-particles i:nth-child(4){left:55%;width:4px;height:4px}
+.login-particles i:nth-child(5){left:68%}.login-particles i:nth-child(6){left:79%;width:5px;height:5px}.login-particles i:nth-child(7){left:88%;width:3px;height:3px}.login-particles i:nth-child(8){left:34%;width:3px;height:3px}
+.login-top{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;gap:6px;position:relative;z-index:2;padding:20px;text-shadow:0 2px 12px rgba(0,0,0,.35)}
+.login-sheet{position:relative;z-index:2}
+.login-feats{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:14px}
+.login-feats span{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:7px 12px;border-radius:30px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.22);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+.login-feats i{display:inline-grid;width:15px;height:15px}.login-feats svg{width:15px;height:15px}
+@media (prefers-reduced-motion: no-preference){
+  .logo-img{animation:fx-logo-in .9s cubic-bezier(.2,.7,.3,1) both, fx-float 6.5s ease-in-out .9s infinite}
+  .logo-sub{animation:fx-up .7s .25s cubic-bezier(.2,.7,.3,1) both}
+  .login-feats span{animation:fx-up .6s cubic-bezier(.2,.7,.3,1) both}
+  .login-feats span:nth-child(1){animation-delay:.4s}.login-feats span:nth-child(2){animation-delay:.5s}.login-feats span:nth-child(3){animation-delay:.6s}
+  .login-sheet{animation:fx-sheet-up .7s .15s cubic-bezier(.2,.8,.25,1) both}
+  #stepPhone,#stepPassword,#stepOtp,#stepRegister{animation:fx-step .4s cubic-bezier(.2,.7,.3,1) both}
+  .login-particles i{animation:fx-rise 7s linear infinite}
+  .login-particles i:nth-child(2){animation-delay:1.2s;animation-duration:9s}.login-particles i:nth-child(3){animation-delay:2.6s}.login-particles i:nth-child(4){animation-delay:.6s;animation-duration:8s}
+  .login-particles i:nth-child(5){animation-delay:3.4s}.login-particles i:nth-child(6){animation-delay:1.8s;animation-duration:10s}.login-particles i:nth-child(7){animation-delay:4.2s}.login-particles i:nth-child(8){animation-delay:5s;animation-duration:9s}
+  .otp .cell.filled{animation:fx-pop .3s cubic-bezier(.3,1.6,.5,1)}
+}
+@keyframes fx-logo-in{from{opacity:0;transform:scale(.85) translateY(10px);filter:blur(6px)}}
+@keyframes fx-up{from{opacity:0;transform:translateY(12px)}}
+@keyframes fx-sheet-up{from{transform:translateY(100%)}}
+@keyframes fx-step{from{opacity:0;transform:translateX(-18px)}}
+@keyframes fx-rise{0%{transform:translateY(0);opacity:0}10%{opacity:.9}80%{opacity:.6}100%{transform:translateY(-75vh);opacity:0}}
 .logo-mark{width:84px;height:84px;border-radius:26px;background:rgba(255,255,255,.16);display:grid;place-items:center;margin-bottom:10px;backdrop-filter:blur(6px)}
 .logo-mark svg{width:44px;height:44px;fill:#fff;stroke:#fff}
 .logo-img{display:block;width:min(220px,60vw);height:auto;margin-bottom:10px}
@@ -129,6 +169,7 @@ window.SC_AUTH_API = {
 };
 </script>
 <script src="@v('/assets/mobile/app-mobile.js')"></script>
+<script src="@v('/assets/mobile/app-fx.js')"></script>
 <script src="@v('/assets/mobile/edge-router.js')"></script>
 <script src="@v('/assets/mobile/auth-wizard.js')"></script>
 </body>

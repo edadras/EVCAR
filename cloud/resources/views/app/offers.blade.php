@@ -53,7 +53,8 @@
     </div>
 
     @if($hero)
-    <div class="offer-hero rise">
+    <div class="offer-hero fx-sheen rise">
+        <img class="oh-art fx-float" src="/assets/app-img/offers.webp" alt="" aria-hidden="true">
         <div class="oh-badge">{{ $hero->discount_percent ? Persian::digits((int) $hero->discount_percent).'%' : '★' }}</div>
         <div class="oh-ic" data-ic="bolt"></div>
         <div class="oh-title">{{ $hero->name }}</div>
@@ -102,6 +103,8 @@
 <style>
 .offer-hero{position:relative;overflow:hidden;border-radius:22px;padding:20px;color:#fff;background:linear-gradient(140deg,var(--accent),#7C3AED);box-shadow:0 16px 34px rgba(var(--accent-rgb),.34)}
 .offer-hero::after{content:"";position:absolute;inset:0;background:radial-gradient(circle at 85% 0%,rgba(255,255,255,.24),transparent 48%)}
+.oh-art{position:absolute;left:-4px;bottom:-6px;width:130px;height:130px;z-index:0;filter:drop-shadow(0 10px 18px rgba(0,0,0,.3));pointer-events:none}
+.offer-hero .oh-title,.offer-hero .oh-body{position:relative;z-index:1;max-width:66%}
 .oh-badge{position:absolute;top:18px;inset-inline-end:20px;font-size:30px;font-weight:800;z-index:1}
 .oh-ic{width:48px;height:48px;border-radius:14px;background:rgba(255,255,255,.2);display:grid;place-items:center;position:relative;z-index:1}.oh-ic svg{width:25px;height:25px}
 .oh-title{font-size:19px;font-weight:800;margin-top:14px;position:relative;z-index:1}

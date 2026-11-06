@@ -16,7 +16,7 @@
         <span class="corner tl"></span><span class="corner tr"></span>
         <span class="corner bl"></span><span class="corner br"></span>
         <div class="scanline"></div>
-        <div class="vf-qr" data-ic="qr"></div>
+        <div class="vf-qr"><img class="fx-float" src="/assets/app-img/scan.webp" alt=""></div>
     </div>
     <p class="scan-hint" id="scanHint">کد QR روی شارژر یا کانکتور را داخل کادر قرار دهید</p>
 </div>
@@ -53,8 +53,8 @@
 .viewfinder.live #scanVideo{opacity:1}
 .vf-start{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:3;border:none;border-radius:14px;padding:12px 20px;background:var(--accent);color:#fff;font-family:inherit;font-size:14px;font-weight:800}
 .viewfinder.live .vf-qr{display:none}
-.vf-qr{position:absolute;inset:50px;opacity:.18;display:grid;place-items:center}
-.vf-qr svg{width:100%;height:100%}
+.vf-qr{position:absolute;inset:28px;display:grid;place-items:center}
+.vf-qr img{width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 10px 24px rgba(14,107,168,.45))}
 .scan-hint{color:#9fb4c8;font-size:13.5px;text-align:center;max-width:240px;line-height:1.7}
 .scan-sheet{background:var(--surface);border-radius:28px 28px 0 0;padding:22px 22px calc(30px + env(safe-area-inset-bottom,0));flex:none;box-shadow:0 -10px 40px rgba(0,0,0,.3)}
 .scan-sheet .btn svg{width:18px;height:18px}

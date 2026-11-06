@@ -25,11 +25,7 @@
     $firstConn = collect($connectorsJs)->firstWhere('st', 'free') ?? ($connectorsJs[0] ?? null);
 @endphp
 <div class="hero">
-    @if($stImage = $station->imageUrl())
-    <img class="hero-img" src="{{ $stImage }}" alt="{{ $station->name }}">
-    @else
-    <div class="hero-bg"><span data-ic="plug"></span></div>
-    @endif
+    <img class="hero-img fx-kenburns" src="{{ $station->imageUrl() ?: '/assets/app-img/station-default.webp' }}" alt="{{ $station->name }}">
     <a href="{{ route('app.map') }}" class="hero-back"><span data-ic="back"></span></a>
     <button class="hero-share" type="button" onclick="if(navigator.share){navigator.share({title:@json($station->name),url:location.href})}"><span data-ic="share"></span></button>
     <span class="hero-pill pill pill-green"><span class="pdot"></span><span id="freeCountTxt">{{ Persian::digits($freeCount) }}</span> کانکتور آزاد</span>
@@ -225,7 +221,7 @@
 .prob{display:flex;align-items:center;gap:10px;padding:11px 12px;border:1.5px solid var(--border);border-radius:13px;font-size:13.5px;cursor:pointer}
 .prob:has(input:checked){border-color:var(--accent);background:var(--accent-soft)}
 .sheet-in{width:100%;margin-top:8px;border:1.5px solid var(--border);background:var(--surface-2);border-radius:13px;padding:11px 12px;font-family:inherit;font-size:13.5px;color:var(--text)}
-.hero{position:relative;height:200px;flex:none}
+.hero{position:relative;height:220px;flex:none;overflow:hidden}
 .hero-bg{position:absolute;inset:0;background:linear-gradient(140deg,var(--accent),color-mix(in srgb,var(--accent) 50%,var(--orange)));display:grid;place-items:center;color:rgba(255,255,255,.5)}
 .hero-bg svg{width:72px;height:72px}
 .hero-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}

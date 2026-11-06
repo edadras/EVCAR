@@ -10,12 +10,13 @@
 </div>
 
 <div class="screen">
-    <div class="wcard rise">
+    <div class="wcard fx-sheen rise">
+        <img class="wcard-art fx-float" src="/assets/app-img/wallet.webp" alt="" aria-hidden="true">
         <div class="row between" style="position:relative;z-index:1">
             <span style="font-size:13px;opacity:.9">موجودی کیف پول</span>
             <img src="/assets/brand/quad-logo-white.png" alt="QUAD EV" style="height:18px;width:auto">
         </div>
-        <div class="wbal tnum"><span id="walletBalance">{{ Persian::money(($wallet?->balance ?? 0) / 10) }}</span> <small>تومان</small></div>
+        <div class="wbal tnum"><span id="walletBalance" data-countup>{{ Persian::money(($wallet?->balance ?? 0) / 10) }}</span> <small>تومان</small></div>
         <div class="row" style="gap:28px;position:relative;z-index:1">
             <div><div class="wl">اعتبار پاداش</div><div class="wv tnum">{{ Persian::money(($wallet?->bonus_balance ?? 0) / 10) }}</div></div>
             <div><div class="wl">کارت RFID</div><div class="wv">{{ $rfidMasked }}</div></div>
@@ -86,6 +87,8 @@
 .wcard{position:relative;overflow:hidden;border-radius:24px;padding:20px;color:#fff;background:linear-gradient(140deg,var(--accent),color-mix(in srgb,var(--accent) 45%,var(--orange)));box-shadow:0 16px 34px rgba(var(--accent-rgb),.4)}
 .wcard::after{content:"";position:absolute;inset:0;background:radial-gradient(circle at 86% 0%,rgba(255,255,255,.22),transparent 45%)}
 .wbal{font-size:32px;font-weight:800;margin:14px 0 18px;position:relative;z-index:1}
+.wcard-art{position:absolute;left:-6px;bottom:-14px;width:128px;height:128px;z-index:0;opacity:.95;filter:drop-shadow(0 10px 18px rgba(0,0,0,.25));pointer-events:none}
+.wcard .row:first-of-type img{position:relative}
 .wbal small{font-size:14px;font-weight:600;opacity:.9}
 .wl{font-size:11.5px;opacity:.85}.wv{font-size:15px;font-weight:700;margin-top:2px}
 
