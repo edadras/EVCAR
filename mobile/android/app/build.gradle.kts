@@ -55,6 +55,9 @@ android {
         release {
             // با key.properties امضای انتشار؛ بدون آن (فقط برای تست) کلید debug.
             signingConfig = if (keystorePropertiesFile.exists()) signingConfigs.getByName("release") else signingConfigs.getByName("debug")
+            // R8 strips plugin classes that Dart reaches only through JNI (app hangs on splash).
+            isMinifyEnabled = false
+            isShrinkResources = false
         }
     }
 }
