@@ -83,6 +83,88 @@
             <div class="card">
                 <div class="card-head">
                     <div>
+                        <h3>پیشرانه و شارژ</h3>
+                        <div class="ch-sub">نوع سوکت تعیین می‌کند خودرو به کدام کانکتور ایستگاه وصل می‌شود</div>
+                    </div>
+                </div>
+                <div class="card-pad">
+                    <div class="form-grid">
+                        <div class="ffield">
+                            <label>واردکننده / عرضه‌کننده</label>
+                            <input class="finput" name="importer" value="{{ old('importer', $vehicle?->importer) }}" placeholder="مثلاً ایران‌خودرو">
+                        </div>
+                        <div class="ffield">
+                            <label>شیمی باتری</label>
+                            <select class="finput" name="battery_chemistry">
+                                <option value="">—</option>
+                                @foreach(App\Models\EvCatalogVehicle::CHEMISTRIES as $k => $label)
+                                <option value="{{ $k }}" @selected(old('battery_chemistry', $vehicle?->battery_chemistry) === $k)>{{ $label }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="ffield">
+                            <label>توان موتور (kW)</label>
+                            <input class="finput tnum" name="motor_kw" type="number" min="20" max="1000" value="{{ old('motor_kw', $vehicle?->motor_kw) }}">
+                        </div>
+                        <div class="ffield">
+                            <label>محور محرک</label>
+                            <select class="finput" name="drivetrain">
+                                <option value="">—</option>
+                                @foreach(App\Models\EvCatalogVehicle::DRIVETRAINS as $k => $label)
+                                <option value="{{ $k }}" @selected(old('drivetrain', $vehicle?->drivetrain) === $k)>{{ $label }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="ffield">
+                            <label>سوکت شارژ سریع (DC)</label>
+                            <select class="finput" name="dc_connector">
+                                <option value="">نامشخص</option>
+                                @foreach(App\Models\EvCatalogVehicle::CONNECTORS as $k => $label)
+                                <option value="{{ $k }}" @selected(old('dc_connector', $vehicle?->dc_connector) === $k)>{{ $label }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="ffield">
+                            <label>حداکثر توان DC (kW)</label>
+                            <input class="finput tnum" name="dc_max_kw" type="number" step="0.1" min="3" max="600" value="{{ old('dc_max_kw', $vehicle?->dc_max_kw) }}">
+                        </div>
+                        <div class="ffield">
+                            <label>سوکت شارژ AC</label>
+                            <select class="finput" name="ac_connector">
+                                <option value="">نامشخص</option>
+                                @foreach(App\Models\EvCatalogVehicle::CONNECTORS as $k => $label)
+                                <option value="{{ $k }}" @selected(old('ac_connector', $vehicle?->ac_connector) === $k)>{{ $label }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="ffield">
+                            <label>حداکثر توان AC (kW)</label>
+                            <input class="finput tnum" name="ac_max_kw" type="number" step="0.1" min="1" max="44" value="{{ old('ac_max_kw', $vehicle?->ac_max_kw) }}">
+                        </div>
+                        <div class="ffield">
+                            <label>برد رسمی کارخانه (km)</label>
+                            <input class="finput tnum" name="range_official_km" type="number" min="50" max="1500" value="{{ old('range_official_km', $vehicle?->range_official_km) }}">
+                        </div>
+                        <div class="ffield">
+                            <label>استاندارد برد رسمی</label>
+                            <select class="finput" name="range_standard">
+                                <option value="">—</option>
+                                @foreach(App\Models\EvCatalogVehicle::RANGE_STANDARDS as $k => $label)
+                                <option value="{{ $k }}" @selected(old('range_standard', $vehicle?->range_standard) === $k)>{{ $label }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="ffield col-span">
+                            <label>یادداشت</label>
+                            <textarea class="finput" name="notes" rows="2" maxlength="500">{{ old('notes', $vehicle?->notes) }}</textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-head">
+                    <div>
                         <h3>مصرف و برد</h3>
                         <div class="ch-sub">مبنای مسیریاب: مصرف واقعی روزمره — نه WLTP</div>
                     </div>

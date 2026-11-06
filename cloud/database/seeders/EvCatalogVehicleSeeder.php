@@ -8,41 +8,106 @@ use Illuminate\Support\Str;
 
 class EvCatalogVehicleSeeder extends Seeder
 {
+    /** نسبت برد واقعی (حداکثر، حداقل، بدترین حالت) به برد رسمی در هر استاندارد */
+    private const REAL_RANGE_FACTORS = [
+        'CLTC' => [0.75, 0.64, 0.52],
+        'NEDC' => [0.76, 0.65, 0.53],
+        'WLTP' => [0.90, 0.78, 0.64],
+        'EPA' => [0.95, 0.82, 0.68],
+    ];
+
+    private const PENDING_NOTE = 'بخش دوم فهرست: عرضه و مشخصات نسخه نیازمند تأیید است.';
+
     public function run(): void
     {
-        if (EvCatalogVehicle::query()->exists()) {
+        if (EvCatalogVehicle::query()->withTrashed()->exists()) {
             return;
         }
 
+        self::insertAll();
+    }
+
+    public static function insertAll(): int
+    {
         /** @var array<string, array<string, mixed>> $vehicles */
         $vehicles = require __DIR__.'/data/ev_catalog_vehicles.php';
 
         $sort = 0;
         foreach ($vehicles as $slug => $entry) {
-            $consumption = $entry['consumption'] ?? [];
-            $base = (float) ($entry['consumption_base'] ?? $consumption['base'] ?? $consumption['mixed'] ?? 16);
-
-            EvCatalogVehicle::create([
-                'uuid' => (string) Str::uuid(),
-                'slug' => $slug,
-                'name' => $entry['name'] ?? $slug,
-                'brand' => $entry['brand'] ?? null,
-                'model' => $entry['model'] ?? null,
-                'battery_kwh' => $entry['battery_kwh'] ?? 60,
-                'mass_kg' => (int) ($entry['mass_kg'] ?? 1750),
-                'regen_efficiency' => $entry['regen_efficiency'] ?? 0.65,
-                'cd' => $entry['cd'] ?? null,
-                'frontal_area_m2' => $entry['frontal_area_m2'] ?? null,
-                'consumption_base' => $base,
-                'range_wltp_km' => $entry['range_wltp_km'] ?? null,
-                'range_real_min_km' => $entry['range_real_min_km'] ?? null,
-                'range_real_max_km' => $entry['range_real_max_km'] ?? null,
-                'range_worst_km' => $entry['range_worst_km'] ?? null,
-                'consumption' => array_merge($consumption, ['base' => $base]),
-                'aliases' => $entry['aliases'] ?? [],
-                'sort_order' => $sort++,
-                'is_active' => true,
-            ]);
+            EvCatalogVehicle::create(self::attributes($slug, $entry, $sort++));
         }
+
+        return $sort;
+    }
+
+    /**
+     * @param  array<string, mixed>  $entry
+     * @return array<string, mixed>
+     */
+    public static function attributes(string $slug, array $entry, int $sort): array
+    {
+        $battery = (float) ($entry['battery_kwh'] ?? 60);
+        $official = isset($entry['range_official_km']) ? (int) $entry['range_official_km'] : null;
+        $standard = $entry['range_standard'] ?? null;
+        [$fMax, $fMin, $fWorst] = self::REAL_RANGE_FACTORS[$standard] ?? self::REAL_RANGE_FACTORS['CLTC'];
+
+        $realMax = (int) ($entry['range_real_max_km'] ?? ($official ? round($official * $fMax / 5) * 5 : 0));
+        $realMin = (int) ($entry['range_real_min_km'] ?? ($official ? round($official * $fMin / 5) * 5 : round($realMax * 0.85)));
+        $worst = (int) ($entry['range_worst_km'] ?? ($official ? round($official * $fWorst / 5) * 5 : round($realMax * 0.7)));
+        if (isset($entry['range_real_max_km']) && ! isset($entry['range_worst_km'])) {
+            $worst = (int) round($realMin * 0.82 / 5) * 5;
+        }
+
+        $base = $realMax > 0
+            ? EvCatalogVehicle::consumptionBaseFromRange($battery, $realMax)
+            : (float) ($entry['consumption_base'] ?? 16);
+        $consumption = ['base' => $base];
+        if ($worst > 0) {
+            $consumption['worst'] = round($battery * EvCatalogVehicle::USABLE_BATTERY_FRACTION / ($worst / 100), 1);
+        }
+
+        $frontal = $entry['frontal_area_m2'] ?? null;
+        if ($frontal === null && isset($entry['dims'][1], $entry['dims'][2])) {
+            $frontal = round($entry['dims'][1] * $entry['dims'][2] * 0.84 / 1_000_000, 2);
+        }
+
+        $active = (bool) ($entry['active'] ?? true);
+        $notes = $entry['notes'] ?? null;
+        if (! $active) {
+            $notes = trim(self::PENDING_NOTE.' '.($notes ?? ''));
+        }
+
+        return [
+            'uuid' => (string) Str::uuid(),
+            'slug' => $slug,
+            'name' => $entry['name'] ?? $slug,
+            'brand' => $entry['brand'] ?? null,
+            'model' => $entry['model'] ?? null,
+            'importer' => $entry['importer'] ?? null,
+            'battery_kwh' => $battery,
+            'battery_chemistry' => $entry['battery_chemistry'] ?? null,
+            'mass_kg' => (int) ($entry['mass_kg'] ?? 1750),
+            'motor_kw' => $entry['motor_kw'] ?? null,
+            'drivetrain' => $entry['drivetrain'] ?? null,
+            'regen_efficiency' => $entry['regen_efficiency'] ?? 0.66,
+            'cd' => $entry['cd'] ?? null,
+            'frontal_area_m2' => $frontal,
+            'consumption_base' => $base,
+            'range_wltp_km' => $entry['range_wltp_km'] ?? ($standard === 'WLTP' ? $official : null),
+            'range_official_km' => $official,
+            'range_standard' => $standard,
+            'range_real_min_km' => $realMin ?: null,
+            'range_real_max_km' => $realMax ?: null,
+            'range_worst_km' => $worst ?: null,
+            'dc_connector' => $entry['dc_connector'] ?? null,
+            'ac_connector' => $entry['ac_connector'] ?? null,
+            'dc_max_kw' => $entry['dc_max_kw'] ?? null,
+            'ac_max_kw' => $entry['ac_max_kw'] ?? null,
+            'consumption' => $consumption,
+            'aliases' => $entry['aliases'] ?? [],
+            'notes' => $notes,
+            'sort_order' => $sort,
+            'is_active' => $active,
+        ];
     }
 }

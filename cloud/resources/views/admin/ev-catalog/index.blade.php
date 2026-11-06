@@ -31,8 +31,9 @@
                 <tr>
                     <th>مدل</th>
                     <th>باتری</th>
+                    <th>سوکت / توان شارژ</th>
                     <th>مصرف پایه</th>
-                    <th>برد WLTP</th>
+                    <th>برد رسمی</th>
                     <th>برد واقعی</th>
                     <th>بدترین حالت</th>
                     <th>وضعیت</th>
@@ -51,11 +52,22 @@
                 <tr>
                     <td>
                         <div class="fw7">{{ $v->name }}</div>
+                        <div class="muted fs11">{{ $v->importer ?? '' }}{{ $v->importer && $v->motor_kw ? ' · ' : '' }}{{ $v->motor_kw ? Persian::num($v->motor_kw).' kW' : '' }} {{ $v->drivetrain ?? '' }}</div>
                         <div class="muted fs11" dir="ltr" style="text-align:right">{{ $v->slug }}</div>
                     </td>
-                    <td class="tnum">{{ Persian::num((float) $v->battery_kwh) }}</td>
-                    <td class="tnum">{{ $base !== null ? Persian::num((float) $base) : '—' }}</td>
-                    <td class="tnum">{{ $v->range_wltp_km ? Persian::num($v->range_wltp_km) : '—' }}</td>
+                    <td class="tnum">{{ Persian::num((float) $v->battery_kwh) }} <span class="muted fs11">{{ $v->battery_chemistry }}</span></td>
+                    <td class="fs12">
+                        @if($v->dc_connector || $v->dc_max_kw)
+                        <div>DC: {{ $v->dc_connector ?? '؟' }}{{ $v->dc_max_kw ? ' · '.Persian::num((float) $v->dc_max_kw).' kW' : '' }}</div>
+                        @endif
+                        @if($v->ac_connector || $v->ac_max_kw)
+                        <div class="muted">AC: {{ $v->ac_connector ?? '؟' }}{{ $v->ac_max_kw ? ' · '.Persian::num((float) $v->ac_max_kw).' kW' : '' }}</div>
+                        @endif
+                        @if(!$v->dc_connector && !$v->ac_connector && !$v->dc_max_kw && !$v->ac_max_kw)
+                        <span class="muted">—</span>
+                        @endif
+                    </td>
+                    <td class="tnum">{{ ($v->range_official_km ?? $v->range_wltp_km) ? Persian::num($v->range_official_km ?? $v->range_wltp_km) : '—' }} <span class="muted fs11">{{ $v->range_standard ?? ($v->range_wltp_km ? 'WLTP' : '') }}</span></td>
                     <td class="tnum">{{ $realRange }}</td>
                     <td class="tnum">{{ $v->range_worst_km ? Persian::num($v->range_worst_km) : '—' }}</td>
                     <td>
@@ -63,6 +75,9 @@
                         <span class="pill pill-green">فعال</span>
                         @else
                         <span class="pill pill-amber">غیرفعال</span>
+                        @endif
+                        @if($v->notes)
+                        <div class="muted fs11" style="max-width:220px;margin-top:4px">{{ $v->notes }}</div>
                         @endif
                     </td>
                     <td>
@@ -77,7 +92,7 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="8" class="muted" style="padding:24px;text-align:center">مدلی ثبت نشده است.</td>
+                    <td colspan="9" class="muted" style="padding:24px;text-align:center">مدلی ثبت نشده است.</td>
                 </tr>
                 @endforelse
             </tbody>

@@ -92,6 +92,17 @@ class EvCatalogVehicleController extends Controller
             'aliases' => ['nullable', 'string', 'max:2000'],
             'sort_order' => ['nullable', 'integer', 'min:0', 'max:9999'],
             'is_active' => ['nullable', 'boolean'],
+            'importer' => ['nullable', 'string', 'max:80'],
+            'battery_chemistry' => ['nullable', Rule::in(array_keys(EvCatalogVehicle::CHEMISTRIES))],
+            'motor_kw' => ['nullable', 'integer', 'min:20', 'max:1000'],
+            'drivetrain' => ['nullable', Rule::in(array_keys(EvCatalogVehicle::DRIVETRAINS))],
+            'range_official_km' => ['nullable', 'integer', 'min:50', 'max:1500'],
+            'range_standard' => ['nullable', Rule::in(array_keys(EvCatalogVehicle::RANGE_STANDARDS))],
+            'dc_connector' => ['nullable', Rule::in(array_keys(EvCatalogVehicle::CONNECTORS))],
+            'ac_connector' => ['nullable', Rule::in(array_keys(EvCatalogVehicle::CONNECTORS))],
+            'dc_max_kw' => ['nullable', 'numeric', 'min:3', 'max:600'],
+            'ac_max_kw' => ['nullable', 'numeric', 'min:1', 'max:44'],
+            'notes' => ['nullable', 'string', 'max:500'],
         ];
 
         $data = $request->validate($rules);
@@ -133,6 +144,17 @@ class EvCatalogVehicleController extends Controller
             'aliases' => $aliases,
             'sort_order' => (int) ($data['sort_order'] ?? 0),
             'is_active' => $request->boolean('is_active', true),
+            'importer' => $data['importer'] ?? null,
+            'battery_chemistry' => $data['battery_chemistry'] ?? null,
+            'motor_kw' => $data['motor_kw'] ?? null,
+            'drivetrain' => $data['drivetrain'] ?? null,
+            'range_official_km' => $data['range_official_km'] ?? null,
+            'range_standard' => $data['range_standard'] ?? null,
+            'dc_connector' => $data['dc_connector'] ?? null,
+            'ac_connector' => $data['ac_connector'] ?? null,
+            'dc_max_kw' => $data['dc_max_kw'] ?? null,
+            'ac_max_kw' => $data['ac_max_kw'] ?? null,
+            'notes' => $data['notes'] ?? null,
         ];
     }
 }
