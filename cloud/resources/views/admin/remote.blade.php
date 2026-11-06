@@ -87,6 +87,7 @@
               @endif
               <button class="ctl-btn" data-cmd="firmware"><span class="cb-ic ic-violet" data-ic="download"></span><div><div class="fw7 fs13">به‌روزرسانی میان‌افزار</div><div class="fhint">UpdateFirmware</div></div></button>
               <button class="ctl-btn" data-cmd="diag"><span class="cb-ic ic-blue" data-ic="activity"></span><div><div class="fw7 fs13">دریافت گزارش تشخیصی</div><div class="fhint">GetDiagnostics</div></div></button>
+              <button class="ctl-btn" data-cmd="config"><span class="cb-ic ic-violet" data-ic="settings"></span><div><div class="fw7 fs13">تنظیمات دستگاه</div><div class="fhint">Get/ChangeConfiguration</div></div></button>
             </div>
             <!-- تنظیم توان -->
             <div class="section-title" style="margin:18px 0 10px">محدودسازی توان (Smart Charging)</div>
@@ -259,6 +260,12 @@ window.__REMOTE_STATION=@json($remoteJs ?? ['devs'=>[]]);
   }
   document.querySelectorAll('.ctl-btn').forEach(function(b){
     b.addEventListener('click',function(){
+      if(b.getAttribute('data-cmd')==='config'){
+        var cd=selectedDev();
+        if(!cd||!cd.chargerId){log('warn','ابتدا یک شارژر را انتخاب کنید.');return;}
+        window.location.href=@json(url('admin/chargers')).replace(/\/$/,'')+'/'+cd.chargerId+'/config';
+        return;
+      }
       var spec=CMD_MAP[b.getAttribute('data-cmd')];
       if(!spec)return;
       if(b.getAttribute('data-cmd')==='hardreset'){

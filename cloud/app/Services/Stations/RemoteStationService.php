@@ -100,6 +100,7 @@ class RemoteStationService
             'id' => $cpLabel.' · C'.($connector->connector_number ?? $connector->id),
             'connectorId' => $connector->id,
             'chargePointId' => $charger->charge_point_id,
+            'chargerId' => $charger->id,
             'connectorNumber' => (int) ($connector->connector_number ?? 1),
             't' => $typeLabel.' · '.Persian::num($maxKw).' kW · '.$charger->charge_point_id,
             'st' => $st,

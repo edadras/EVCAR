@@ -51,7 +51,7 @@
                 <div class="ce-ic {{ in_array($ch->connector_type, ['Type2','Type1','GBT-AC'], true) ? 'ic-blue' : 'ic-green' }}" data-ic="plug"></div>
                 <div style="min-width:110px">
                   <a href="{{ route('admin.chargers.show', $ch) }}" class="fw8 tnum" dir="ltr" style="color:var(--text);text-decoration:none">{{ $ch->charge_point_id }}</a>
-                  <div class="fs12 muted">{{ ($ch->meta['name'] ?? null) ? $ch->meta['name'].' · ' : '' }}{{ \App\Support\Persian::digits($ch->connectors->count()) }} کانکتور · <a href="{{ route('admin.chargers.edit', $ch) }}" style="color:var(--accent)">ویرایش کامل</a></div>
+                  <div class="fs12 muted">{{ ($ch->meta['name'] ?? null) ? $ch->meta['name'].' · ' : '' }}{{ \App\Support\Persian::digits($ch->connectors->count()) }} کانکتور · <a href="{{ route('admin.chargers.edit', $ch) }}" style="color:var(--accent)">ویرایش کامل</a> · <a href="{{ route('admin.chargers.config', $ch) }}" style="color:var(--accent)">تنظیمات دستگاه</a></div>
                 </div>
                 <select name="charger_types[{{ $ch->id }}]" aria-label="نوع کانکتور">
                   @if($ch->connector_type && ! array_key_exists($ch->connector_type, \App\Models\Charger::CONNECTOR_TYPES))

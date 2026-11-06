@@ -26,7 +26,7 @@
                     <td class="tnum">{{ $charger->max_power_kw ?? '—' }} kW</td>
                     <td>{{ $charger->is_online ? 'بله' : 'خیر' }}</td>
                     <td class="tnum">{{ $charger->connectors->count() }}</td>
-                    <td><a href="{{ route('admin.chargers.show', $charger) }}" class="btn btn-sm">جزئیات</a> <a href="{{ route('admin.chargers.edit', $charger) }}" class="btn btn-sm">ویرایش</a></td>
+                    <td><a href="{{ route('admin.chargers.show', $charger) }}" class="btn btn-sm">جزئیات</a> <a href="{{ route('admin.chargers.edit', $charger) }}" class="btn btn-sm">ویرایش</a> <a href="{{ route('admin.chargers.config', $charger) }}" class="btn btn-sm">تنظیمات دستگاه</a></td>
                 </tr>
                 @empty
                 <tr><td colspan="6" class="muted" style="text-align:center;padding:24px">شارژری ثبت نشده است.</td></tr>
