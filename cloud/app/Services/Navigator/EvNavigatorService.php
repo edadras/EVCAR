@@ -197,6 +197,7 @@ class EvNavigatorService
             'verdict' => $verdict,
             'charge_plan' => $chargePlan,
             'chargers' => $chargers,
+            'route_stations' => $geometry['route_stations'] ?? $chargers,
             'weather' => $weatherMid,
             'vehicle' => $vehicle,
         ];
@@ -372,6 +373,7 @@ class EvNavigatorService
             'chargers' => $chargerContext['display'],
             'candidates' => $chargerContext['candidates'],
             'corridor_charger_count' => count($corridorChargers),
+            'route_stations' => collect($corridorChargers)->sortBy('route_km')->take(20)->values()->all(),
             'needs_charge' => $chargerContext['needs_charge'],
             'stations_missing' => $chargerContext['stations_missing'],
             'estimated_charge_stops' => $chargerContext['estimated_charge_stops'],

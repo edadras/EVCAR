@@ -10,13 +10,8 @@
     <a href="{{ route('app.map') }}" class="nav-back" data-ic="chevron"></a>
     <div class="nav-title">
         <div class="fw8">مسیریاب برقی</div>
-        <div class="fs11 muted">برنامه‌ریزی مسیر و مصرف انرژی</div>
+        <div class="fs11 muted">مبدا و مقصد را بدهید؛ می‌گوییم می‌رسید یا کجا شارژ کنید</div>
     </div>
-    @if($apiConfigured)
-        <span class="pill pill-green" style="font-size:10px">سرور پیشرفته</span>
-    @else
-        <span class="pill pill-accent" style="font-size:10px">حالت ابری</span>
-    @endif
 </div>
 
 <button class="nav-loc" type="button" id="navLocBtn" data-ic="nav" title="موقعیت من"></button>
@@ -84,33 +79,10 @@
             </div>
         </div>
 
-        <div class="nav-soc-stack">
-            <label class="nav-field">
-                <span>درصد شارژ فعلی باتری</span>
-                <div class="nav-soc-row">
-                    <input type="range" id="socRange" min="10" max="100" value="80">
-                    <output id="socOut">{{ Persian::digits(80) }}٪</output>
-                </div>
-            </label>
-            <label class="nav-field">
-                <span>درصد شارژ هدف در مقصد</span>
-                <div class="nav-soc-row">
-                    <input type="range" id="targetSocRange" min="5" max="90" value="20">
-                    <output id="targetSocOut">{{ Persian::digits(20) }}٪</output>
-                </div>
-            </label>
-            <label class="nav-field">
-                <span>شارژ تا چند درصد در ایستگاه‌های بین راه</span>
-                <div class="nav-soc-row">
-                    <input type="range" id="chargeToRange" min="50" max="100" step="5" value="80">
-                    <output id="chargeToOut">{{ Persian::digits(80) }}٪</output>
-                </div>
-            </label>
-        </div>
-
         <button type="button" class="btn btn-primary nav-analyze" id="analyzeBtn">
-            <span data-ic="nav"></span> تحلیل مسیر و مصرف انرژی
+            <span data-ic="nav"></span> بررسی مسیر
         </button>
+        <p class="fs11 muted center-col mt8">محاسبه با فرض حرکت با باتری پر و بر اساس مسافت، شیب، دما و مصرف واقعی خودرو</p>
         <p class="fs11 muted center-col mt8" id="navHint" hidden></p>
     </div>
 
@@ -118,39 +90,13 @@
         <div class="nav-verdict" id="navVerdict"></div>
         <div class="nav-summary card card-p" id="navSummary"></div>
 
+        <div id="chargePlanWrap" hidden>
+            <div class="sec-title mt16">کجا شارژ کنید</div>
+            <div id="chargePlan" class="nav-plan"></div>
+        </div>
+
         <div class="sec-title mt16">ایستگاه‌های شارژ در مسیر</div>
         <div id="chargerList" class="nav-plan"></div>
-
-        <div class="sec-title mt16">برنامه شارژ پیشنهادی</div>
-        <div id="chargePlan" class="nav-plan"></div>
-
-        <details class="nav-details mt16">
-            <summary class="sec-title">جزئیات بیشتر (نمودار و بخش‌های مسیر)</summary>
-            <div class="sec-title mt8">وضعیت شارژ در مسیر</div>
-            <div class="nav-soc-bar card card-p">
-                <canvas id="socChart" height="56"></canvas>
-                <div class="nav-soc-labels"><span>شروع</span><span>میانه</span><span>مقصد</span></div>
-            </div>
-            <div class="sec-title mt16">معنی رنگ‌ها روی نقشه</div>
-            <div class="nav-colors card card-p">
-                <span><i class="nc" style="background:#1D9E75"></i> مصرف کمتر از پایه (بازیابی)</span>
-                <span><i class="nc" style="background:#378ADD"></i> مصرف نزدیک پایه</span>
-                <span><i class="nc" style="background:#EF9F27"></i> مصرف بالاتر</span>
-                <span><i class="nc" style="background:#E24B4A"></i> مصرف خیلی بالا</span>
-            </div>
-            <p class="fs11 muted mt4">رنگ مسیر از نسبت مصرف نهایی هر بخش به مصرف پایه خودرو (پایه + شیب خالص + دما + باد + تهویه) تعیین می‌شود.</p>
-            <div class="sec-title mt16">نمودار ارتفاع و مصرف</div>
-            <div class="nav-chart-wrap card card-p">
-                <canvas id="elevChart" height="140"></canvas>
-                <div class="nav-legend">
-                    <span><i class="lg lg-elev"></i> ارتفاع (متر)</span>
-                    <span><i class="lg lg-use"></i> مصرف نسبت به پایه</span>
-                </div>
-                <div class="nav-chart-note" id="chartDataNote"></div>
-            </div>
-            <div class="sec-title mt16">بخش‌های مسیر</div>
-            <div id="segmentList" class="nav-segments"></div>
-        </details>
 
         <button type="button" class="btn btn-soft mt16" id="navReset">مسیر جدید</button>
     </div>

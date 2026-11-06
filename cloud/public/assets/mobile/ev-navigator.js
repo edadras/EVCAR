@@ -15,6 +15,7 @@
   var lastResult = null;
   var previewTimer = null;
   var previewSeq = 0;
+  var TRIP = { current_soc: 100, target_soc: 10, charge_to_soc: 80 };
 
   var mapEl = document.getElementById('navMap');
   if (!mapEl) return;
@@ -516,6 +517,10 @@
   function renderChargerList(chargers, noChargerWarning, summary) {
     var el = document.getElementById('chargerList');
     var s = summary || {};
+    if ((!chargers || !chargers.length) && !s.needs_charge_trip && !s.needs_charge) {
+      el.innerHTML = '<div class="card card-p muted fs13">ایستگاه شارژی نزدیک این مسیر ثبت نشده است؛ برای این سفر هم لازم نیست.</div>';
+      return;
+    }
     if (!chargers || !chargers.length) {
       var title = s.stations_missing
         ? '⛔ به شارژ نیاز دارید — ایستگاه در محل نیاز نیست'
@@ -531,8 +536,12 @@
       return '<a class="nav-plan-item" href="' + (ch.url || '#') + '">' +
         '<div class="pi">' + fa(i + 1) + '</div>' +
         '<div style="flex:1"><div class="fw7">' + ch.name + '</div>' +
-        '<div class="fs12 muted mt4">کیلومتر ' + fa(ch.route_km) + ' از مبدا · ' + fa(ch.max_power_kw) + ' کیلووات</div></div>' +
-        '<span class="pill pill-green">' + fa(ch.free_ports) + ' آزاد</span></a>';
+        '<div class="fs12 muted mt4">کیلومتر ' + fa(Math.round(ch.route_km)) + ' مسیر' +
+          (ch.offset_km >= 1 ? ' · ' + fa(ch.offset_km) + ' کیلومتر از جاده' : '') +
+          (ch.max_power_kw ? ' · ' + fa(ch.max_power_kw) + ' کیلووات' : '') + '</div></div>' +
+        (ch.free_ports > 0
+          ? '<span class="pill pill-green">' + fa(ch.free_ports) + ' آزاد</span>'
+          : '<span class="pill" style="background:var(--surface-3);color:var(--muted)">پر / خاموش</span>') + '</a>';
     }).join('');
   }
 
@@ -555,109 +564,48 @@
     lastResult = data;
     clearPreview();
     var s = data.summary || {};
-    var srcLabel = { api: 'سرور پیشرفته', lite: 'حالت ابری', lite_fallback: 'حالت ابری (جایگزین)' };
-    var src = srcLabel[data.source] || data.source;
-    var warn = data.api_error ? '<div class="ns-warn">' + data.api_error + '</div>' : '';
-    var direction = data.route && data.route.direction ? data.route.direction : '';
+    var route = data.route || {};
+    var stops = data.charge_plan || [];
 
     renderVerdict(data);
 
-    document.getElementById('navSummary').innerHTML =
-      '<div class="row between mb8"><span class="fw8">خلاصه مسیر</span><span class="pill pill-accent">' + src + '</span></div>' +
-      (direction ? '<div class="ns-row"><span>جهت</span><strong>' + direction + '</strong></div>' : '') +
-      '<div class="ns-row"><span>مسافت</span><strong>' + fa(data.route.distance_km) + ' کیلومتر · ' + fa(data.route.duration_min) + ' دقیقه</strong></div>' +
-      (data.route.mode === 'via_chargers'
-        ? '<div class="ns-row"><span>مسیر</span><strong style="color:var(--orange)">عبور از ' + fa((data.charge_plan || []).length) + ' ایستگاه شارژ' +
-          (data.route.detour_km > 0 ? ' (+' + fa(data.route.detour_km) + ' کیلومتر)' : '') + '</strong></div>'
-        : '') +
-      '<div class="ns-row"><span>خودرو و باتری</span><strong>' + (data.vehicle && data.vehicle.name ? data.vehicle.name + ' · ' : '') +
-        fa(s.battery_kwh) + ' کیلووات‌ساعت</strong></div>' +
-      (s.range_km_on_start > 0
-        ? '<div class="ns-row"><span>برد (همین مصرف مسیر)</span><strong>حدود ' + fa(s.range_km_on_start) + ' کیلومتر تا رزرو ' + fa(s.reserve_soc || 10) + '٪' +
-          (s.usable_kwh_on_start ? ' · ' + fa(s.usable_kwh_on_start) + ' kWh در دسترس' : '') +
-          '</strong></div>'
-        : '') +
-      (function () {
-        var base = s.consumption_base_kwh100;
-        var mul = s.consumption_multiplier;
-        var extra = '';
-        if (base && mul && mul !== 1) {
-          extra = ' (پایه ' + fa(base) + ' × ' + fa(mul) + ')';
-        } else if (base) {
-          extra = ' (پایه ' + fa(base) + ')';
-        }
-        return '<div class="ns-row"><span>مصرف این مسیر</span><strong>' + fa(s.consumption_per_100km || 0) +
-          ' کیلووات‌ساعت در ۱۰۰ کیلومتر' + extra + ' · کل ' + fa(s.total_kwh) + '</strong></div>';
-      })() +
-      '<div class="ns-row"><span>شارژ بدون توقف</span><strong>' + fa(s.start_soc) + '٪ → ' + fa(s.arrival_soc) + '٪ در مقصد</strong></div>' +
-      (s.charge_stops > 0 && s.arrival_soc_planned !== s.arrival_soc
-        ? '<div class="ns-row"><span>با توقف شارژ پیشنهادی</span><strong>' + fa(s.start_soc) + '٪ → ' + fa(s.arrival_soc_planned) + '٪ در مقصد</strong></div>'
-        : '') +
-      '<div class="ns-row"><span>هدف در مقصد</span><strong>' + fa(s.target_soc) + '٪</strong></div>' +
-      (s.total_charge_minutes > 0
-        ? '<div class="ns-row"><span>زمان و هزینهٔ شارژ بین راه</span><strong>حدود ' + fa(s.total_charge_minutes) + ' دقیقه · ' +
-          fa(s.total_charge_kwh) + ' kWh' + (s.total_charge_cost ? ' · ' + fa(Math.round(s.total_charge_cost / 10).toLocaleString('en-US')) + ' تومان' : '') + '</strong></div>'
-        : '') +
-      (s.stranded_km != null
-        ? '<div class="ns-row"><span>تمام شدن شارژ</span><strong style="color:var(--red,#d33)">حدود کیلومتر ' + fa(s.stranded_km) + '</strong></div>'
-        : '') +
-      '<div class="ns-row"><span>کمینه شارژ در مسیر</span><strong style="color:' + socColor(s.min_soc_on_route || s.arrival_soc) + '">' + fa(s.min_soc_on_route || s.arrival_soc) + '٪</strong></div>' +
-      (s.needs_charge_trip && s.estimated_charge_stops > 0
-        ? '<div class="ns-row"><span>توقف شارژ لازم</span><strong>حدود ' + fa(s.estimated_charge_stops) + ' بار</strong></div>'
-        : '') +
-      '<div class="ns-row"><span>ایستگاه در محدوده شارژ</span><strong>' + fa(s.charger_count || 0) + ' ایستگاه' +
-        (s.needs_charge_trip ? '' : ' (نیاز به توقف نیست)') + '</strong></div>' +
-      (s.corridor_charger_count > s.charger_count
-        ? '<div class="ns-row"><span>نزدیک مسیر (غیرضروری)</span><strong class="muted">' + fa(s.corridor_charger_count) + ' ایستگاه</strong></div>'
-        : '') +
-      (s.first_charge_km != null && s.needs_charge_trip
-        ? '<div class="ns-row"><span>اولین توقف تقریبی</span><strong>کیلومتر ' + fa(s.first_charge_km) + '</strong></div>'
-        : '') +
-      warn;
+    function row(label, value, color) {
+      return '<div class="ns-row"><span>' + label + '</span><strong' + (color ? ' style="color:' + color + '"' : '') + '>' + value + '</strong></div>';
+    }
+    var arrival = stops.length ? s.arrival_soc_planned : s.arrival_soc;
+    var html =
+      row('مسافت و زمان رانندگی', fa(route.distance_km) + ' کیلومتر · ' + fa(route.duration_min) + ' دقیقه') +
+      row('خودرو', (data.vehicle && data.vehicle.name ? data.vehicle.name : '—')) +
+      row('انرژی لازم برای مسیر', fa(s.total_kwh) + ' کیلووات‌ساعت');
+    if (s.stranded_km != null && !stops.length) {
+      html += row('شارژ تمام می‌شود حدود', 'کیلومتر ' + fa(Math.round(s.stranded_km)), '#E24B4A');
+    } else if (arrival != null) {
+      html += row('شارژ باتری هنگام رسیدن', fa(arrival) + '٪', socColor(arrival));
+    }
+    if (stops.length) {
+      html += row('توقف شارژ', fa(stops.length) + ' بار' +
+        (s.total_charge_minutes > 0 ? ' · حدود ' + fa(s.total_charge_minutes) + ' دقیقه' : ''));
+      if (s.total_charge_cost) {
+        html += row('هزینهٔ تقریبی شارژ بین راه', fa(Math.round(s.total_charge_cost / 10).toLocaleString('en-US')) + ' تومان');
+      }
+    }
+    document.getElementById('navSummary').innerHTML = html;
 
+    var planWrap = document.getElementById('chargePlanWrap');
     var planEl = document.getElementById('chargePlan');
-    var plan = data.charge_plan || [];
-    if (!plan.length) {
-      planEl.innerHTML = '<div class="card card-p muted fs13">' +
-        (s.needs_charge ? 'با شارژ فعلی به هدف مقصد نمی‌رسید — ایستگاه مناسب در مسیر پیدا نشد.' : 'با شارژ فعلی بدون توقف اضافه به مقصد می‌رسید.') +
-        '</div>';
-    } else {
-      planEl.innerHTML = plan.map(function (p) {
-        return '<a class="nav-plan-item" href="' + (p.url || '#') + '">' +
-          '<div class="pi">' + (window.icon ? window.icon('plug') : '⚡') + '</div>' +
-          '<div style="flex:1"><div class="fw7">' + p.name + '</div>' +
-          '<div class="fs12 muted mt4">کیلومتر ' + fa(p.km) + ' · ' + p.reason + '</div>' +
-          (p.energy_kwh != null
-            ? '<div class="fs12 muted mt4">' + fa(p.energy_kwh) + ' کیلووات‌ساعت · حدود ' + fa(p.duration_min) + ' دقیقه' +
-              (p.cost_rial ? ' · ' + fa(Math.round(p.cost_rial / 10).toLocaleString('en-US')) + ' تومان' : '') +
-              (p.max_power_kw ? ' · ' + fa(p.max_power_kw) + ' kW' : '') + '</div>'
-            : '') +
-          '</div>' +
-          '<span class="pill pill-accent">→ ' + fa(p.charge_to_soc || s.target_soc) + '٪</span></a>';
-      }).join('');
-    }
-
-    var noChargerMsg = (data.verdict && data.verdict.status === 'no_chargers')
-      ? data.verdict.message
-      : null;
-    renderChargerList(data.chargers, noChargerMsg, s);
-
-    var segEl = document.getElementById('segmentList');
-    var segs = data.segments || [];
-    var segHtml = segs.slice(0, 25).map(function (seg) {
-      var socFrom = seg.soc_before != null ? seg.soc_before : s.start_soc;
-      return '<div class="nav-seg">' +
-        '<div class="bar" style="background:' + segmentColor(seg.ratio) + '"></div>' +
-        '<div style="flex:1"><div class="fw7">کیلومتر ' + fa(seg.from_km) + ' تا ' + fa(seg.to_km) + '</div>' +
-        '<div class="muted mt4">ارتفاع ' + fa(seg.delta_h_m) + ' م · مصرف ' + fa(seg.consumption_kwh) + ' کیلووات‌ساعت</div>' +
-        '<div class="fs12 mt4" style="color:' + socColor(seg.soc_after) + '">شارژ: ' + fa(socFrom) + '٪ → ' + fa(seg.soc_after) + '٪</div></div>' +
-        '<span class="pill" style="background:' + segmentColor(seg.ratio) + '22;color:' + segmentColor(seg.ratio) + '">×' + fa(seg.ratio) + '</span></div>';
+    planWrap.hidden = !stops.length;
+    planEl.innerHTML = stops.map(function (p, i) {
+      return '<a class="nav-plan-item" href="' + (p.url || '#') + '">' +
+        '<div class="pi">' + (window.icon ? window.icon('plug') : '⚡') + '</div>' +
+        '<div style="flex:1"><div class="fw7">' + fa(i + 1) + '. ' + p.name + '</div>' +
+        '<div class="fs12 muted mt4">کیلومتر ' + fa(Math.round(p.km)) + ' مسیر' +
+          (p.duration_min ? ' · حدود ' + fa(p.duration_min) + ' دقیقه شارژ' : '') + '</div>' +
+        '</div>' +
+        '<span class="pill pill-accent">تا ' + fa(p.charge_to_soc || TRIP.charge_to_soc) + '٪</span></a>';
     }).join('');
-    if (segs.length > 25) {
-      var last = segs[segs.length - 1];
-      segHtml += '<div class="card card-p muted fs12 center-col">… ' + fa(segs.length - 25) + ' بخش دیگر · پایان مسیر: ' + fa(last.soc_after) + '٪</div>';
-    }
-    segEl.innerHTML = segHtml;
+
+    var noChargerMsg = (data.verdict && data.verdict.status === 'no_chargers') ? data.verdict.message : null;
+    renderChargerList(data.route_stations || data.chargers, noChargerMsg, s);
 
     drawRoute(data);
 
@@ -691,9 +639,9 @@
     var payload = {
       origin: { lat: origin.lat, lng: origin.lng },
       destination: { lat: destination.lat, lng: destination.lng },
-      current_soc: parseInt(document.getElementById('socRange').value, 10),
-      target_soc: parseInt(document.getElementById('targetSocRange').value, 10),
-      charge_to_soc: chargeToValue(),
+      current_soc: TRIP.current_soc,
+      target_soc: TRIP.target_soc,
+      charge_to_soc: TRIP.charge_to_soc,
     };
     var sel = document.getElementById('vehicleSelect').value;
     if (sel.indexOf('user:') === 0) {
@@ -714,9 +662,9 @@
     var payload = {
       origin: { lat: origin.lat, lng: origin.lng, label: origin.label },
       destination: { lat: destination.lat, lng: destination.lng, label: destination.label },
-      current_soc: parseInt(document.getElementById('socRange').value, 10),
-      target_soc: parseInt(document.getElementById('targetSocRange').value, 10),
-      charge_to_soc: chargeToValue(),
+      current_soc: TRIP.current_soc,
+      target_soc: TRIP.target_soc,
+      charge_to_soc: TRIP.charge_to_soc,
     };
     if (sel.indexOf('user:') === 0) {
       payload.vehicle_uuid = sel.slice(5);
@@ -730,25 +678,6 @@
     return payload;
   }
 
-  document.getElementById('socRange').addEventListener('input', function (e) {
-    document.getElementById('socOut').textContent = fa(e.target.value) + '٪';
-    scheduleRoutePreview();
-  });
-  function chargeToValue() {
-    var el = document.getElementById('chargeToRange');
-    return el ? parseInt(el.value, 10) : 80;
-  }
-  var chargeToEl = document.getElementById('chargeToRange');
-  if (chargeToEl) {
-    chargeToEl.addEventListener('input', function (e) {
-      document.getElementById('chargeToOut').textContent = fa(e.target.value) + '٪';
-      scheduleRoutePreview();
-    });
-  }
-  document.getElementById('targetSocRange').addEventListener('input', function (e) {
-    document.getElementById('targetSocOut').textContent = fa(e.target.value) + '٪';
-    scheduleRoutePreview();
-  });
   document.getElementById('vehicleSelect').addEventListener('change', function () {
     toggleCustomVehicle();
     scheduleRoutePreview();
