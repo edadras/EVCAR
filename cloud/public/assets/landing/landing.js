@@ -79,7 +79,7 @@
     if (!window.L || mapEl._init) return;
     mapEl._init = true;
     var map = L.map(mapEl, { scrollWheelZoom: false, attributionControl: false, zoomControl: true }).setView([32.4, 53.7], 5);
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { maxZoom: 18, subdomains: 'abcd' }).addTo(map);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18 }).addTo(map);
     var canvas = L.canvas({ padding: .5 });
     var counts = {};
     data.ext.forEach(function (s) {

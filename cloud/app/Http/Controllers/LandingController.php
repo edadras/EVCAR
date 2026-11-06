@@ -13,7 +13,7 @@ class LandingController extends Controller
 {
     public function __invoke(): View
     {
-        $data = Cache::remember('landing:data', now()->addMinutes(10), function () {
+        $data = Cache::remember('landing:data:v2', now()->addMinutes(10), function () {
             $own = Station::where('status', '!=', 'inactive')
                 ->whereNotNull('latitude')->whereNotNull('longitude')
                 ->get(['id', 'name', 'latitude', 'longitude']);
@@ -36,9 +36,9 @@ class LandingController extends Controller
                     'operators' => EvOperator::where('is_active', true)->count() + 1,
                 ],
                 'map' => [
-                    'own' => $own->map(fn ($s) => [round((float) $s->latitude, 5), round((float) $s->longitude, 5), $s->name])->values(),
-                    'ext' => $ext->map(fn ($s) => [round((float) $s->latitude, 5), round((float) $s->longitude, 5), $opIndex[$s->ev_operator_id] ?? 0])->values(),
-                    'ops' => $operators->map(fn ($o) => [$o->name, $o->color ?: '#64748b'])->values(),
+                    'own' => $own->map(fn ($s) => [round((float) $s->latitude, 5), round((float) $s->longitude, 5), $s->name])->values()->all(),
+                    'ext' => $ext->map(fn ($s) => [round((float) $s->latitude, 5), round((float) $s->longitude, 5), $opIndex[$s->ev_operator_id] ?? 0])->values()->all(),
+                    'ops' => $operators->map(fn ($o) => [$o->name, $o->color ?: '#64748b'])->values()->all(),
                 ],
             ];
         });
