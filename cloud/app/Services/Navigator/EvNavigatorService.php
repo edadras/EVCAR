@@ -1041,195 +1041,85 @@ class EvNavigatorService
 
         $reserveSoc = max(10, $targetSoc);
         $chargeThreshold = max($reserveSoc, min(35, $targetSoc));
-        $usableKwh = $batteryKwh * max(0, ($startSoc - $reserveSoc) / 100);
-
-        $rangeFromSim = $this->kmWhereSocDropsBelow($segments, $batteryKwh, $startSoc, (float) $reserveSoc);
-        $rangeKm = $rangeFromSim !== null
-            ? round($rangeFromSim, 1)
-            : ($kwhPerKm > 0 ? round($usableKwh / $kwhPerKm, 1) : 0.0);
-
-        $firstFromSegments = $this->kmWhereSocDropsBelow($segments, $batteryKwh, $startSoc, (float) $chargeThreshold);
-        $firstChargeKm = $firstFromSegments !== null
-            ? round($firstFromSegments, 1)
-            : ($rangeKm > 0 ? $rangeKm : null);
-
-        $rechargeSoc = (int) min(90, max(70, $chargeThreshold + 40));
-        $startKwh = $batteryKwh * ($startSoc / 100);
-        $arrivalTargetKwh = $batteryKwh * ($targetSoc / 100);
-        $energyFromCharging = max(0, $totalKwh - $startKwh + $arrivalTargetKwh);
-        $kwhPerStop = $batteryKwh * max(0.01, ($rechargeSoc - $chargeThreshold) / 100);
-        $stops = $energyFromCharging <= 0.01 ? 0 : (int) ceil($energyFromCharging / $kwhPerStop);
-
-        if (! $this->tripNeedsCharge($segments, $startSoc, $targetSoc)) {
-            $stops = 0;
-        }
-
-        return [
-            'range_km_on_start' => $rangeKm,
-            'first_charge_km' => $firstChargeKm,
-            'estimated_charge_stops' => $stops,
-            'consumption_per_100km' => round($kwhPerKm * 100, 1),
-            'energy_from_charging_kwh' => round($energyFromCharging, 1),
-        ];
-    }
-
-    /** @param  list<array<string, mixed>>  $segments */
-    private function tripNeedsCharge(array $segments, int $startSoc, int $targetSoc): bool
-    {
-        if ($segments === []) {
-            return false;
-        }
-
-        $arrivalSoc = (float) end($segments)['soc_after'];
-        $minSoc = (float) $startSoc;
-        $reserveSoc = max(10, $targetSoc);
-
-        foreach ($segments as $seg) {
-            $minSoc = min($minSoc, (float) ($seg['soc_after'] ?? $startSoc));
-        }
-
-        return $arrivalSoc < $reserveSoc || $minSoc < $reserveSoc;
-    }
-
-    /** @param  list<array<string, mixed>>  $segments */
-    private function kmWhereSocDropsBelow(
-        array $segments,
-        float $batteryKwh,
-        int $startSoc,
-        float $threshold,
-    ): ?float {
-        $energy = $batteryKwh * ($startSoc / 100);
-
-        foreach ($segments as $seg) {
-            $energy -= $seg['consumption_kwh'];
-            $socNow = max(0, ($energy / $batteryKwh) * 100);
-            if ($socNow < $threshold) {
-                return (float) $seg['from_km'];
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * @param  list<array<string, mixed>>  $chargers
-     * @param  list<array<string, mixed>>  $chargePlan
-     * @param  list<array<string, mixed>>  $segments
-     * @return array<string, mixed>
-     */
-    private function buildVerdict(
-        float $arrivalSocDirect,
-        float $arrivalSocPlanned,
-        int $targetSoc,
-        int $startSoc,
-        array $chargers,
-        array $chargePlan,
-        array $segments,
-        int $corridorChargerCount = 0,
-        ?float $firstChargeKm = null,
-        int $estimatedChargeStops = 0,
-        float $batteryKwh = 60.0,
-        ?float $rangeKmOnStart = null,
-    ): array {
-        $minSoc = $arrivalSocDirect;
-        foreach ($segments as $seg) {
-            $minSoc = min($minSoc, (float) ($seg['soc_after'] ?? $startSoc));
-        }
-
-        $chargerCount = count($chargers);
-        $reserveSoc = max(10, $targetSoc);
-        $canReachDirect = $arrivalSocDirect >= $reserveSoc && $minSoc >= $reserveSoc;
-        $canReachWithPlan = count($chargePlan) > 0 && $arrivalSocPlanned >= $targetSoc;
-        $needsCharge = ! $canReachDirect;
-        $warnings = [];
-        $usableKwh = $batteryKwh * max(0, ($startSoc - $reserveSoc) / 100);
+        $startLabel = $startSoc >= 100 ? 'با باتری پر' : 'با شارژ '.$startSoc.'٪';
+        $arrivalDirect = (int) round(max(0, $arrivalSocDirect));
+        $arrivalPlanned = (int) round(max(0, $arrivalSocPlanned));
         $rangeHint = $rangeKmOnStart !== null && $rangeKmOnStart > 0
-            ? 'باتری '.round($batteryKwh, 0).' کیلووات‌ساعت؛ با شارژ '.$startSoc.'٪ و رزرو '.$reserveSoc.'٪ انرژی در دسترس '.round($usableKwh, 0).' کیلووات‌ساعت — برد با همین مصرف مسیر حدود '.round($rangeKmOnStart, 0).' کیلومتر. '
+            ? 'برد خودرو در این مسیر '.$startLabel.' حدود '.round($rangeKmOnStart, 0).' کیلومتر است. '
             : '';
-        $stopsHint = '';
-        if ($estimatedChargeStops > 1) {
-            $stopsHint = 'برای کل مسیر حدود '.$estimatedChargeStops.' توقف شارژ (هر بار تا حدود ۷۰٪) لازم است. ';
-        } elseif ($estimatedChargeStops === 1) {
-            $stopsHint = 'حداقل یک توقف شارژ در مسیر لازم است. ';
-        }
+        $kmHint = $firstChargeKm !== null ? 'حدود کیلومتر '.round($firstChargeKm, 0).' باید شارژ کنید. ' : '';
 
         if ($needsCharge && $chargerCount === 0) {
-            if ($corridorChargerCount > 0) {
-                $warnings[] = $corridorChargerCount.' ایستگاه نزدیک مسیر است ولی در محدوده‌ای که شارژ کم می‌شود قرار ندارد.';
-            } else {
-                $warnings[] = 'هیچ ایستگاه شارژ QUAD EV در این مسیر ثبت نشده است.';
-            }
-        }
-
-        if ($minSoc < 5) {
-            $warnings[] = 'بدون توقف شارژ، باتری در میانه مسیر تقریباً خالی می‌شود.';
-        } elseif ($minSoc < 15) {
-            $warnings[] = 'بدون توقف شارژ، سطح باتری به حد بحرانی نزدیک می‌شود.';
-        }
-
-        if ($needsCharge && $chargerCount === 0) {
-            $kmHint = $firstChargeKm !== null
-                ? ' اولین نیاز به شارژ حدود کیلومتر '.round($firstChargeKm, 0).' است.'
-                : '';
-            $corridorHint = $corridorChargerCount > 0
-                ? ' '.$corridorChargerCount.' ایستگاه فقط در بخش‌های دیگر مسیر هستند و در محل نیاز شما نیستند.'
-                : ' هیچ ایستگاه QUAD EV در این مسیر پوشش داده نشده است.';
-
             return [
                 'status' => 'no_chargers',
-                'title' => 'به مقصد نمی‌رسید — ایستگاه شارژ در محل نیاز نیست',
-                'message' => $rangeHint.$stopsHint.'بدون توقف به مقصد نمی‌رسید (شارژ پایان حدود '.round($arrivalSocDirect, 0).'٪).'.$kmHint.$corridorHint,
+                'title' => 'بدون شارژ بین راه به مقصد نمی‌رسید',
+                'message' => $rangeHint.$kmHint.($corridorChargerCount > 0
+                    ? 'ایستگاه‌های این مسیر در جایی که شارژ لازم دارید نیستند.'
+                    : 'در این مسیر ایستگاه شارژی ثبت نشده است.'),
                 'can_reach_destination' => false,
                 'can_reach_with_plan' => false,
                 'needs_charge' => true,
                 'min_soc_on_route' => round($minSoc, 1),
-                'warnings' => $warnings,
+                'warnings' => [],
             ];
         }
 
         if ($needsCharge && count($chargePlan) > 0 && $canReachWithPlan) {
             return [
                 'status' => 'needs_charge',
-                'title' => 'مسیر از ایستگاه‌های شارژ عبور می‌کند',
-                'message' => 'مستقیم به مقصد نمی‌رسید (پایان حدود '.round($arrivalSocDirect, 0).'٪). مسیر روی نقشه از '.count($chargePlan).' ایستگاه شارژ می‌گذرد و با توقف به حدود '.round($arrivalSocPlanned, 0).'٪ می‌رسید.',
+                'title' => 'با '.count($chargePlan).' توقف شارژ به مقصد می‌رسید',
+                'message' => 'بدون توقف نمی‌رسید. در ایستگاه‌های پیشنهادی زیر شارژ کنید تا با حدود '.$arrivalPlanned.'٪ شارژ به مقصد برسید.',
                 'can_reach_destination' => false,
                 'can_reach_with_plan' => true,
                 'needs_charge' => true,
                 'min_soc_on_route' => round($minSoc, 1),
-                'warnings' => $warnings,
+                'warnings' => [],
             ];
         }
 
         if ($needsCharge && count($chargePlan) > 0) {
             return [
-                'status' => 'needs_charge',
-                'title' => 'نیاز به توقف برای شارژ دارید',
-                'message' => 'بدون توقف به مقصد نمی‌رسید (پایان حدود '.round($arrivalSocDirect, 0).'٪). '.count($chargePlan).' توقف شارژ پیشنهاد شده.',
+                'status' => 'critical',
+                'title' => 'رسیدن به مقصد حتی با توقف شارژ مطمئن نیست',
+                'message' => $rangeHint.'فاصله بین ایستگاه‌های مسیر برای این خودرو زیاد است؛ بیشترین شارژ ممکن را در ایستگاه‌های زیر بگیرید.',
                 'can_reach_destination' => false,
-                'can_reach_with_plan' => $canReachWithPlan,
-                'needs_charge' => true,
-                'min_soc_on_route' => round($minSoc, 1),
-                'warnings' => $warnings,
-            ];
-        }
-
-        if ($needsCharge && $chargerCount > 0) {
-            return [
-                'status' => 'needs_charge',
-                'title' => 'شارژ پایان مسیر از هدف کمتر است',
-                'message' => 'به مقصد می‌رسید ولی شارژ پایان (حدود '.round($arrivalSocDirect, 0).'٪) از هدف '.$targetSoc.'٪ کمتر است.',
-                'can_reach_destination' => $arrivalSocDirect >= $targetSoc,
                 'can_reach_with_plan' => false,
                 'needs_charge' => true,
                 'min_soc_on_route' => round($minSoc, 1),
-                'warnings' => $warnings,
+                'warnings' => [],
+            ];
+        }
+
+        if ($needsCharge && $arrivalSocDirect > 0 && $minSoc > 0) {
+            return [
+                'status' => 'needs_charge',
+                'title' => 'به مقصد می‌رسید ولی با باتری خیلی کم',
+                'message' => 'حدود '.$arrivalDirect.'٪ شارژ هنگام رسیدن باقی می‌ماند؛ بهتر است در یکی از ایستگاه‌های مسیر شارژ کنید.',
+                'can_reach_destination' => true,
+                'can_reach_with_plan' => false,
+                'needs_charge' => true,
+                'min_soc_on_route' => round($minSoc, 1),
+                'warnings' => [],
+            ];
+        }
+
+        if ($needsCharge) {
+            return [
+                'status' => 'critical',
+                'title' => 'به مقصد نمی‌رسید',
+                'message' => $rangeHint.$kmHint.'ایستگاه‌های ثبت‌شده در این مسیر برای رسیدن به مقصد کافی نیستند.',
+                'can_reach_destination' => false,
+                'can_reach_with_plan' => false,
+                'needs_charge' => true,
+                'min_soc_on_route' => round($minSoc, 1),
+                'warnings' => [],
             ];
         }
 
         return [
             'status' => 'ok',
-            'title' => 'با شارژ فعلی به مقصد می‌رسید',
-            'message' => 'بدون توقف اضافه به مقصد می‌رسید (شارژ حدود '.round($arrivalSocDirect, 0).'٪ در پایان مسیر).',
+            'title' => $startLabel.' بدون توقف به مقصد می‌رسید',
+            'message' => 'حدود '.$arrivalDirect.'٪ شارژ هنگام رسیدن باقی می‌ماند.',
             'can_reach_destination' => true,
             'can_reach_with_plan' => true,
             'needs_charge' => false,
