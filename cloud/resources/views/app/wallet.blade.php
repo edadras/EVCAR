@@ -1,6 +1,6 @@
 @extends('app.layouts.mobile', ['tab' => 'wallet'])
 
-@section('title', 'SafirCharge — کیف پول')
+@section('title', 'QUAD EV — کیف پول')
 
 @section('phone')
 @php use App\Support\Persian; @endphp
@@ -13,7 +13,7 @@
     <div class="wcard rise">
         <div class="row between" style="position:relative;z-index:1">
             <span style="font-size:13px;opacity:.9">موجودی کیف پول</span>
-            <span class="fw8" style="letter-spacing:.02em">SafirCharge</span>
+            <img src="/assets/brand/quad-logo-white.png" alt="QUAD EV" style="height:18px;width:auto">
         </div>
         <div class="wbal tnum"><span id="walletBalance">{{ Persian::money(($wallet?->balance ?? 0) / 10) }}</span> <small>تومان</small></div>
         <div class="row" style="gap:28px;position:relative;z-index:1">
@@ -30,7 +30,7 @@
     <div class="reward rise" style="animation-delay:.05s">
         <div class="rw-ic" data-ic="gift"></div>
         <div style="flex:1">
-            <div class="fw7">باشگاه SafirCharge</div>
+            <div class="fw7">باشگاه QUAD EV</div>
             <div class="fs12" style="opacity:.85">{{ $loyalty['label'] }}</div>
             <div class="rw-bar mt8"><i style="width:{{ $loyalty['progress_pct'] }}%"></i></div>
         </div>

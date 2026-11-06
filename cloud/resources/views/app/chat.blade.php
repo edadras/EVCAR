@@ -1,6 +1,6 @@
 @extends('app.layouts.mobile', ['noTab' => true])
 
-@section('title', 'SafirCharge — گفتگوی آنلاین')
+@section('title', 'QUAD EV — گفتگوی آنلاین')
 
 @section('phone')
 @php
@@ -12,7 +12,7 @@ $activeTicket = $ticket ?? $tickets->firstWhere('status', 'open') ?? $tickets->f
     <div class="chat-agent">
         <span class="ca-av" data-ic="headset"></span>
         <div>
-            <div class="fw7 fs13">پشتیبانی SafirCharge</div>
+            <div class="fw7 fs13">پشتیبانی QUAD EV</div>
             <div class="fs12" style="color:var(--green)"><span class="onl"></span>آنلاین · پاسخ فوری</div>
         </div>
     </div>
@@ -29,7 +29,7 @@ $activeTicket = $ticket ?? $tickets->firstWhere('status', 'open') ?? $tickets->f
         </div>
         @endforeach
     @else
-        <div class="msg bot"><div class="bub">سلام! به پشتیبانی SafirCharge خوش آمدید 👋 چطور می‌توانم کمکتان کنم؟</div><span class="time">{{ Persian::digits(now()->format('H:i')) }}</span></div>
+        <div class="msg bot"><div class="bub">سلام! به پشتیبانی QUAD EV خوش آمدید 👋 چطور می‌توانم کمکتان کنم؟</div><span class="time">{{ Persian::digits(now()->format('H:i')) }}</span></div>
         <div class="quick" id="quick">
             <button type="button">مشکل در شارژ دارم</button>
             <button type="button">کسر هزینهٔ اشتباه</button>

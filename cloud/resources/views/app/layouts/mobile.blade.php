@@ -4,14 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title', 'SafirCharge')</title>
+    <title>@yield('title', 'QUAD EV')</title>
+    <link rel="icon" type="image/png" href="/assets/brand/quad-icon-256.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="@v('/assets/mobile/app-mobile.css')">
     <link rel="manifest" href="/app.webmanifest">
     <meta name="theme-color" content="#0e63c9">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-title" content="SafirCharge">
+    <meta name="apple-mobile-web-app-title" content="QUAD EV">
     <link rel="apple-touch-icon" href="/assets/pwa/apple-touch-icon.png">
     @stack('styles')
 </head>

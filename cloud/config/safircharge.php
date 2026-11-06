@@ -106,7 +106,7 @@ return [
     | EV Navigator — مسیریابی هوشمند (فقط مرکز ابری)
     |--------------------------------------------------------------------------
     | وقتی api_url تنظیم شود، Laravel به FastAPI پروکسی می‌کند.
-    | در غیر این صورت حالت lite (OSRM + Open-Meteo + ایستگاه‌های SafirCharge) فعال است.
+    | در غیر این صورت حالت lite (OSRM + Open-Meteo + ایستگاه‌های QUAD EV) فعال است.
     */
     'ev_navigator' => [
         'api_url' => rtrim((string) env('EV_NAVIGATOR_API_URL', ''), '/'),

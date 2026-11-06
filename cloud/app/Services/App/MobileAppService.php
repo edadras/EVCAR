@@ -282,7 +282,7 @@ class MobileAppService
     public function legal(string $key): string
     {
         return SystemSetting::text('app', $key, match ($key) {
-            'privacy' => 'SafirCharge اطلاعات حساب، جلسات شارژ و موقعیت ایستگاه را مطابق قوانین ذخیره و پردازش می‌کند.',
+            'privacy' => 'QUAD EV اطلاعات حساب، جلسات شارژ و موقعیت ایستگاه را مطابق قوانین ذخیره و پردازش می‌کند.',
             'terms' => 'استفاده از سامانه شارژ به معنای پذیرش تعرفه‌ها، قوانین پارکینگ و مسئولیت نگهداری از کابل و کانکتور است.',
             default => '',
         });

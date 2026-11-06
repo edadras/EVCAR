@@ -31,7 +31,7 @@
                     @if($rv->tags)<div class="mt-8" style="display:flex;gap:6px;flex-wrap:wrap">@foreach($rv->tags as $t)<span class="tag">{{ $tags[$t] ?? $t }}</span>@endforeach</div>@endif
                     <div class="muted fs12 mt-8">{{ Persian::digits($rv->created_at?->format('Y/m/d H:i') ?? '') }}@if($rv->session) · {{ Persian::kwh($rv->session->energy_kwh, 2) }} kWh · {{ Persian::money((int) round($rv->session->cost_amount / 10)) }} ت@endif</div>
                     <form method="POST" action="{{ route('admin.support.reviews.update', $rv) }}" class="mt-8" style="display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap">@csrf
-                        <textarea class="finput" name="reply" rows="2" maxlength="600" placeholder="پاسخ عمومی SafirCharge…" style="flex:1;min-width:220px">{{ $rv->reply }}</textarea>
+                        <textarea class="finput" name="reply" rows="2" maxlength="600" placeholder="پاسخ عمومی QUAD EV…" style="flex:1;min-width:220px">{{ $rv->reply }}</textarea>
                         <div style="display:flex;flex-direction:column;gap:6px">
                             <button class="btn btn-sm btn-primary" type="submit">{{ $rv->reply ? 'ویرایش پاسخ' : 'ارسال پاسخ' }}</button>
                             <button class="btn btn-sm" type="submit" name="is_hidden" value="{{ $rv->is_hidden ? 0 : 1 }}">{{ $rv->is_hidden ? 'نمایش' : 'پنهان کردن' }}</button>

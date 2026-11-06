@@ -580,7 +580,7 @@ class EvNavigatorService
             [
                 'key' => 'vehicle_catalog',
                 'label' => 'مشخصات خودرو',
-                'detail' => 'کاتالوگ دیتابیس SafirCharge (پنل ادمین)',
+                'detail' => 'کاتالوگ دیتابیس QUAD EV (پنل ادمین)',
                 'kind' => 'real',
             ],
         ];
@@ -1155,7 +1155,7 @@ class EvNavigatorService
             if ($corridorChargerCount > 0) {
                 $warnings[] = $corridorChargerCount.' ایستگاه نزدیک مسیر است ولی در محدوده‌ای که شارژ کم می‌شود قرار ندارد.';
             } else {
-                $warnings[] = 'هیچ ایستگاه شارژ SafirCharge در این مسیر ثبت نشده است.';
+                $warnings[] = 'هیچ ایستگاه شارژ QUAD EV در این مسیر ثبت نشده است.';
             }
         }
 
@@ -1171,7 +1171,7 @@ class EvNavigatorService
                 : '';
             $corridorHint = $corridorChargerCount > 0
                 ? ' '.$corridorChargerCount.' ایستگاه فقط در بخش‌های دیگر مسیر هستند و در محل نیاز شما نیستند.'
-                : ' هیچ ایستگاه SafirCharge در این مسیر پوشش داده نشده است.';
+                : ' هیچ ایستگاه QUAD EV در این مسیر پوشش داده نشده است.';
 
             return [
                 'status' => 'no_chargers',

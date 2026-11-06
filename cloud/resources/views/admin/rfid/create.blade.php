@@ -97,7 +97,7 @@
       <div style="display:flex;flex-direction:column;gap:16px;align-self:start;position:sticky;top:84px">
         <div class="rfid-preview">
           <div class="flex between items-center" style="position:relative;z-index:1">
-            <span style="font-size:13px;opacity:.9">SafirCharge RFID</span>
+            <span style="font-size:13px;opacity:.9">QUAD EV RFID</span>
             <span class="rp-chip" data-ic="chip"></span>
           </div>
           <div class="rp-uid tnum" id="pvUid">{{ old('id_tag', $defaultTag) }}</div>

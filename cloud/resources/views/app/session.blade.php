@@ -1,6 +1,6 @@
 @extends('app.layouts.mobile', ['tab' => 'account', 'noTab' => true])
 
-@section('title', 'SafirCharge — رسید جلسهٔ شارژ')
+@section('title', 'QUAD EV — رسید جلسهٔ شارژ')
 
 @section('phone')
 @php use App\Support\Persian; @endphp
@@ -60,7 +60,7 @@
         <div class="rv-stars big">@for($i = 1; $i <= 5; $i++)<span class="{{ $i <= $r['review']['rating'] ? 'on' : '' }}">★</span>@endfor</div>
         @if($r['review']['comment'])<div class="fs13 mt4">{{ $r['review']['comment'] }}</div>@endif
         @if($r['review']['tags'])<div class="fs12 muted mt4">{{ implode(' · ', $r['review']['tags']) }}</div>@endif
-        @if($r['review']['reply'])<div class="fs12 mt4" style="background:var(--surface-2);padding:8px 10px;border-radius:10px"><b>پاسخ SafirCharge:</b> {{ $r['review']['reply'] }}</div>@endif
+        @if($r['review']['reply'])<div class="fs12 mt4" style="background:var(--surface-2);padding:8px 10px;border-radius:10px"><b>پاسخ QUAD EV:</b> {{ $r['review']['reply'] }}</div>@endif
     </div>
     @elseif($r['can_review'])
     <div class="sec-title">تجربهٔ شما چطور بود؟</div>

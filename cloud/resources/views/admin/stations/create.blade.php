@@ -23,7 +23,7 @@
               @else
               <div class="ffield"><label>کد ایستگاه</label><input class="finput tnum" dir="ltr" style="text-align:right" value="خودکار پس از ثبت" disabled><span class="fhint">کد یکتا هنگام ذخیره تولید می‌شود</span></div>
               @endif
-              <div class="ffield"><label>اپراتور / مالک</label><select class="fselect" name="partner_id"><option value="">SafirCharge (مستقیم)</option>@foreach($partners ?? [] as $p)<option value="{{ $p->id }}" @selected(old('partner_id', $station?->partner_id)==$p->id)>{{ $p->name }}</option>@endforeach</select></div>
+              <div class="ffield"><label>اپراتور / مالک</label><select class="fselect" name="partner_id"><option value="">QUAD EV (مستقیم)</option>@foreach($partners ?? [] as $p)<option value="{{ $p->id }}" @selected(old('partner_id', $station?->partner_id)==$p->id)>{{ $p->name }}</option>@endforeach</select></div>
               <div class="ffield col-span"><label>آدرس <span class="req">*</span></label><input class="finput" name="address" value="{{ old('address', $station?->address) }}" placeholder="استان، شهر، خیابان، پلاک"></div>
               <div class="ffield"><label>مختصات جغرافیایی</label><input class="finput tnum" id="stCoords" dir="ltr" style="text-align:right" placeholder="۳۵٫۶۹۹۲, ۵۱٫۳۳۸۹" value="{{ old('coords', $station?->latitude ? $station->latitude.','.$station->longitude : '') }}"></div>
               <input type="hidden" name="latitude" id="stLat" value="{{ old('latitude', $station?->latitude) }}">

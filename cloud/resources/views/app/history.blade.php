@@ -1,6 +1,6 @@
 @extends('app.layouts.mobile', ['tab' => 'account'])
 
-@section('title', 'SafirCharge — سوابق شارژ')
+@section('title', 'QUAD EV — سوابق شارژ')
 
 @section('phone')
 @php use App\Support\Persian; @endphp

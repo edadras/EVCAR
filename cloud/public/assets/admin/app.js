@@ -1,5 +1,5 @@
 /* ============================================================
-   SafirCharge — چرم مشترک: سایدبار، توربار، تم و رنگ تاکیدی
+   QUAD EV — چرم مشترک: سایدبار، توربار، تم و رنگ تاکیدی
    هر صفحه body[data-page] و [data-title]/[data-crumb] دارد.
    ============================================================ */
 (function () {
@@ -152,7 +152,7 @@
     var body = document.body;
     var page = body.getAttribute("data-page");
     var title = body.getAttribute("data-title") || "";
-    var crumb = body.getAttribute("data-crumb") || "SafirCharge";
+    var crumb = body.getAttribute("data-crumb") || "QUAD EV";
 
     var stats = {};
     try { stats = JSON.parse(body.getAttribute("data-nav") || "{}") || {}; } catch (e) {}
@@ -190,8 +190,7 @@
     var sidebar =
       '<aside class="sidebar" id="sidebar">' +
         '<div class="brand">' +
-          '<div class="brand-mark">' + svg("bolt") + '</div>' +
-          '<div><div class="brand-name">SafirCharge</div><div class="brand-sub">سامانه مدیریت شارژ</div></div>' +
+          '<div><img class="brand-logo" src="/assets/brand/quad-logo-white.png" alt="QUAD EV"><div class="brand-sub">QUAD EV · سامانه مدیریت شارژ</div></div>' +
         '</div>' +
         '<nav class="nav">' + navHTML + '</nav>' +
         '<div class="sidebar-foot">' +

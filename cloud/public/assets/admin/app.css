@@ -1,5 +1,5 @@
 /* ============================================================
-   SafirCharge — سامانه مدیریت شارژ و پرداخت خودرو برقی
+   QUAD EV — سامانه مدیریت شارژ و پرداخت خودرو برقی
    سیستم طراحی مشترک
    ============================================================ */
 
@@ -149,6 +149,8 @@ h1,h2,h3,h4 { margin: 0; font-weight: 700; letter-spacing: -.01em; }
 .brand-mark svg { width: 21px; height: 21px; }
 .brand-name { color: #fff; font-weight: 800; font-size: 17px; line-height: 1.1; }
 .brand-sub { font-size: 11px; color: var(--sidebar-text); opacity: .8; }
+.brand-logo { display: block; height: 30px; width: auto; margin-bottom: 6px; }
+.brand-logo-lg { display: block; height: 44px; width: auto; }
 
 .nav { padding: 6px 12px 20px; flex: 1; }
 .nav-group { margin-top: 16px; }

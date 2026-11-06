@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>SafirCharge — ورود شرکا</title>
+    <title>QUAD EV — ورود شرکا</title>
+    <link rel="icon" type="image/png" href="/assets/brand/quad-icon-256.png">
     <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="@v('/assets/admin/app.css')">
     <link rel="stylesheet" href="@v('/assets/partner/login.css')">
@@ -12,16 +13,13 @@
 <div class="login-wrap">
     <div class="login-brand">
         <div class="lb-top">
-            <div class="brand-mark" style="width:46px;height:46px;border-radius:14px">
-                <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.9"><path d="M13 2 3 14h7l-1 8 10-12h-7l1-8z"/></svg>
-            </div>
-            <div><div style="font-weight:800;font-size:20px;color:#fff">SafirCharge</div><div style="color:rgba(255,255,255,.7);font-size:13px">پنل شرکا و مالکان شارژر</div></div>
+            <div><img class="brand-logo-lg" src="/assets/brand/quad-logo-white.png" alt="QUAD EV"><div style="color:rgba(255,255,255,.7);font-size:13px;margin-top:8px">QUAD EV · پنل شرکا و مالکان شارژر</div></div>
         </div>
         <div class="lb-mid">
             <h1 style="color:#fff;font-size:30px;line-height:1.5;font-weight:800">دستگاه‌های خود را<br>هوشمندانه مدیریت کنید</h1>
             <p style="color:rgba(255,255,255,.78);font-size:15px;line-height:2;margin-top:14px">وضعیت شارژرها، درآمد و تسویه — همه از دیتابیس زنده.</p>
         </div>
-        <div class="lb-foot">© {{ now()->year }} SafirCharge</div>
+        <div class="lb-foot">© {{ now()->year }} QUAD EV</div>
     </div>
     <div class="login-form">
         <div class="lf-inner">

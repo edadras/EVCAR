@@ -1,6 +1,6 @@
 @extends('app.layouts.mobile', ['noTab' => true, 'darkStatus' => true, 'phoneClass' => 'scan-phone'])
 
-@section('title', 'SafirCharge — اسکن QR')
+@section('title', 'QUAD EV — اسکن QR')
 
 @section('phone')
 <div class="appbar" style="padding-top:2px">

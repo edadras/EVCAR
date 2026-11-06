@@ -69,7 +69,7 @@ class PaymentGatewayService
             'amount' => (int) $payment->amount,
             'currency' => 'IRR',
             'callback_url' => route('payment.callback', ['payment' => $payment->uuid]),
-            'description' => 'شارژ کیف پول SafirCharge',
+            'description' => 'شارژ کیف پول QUAD EV',
             'metadata' => array_filter(['mobile' => $user->phone, 'email' => $user->email]),
         ]);
 

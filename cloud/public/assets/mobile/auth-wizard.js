@@ -1,4 +1,4 @@
-/* SafirCharge — ویزارد ورود / ثبت‌نام */
+/* QUAD EV — ویزارد ورود / ثبت‌نام */
 (function () {
   'use strict';
 

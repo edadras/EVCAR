@@ -1,4 +1,4 @@
-/* SafirCharge — جستجو، فیلتر و autocomplete مشترک پنل ادمین */
+/* QUAD EV — جستجو، فیلتر و autocomplete مشترک پنل ادمین */
 (function () {
   "use strict";
 

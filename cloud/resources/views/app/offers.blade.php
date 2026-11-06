@@ -1,6 +1,6 @@
 @extends('app.layouts.mobile', ['noTab' => true])
 
-@section('title', 'SafirCharge — طرح‌ها')
+@section('title', 'QUAD EV — طرح‌ها')
 
 @section('phone')
 @php
@@ -39,7 +39,7 @@
             $parts[] = 'تا '.Persian::date($c->ends_at);
         }
 
-        return implode(' · ', $parts) ?: ($c->conditions['summary'] ?? 'طرح فعال SafirCharge');
+        return implode(' · ', $parts) ?: ($c->conditions['summary'] ?? 'طرح فعال QUAD EV');
     };
 @endphp
 <div class="appbar" style="padding-top:2px">

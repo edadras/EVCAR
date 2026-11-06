@@ -88,7 +88,7 @@
             <div class="invoice">
               @if($inv)
               <div class="inv-top">
-                <div><div class="inv-logo"><span data-ic="bolt"></span>SafirCharge</div><div class="fs12 muted mt-4">فاکتور سهم درآمد</div></div>
+                <div><div class="inv-logo"><img src="/assets/brand/quad-logo.png" alt="QUAD EV" style="height:26px;width:auto;display:block"></div><div class="fs12 muted mt-4">فاکتور سهم درآمد</div></div>
                 <div style="text-align:end"><div class="fw8 mono">{{ $inv->invoice_number }}</div><div class="fs12 muted">{{ $inv->issued_at?->format('Y/m') }}</div></div>
               </div>
               <hr class="sep">

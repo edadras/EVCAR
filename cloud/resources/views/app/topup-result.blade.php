@@ -1,6 +1,6 @@
 @extends('app.layouts.mobile', ['noTab' => true])
 
-@section('title', 'SafirCharge — نتیجهٔ پرداخت')
+@section('title', 'QUAD EV — نتیجهٔ پرداخت')
 
 @section('phone')
 @php

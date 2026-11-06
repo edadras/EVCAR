@@ -238,7 +238,7 @@
           stationMsg += ' — نارنجی روی نقشه.';
         } else {
           danger = true;
-          stationMsg = (vehicleHint ? vehicleHint + ' — ' : '') + '⛔ به شارژ نیاز دارید — ایستگاه SafirCharge در محل نیاز پیدا نشد';
+          stationMsg = (vehicleHint ? vehicleHint + ' — ' : '') + '⛔ به شارژ نیاز دارید — ایستگاه QUAD EV در محل نیاز پیدا نشد';
           if (data.estimated_charge_stops > 1) {
             stationMsg += ' (حدود ' + fa(data.estimated_charge_stops) + ' توقف لازم است)';
           } else if (data.estimated_charge_stops === 1) {
@@ -522,7 +522,7 @@
         : '⚠ ایستگاه شارژ در مسیر نیست';
       el.innerHTML = '<div class="card card-p" style="border:2px solid #E24B4A;background:#fde8e8;color:#E24B4A;font-size:13px;line-height:1.55;padding:12px">' +
         '<div class="fw8 mb4">' + title + '</div>' +
-        (noChargerWarning || 'هیچ ایستگاه SafirCharge در محدوده نیاز به شارژ یافت نشد. بدون توقف به مقصد نمی‌رسید.') +
+        (noChargerWarning || 'هیچ ایستگاه QUAD EV در محدوده نیاز به شارژ یافت نشد. بدون توقف به مقصد نمی‌رسید.') +
         (s.estimated_charge_stops > 1 ? '<div class="mt6">حدود ' + fa(s.estimated_charge_stops) + ' توقف شارژ لازم است.</div>' : '') +
         '</div>';
       return;

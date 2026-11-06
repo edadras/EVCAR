@@ -82,7 +82,7 @@ function check(string $label, array $r, int $expect = 200): void
     $results[] = "OK   [$label] HTTP {$r['code']}";
 }
 
-echo "=== SafirCharge Customer App E2E ===\nBase: $base\n\n";
+echo "=== QUAD EV Customer App E2E ===\nBase: $base\n\n";
 
 // 1. Login page
 $r = req('GET', "$base/app/login");

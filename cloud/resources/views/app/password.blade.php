@@ -1,6 +1,6 @@
 @extends('app.layouts.mobile', ['noTab' => true])
 
-@section('title', 'SafirCharge — تغییر رمز عبور')
+@section('title', 'QUAD EV — تغییر رمز عبور')
 
 @section('phone')
 <div class="appbar" style="padding-top:2px">

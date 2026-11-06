@@ -1,6 +1,6 @@
 @extends('app.layouts.mobile', ['noTab' => true])
 
-@section('title', 'SafirCharge — کارت RFID')
+@section('title', 'QUAD EV — کارت RFID')
 
 @section('phone')
 @php

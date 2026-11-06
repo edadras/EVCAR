@@ -1,6 +1,6 @@
 @extends('app.layouts.mobile', ['tab' => 'account'])
 
-@section('title', 'SafirCharge — حساب کاربری')
+@section('title', 'QUAD EV — حساب کاربری')
 
 @section('phone')
 @php use App\Support\Persian; @endphp
@@ -88,7 +88,7 @@
         @csrf
         <button type="submit" class="logout-btn" style="width:100%;border:none;cursor:pointer;font-family:inherit"><span data-ic="logout"></span> خروج از حساب</button>
     </form>
-    <div class="center-col mt16 mb"><span class="fs12 muted">SafirCharge · نسخهٔ {{ Persian::digits('2.4.1') }}</span></div>
+    <div class="center-col mt16 mb"><span class="fs12 muted">QUAD EV · نسخهٔ {{ Persian::digits('2.4.1') }}</span></div>
 </div>
 @endsection
 

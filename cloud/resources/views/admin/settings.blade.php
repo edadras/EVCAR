@@ -25,7 +25,7 @@
             <div class="card-pad">
               @php
                 $platformSetting = ($settings['general'] ?? collect())->firstWhere('key', 'platform_name');
-                $platformName = $platformSetting?->value['fa'] ?? $platformSetting?->value['raw'] ?? 'SafirCharge';
+                $platformName = $platformSetting?->value['fa'] ?? $platformSetting?->value['raw'] ?? 'QUAD EV';
               @endphp
               <div class="form-grid">
                 <div class="ffield"><label>نام سامانه</label>
@@ -53,7 +53,7 @@
             <div class="card-head"><div><h3>برند و ظاهر</h3><div class="ch-sub">لوگو، رنگ و حالت نمایش پنل</div></div></div>
             <div class="card-pad">
               <div class="ffield" style="margin-bottom:18px"><label>لوگوی سامانه</label>
-                <div class="logo-up"><div class="brand-mark" style="width:48px;height:48px;border-radius:14px"><span data-ic="bolt"></span></div><button class="btn btn-sm">بارگذاری لوگو</button><span class="muted fs12">PNG یا SVG · حداکثر ۱ مگابایت</span></div>
+                <div class="logo-up"><img src="/assets/brand/quad-logo.png" alt="QUAD EV" style="height:40px;width:auto"><button class="btn btn-sm">بارگذاری لوگو</button><span class="muted fs12">PNG یا SVG · حداکثر ۱ مگابایت</span></div>
               </div>
               <div class="ffield" style="margin-bottom:18px"><label>رنگ تاکیدی پنل</label>
                 <div class="flex gap-12" id="accRow"></div>

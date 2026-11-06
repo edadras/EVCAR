@@ -1,5 +1,5 @@
-/* SafirCharge PWA service worker — فقط دارایی‌های ثابت کش می‌شوند؛ داده‌ها همیشه از شبکه. */
-const VERSION = 'sc-v1';
+/* QUAD EV PWA service worker — فقط دارایی‌های ثابت کش می‌شوند؛ داده‌ها همیشه از شبکه. */
+const VERSION = 'sc-v2';
 const STATIC = ['/offline.html', '/assets/mobile/app-mobile.css', '/assets/mobile/app-mobile.js', '/assets/pwa/icon-192.png'];
 
 self.addEventListener('install', (event) => {

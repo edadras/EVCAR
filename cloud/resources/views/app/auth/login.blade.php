@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>SafirCharge — ورود</title>
+    <title>QUAD EV — ورود</title>
+    <link rel="icon" type="image/png" href="/assets/brand/quad-icon-256.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="@v('/assets/mobile/app-mobile.css')">
@@ -12,9 +13,8 @@
 <body data-no-tab>
 <div class="phone login-phone">
     <div class="login-top">
-        <div class="logo-mark" data-ic="bolt"></div>
-        <div class="logo-name">SafirCharge</div>
-        <div class="logo-sub">شارژ هوشمند خودرو برقی</div>
+        <img class="logo-img" src="/assets/brand/quad-logo-white.png" alt="QUAD EV">
+        <div class="logo-sub">QUAD EV · شارژ هوشمند خودرو برقی</div>
     </div>
 
     <div class="login-sheet">
@@ -102,7 +102,7 @@
 .login-top{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;gap:6px}
 .logo-mark{width:84px;height:84px;border-radius:26px;background:rgba(255,255,255,.16);display:grid;place-items:center;margin-bottom:10px;backdrop-filter:blur(6px)}
 .logo-mark svg{width:44px;height:44px;fill:#fff;stroke:#fff}
-.logo-name{font-size:30px;font-weight:800;letter-spacing:-.02em}
+.logo-img{display:block;width:min(220px,60vw);height:auto;margin-bottom:10px}
 .logo-sub{font-size:14px;opacity:.9}
 .login-sheet{background:var(--surface);border-radius:30px 30px 0 0;padding:28px 24px calc(34px + env(safe-area-inset-bottom,0));box-shadow:0 -10px 40px rgba(0,0,0,.18);flex:none}
 .offline-note{display:flex;align-items:flex-start;gap:10px;background:var(--surface-2);border:1px solid var(--border-2);border-radius:14px;padding:13px;font-size:12.5px;color:var(--text-2);line-height:1.6}

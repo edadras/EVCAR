@@ -1,6 +1,6 @@
 @extends('app.layouts.mobile', ['noTab' => true])
 
-@section('title', 'SafirCharge — تنظیمات')
+@section('title', 'QUAD EV — تنظیمات')
 
 @section('phone')
 @php
@@ -40,7 +40,7 @@
         <div class="srow" style="border-bottom:none"><span class="sr-ic ic-green" data-ic="scan"></span><span class="l-title" style="flex:1">شارژ خودکار با پلاک</span><span class="switch {{ ($prefs['plate_auto_charge'] ?? true) ? 'on' : '' }}" data-sw data-pref="plate_auto_charge"><i></i></span></div>
     </div>
 
-    <div class="center-col mt20 mb"><span class="fs12 muted" id="saveStatus">SafirCharge · نسخهٔ ۲٫۴٫۱</span></div>
+    <div class="center-col mt20 mb"><span class="fs12 muted" id="saveStatus">QUAD EV · نسخهٔ ۲٫۴٫۱</span></div>
 </div>
 @endsection
 
@@ -81,7 +81,7 @@ html[dir=rtl] .switch.on i{transform:translateX(-20px)}
         body:JSON.stringify(payload)
       }).then(function(r){return r.json();}).then(function(){
         if(statusEl)statusEl.textContent='تنظیمات ذخیره شد';
-        setTimeout(function(){if(statusEl)statusEl.textContent='SafirCharge · نسخهٔ ۲٫۴٫۱';},2000);
+        setTimeout(function(){if(statusEl)statusEl.textContent='QUAD EV · نسخهٔ ۲٫۴٫۱';},2000);
       }).catch(function(){});
     },350);
   }

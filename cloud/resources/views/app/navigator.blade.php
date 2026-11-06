@@ -1,6 +1,6 @@
 @extends('app.layouts.mobile', ['tab' => 'map', 'noTab' => true])
 
-@section('title', 'SafirCharge — مسیریاب برقی')
+@section('title', 'QUAD EV — مسیریاب برقی')
 
 @section('phone')
 @php use App\Support\Persian; @endphp

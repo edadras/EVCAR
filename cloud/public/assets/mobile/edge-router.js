@@ -1,4 +1,4 @@
-/* SafirCharge — تشخیص مرکز / لبه محلی و مسیریابی API */
+/* QUAD EV — تشخیص مرکز / لبه محلی و مسیریابی API */
 (function () {
   'use strict';
 

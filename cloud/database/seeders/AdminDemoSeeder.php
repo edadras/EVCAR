@@ -179,7 +179,7 @@ class AdminDemoSeeder extends Seeder
                     'partner_id' => $partners[$i % $partners->count()]->id,
                     'type' => 'public',
                     'status' => $i === 0 ? 'active' : ($i % 11 === 0 ? 'maintenance' : 'active'),
-                    'wifi_ssid' => 'SafirCharge-'.Str::upper(Str::substr($code, -4)),
+                    'wifi_ssid' => 'QUADEV-'.Str::upper(Str::substr($code, -4)),
                     'local_hostname' => 'station-'.($i + 1).'.local',
                 ]
             );
@@ -560,15 +560,15 @@ class AdminDemoSeeder extends Seeder
 
         SystemSetting::updateOrCreate(
             ['group' => 'general', 'key' => 'platform_name'],
-            ['value' => ['fa' => 'SafirCharge'], 'is_public' => true]
+            ['value' => ['fa' => 'QUAD EV'], 'is_public' => true]
         );
         SystemSetting::updateOrCreate(
             ['group' => 'app', 'key' => 'privacy'],
-            ['value' => ['fa' => 'SafirCharge اطلاعات حساب کاربری، سوابق شارژ، پلاک خودرو و موقعیت ایستگاه را صرفاً برای ارائه خدمات شارژ ذخیره می‌کند. داده‌ها مطابق قوانین جمهوری اسلامی ایران نگهداری و در صورت درخواست قانونی در اختیار مراجع ذی‌صلاح قرار می‌گیرد.'], 'is_public' => true]
+            ['value' => ['fa' => 'QUAD EV اطلاعات حساب کاربری، سوابق شارژ، پلاک خودرو و موقعیت ایستگاه را صرفاً برای ارائه خدمات شارژ ذخیره می‌کند. داده‌ها مطابق قوانین جمهوری اسلامی ایران نگهداری و در صورت درخواست قانونی در اختیار مراجع ذی‌صلاح قرار می‌گیرد.'], 'is_public' => true]
         );
         SystemSetting::updateOrCreate(
             ['group' => 'app', 'key' => 'terms'],
-            ['value' => ['fa' => 'استفاده از سامانه SafirCharge به منزله پذیرش تعرفه‌های اعلام‌شده، رعایت قوانین پارکینگ ایستگاه و مسئولیت نگهداری از کابل و کانکتور است. هرگونه سوءاستفاده از کارت RFID یا کیف پول منجر به مسدودسازی حساب می‌شود.'], 'is_public' => true]
+            ['value' => ['fa' => 'استفاده از سامانه QUAD EV به منزله پذیرش تعرفه‌های اعلام‌شده، رعایت قوانین پارکینگ ایستگاه و مسئولیت نگهداری از کابل و کانکتور است. هرگونه سوءاستفاده از کارت RFID یا کیف پول منجر به مسدودسازی حساب می‌شود.'], 'is_public' => true]
         );
         SystemSetting::updateOrCreate(
             ['group' => 'sync', 'key' => 'engine'],

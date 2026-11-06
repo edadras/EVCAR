@@ -1,6 +1,6 @@
 @extends('app.layouts.mobile', ['noTab' => true])
 
-@section('title', 'SafirCharge — حریم خصوصی و امنیت')
+@section('title', 'QUAD EV — حریم خصوصی و امنیت')
 
 @section('phone')
 @php $user = auth()->user(); @endphp
@@ -40,7 +40,7 @@
     @endif
 
     <button type="button" class="danger-btn mt20"><span data-ic="x"></span> حذف حساب کاربری و داده‌ها</button>
-    <div class="center-col mt12 mb"><span class="fs12 muted">داده‌های شما طبق سیاست حفظ حریم خصوصی SafirCharge نگهداری می‌شود.</span></div>
+    <div class="center-col mt12 mb"><span class="fs12 muted">داده‌های شما طبق سیاست حفظ حریم خصوصی QUAD EV نگهداری می‌شود.</span></div>
 </div>
 @endsection
 

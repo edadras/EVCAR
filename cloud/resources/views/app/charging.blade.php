@@ -1,6 +1,6 @@
 @extends('app.layouts.mobile', ['tab' => 'map', 'noTab' => true, 'darkStatus' => true, 'phoneClass' => 'charging-phone'])
 
-@section('title', 'SafirCharge — شارژ در حال انجام')
+@section('title', 'QUAD EV — شارژ در حال انجام')
 
 @section('phone')
 @php use App\Support\Persian; @endphp
@@ -83,7 +83,7 @@
 
 <div class="stopbar">
     <div class="row between mb">
-        <span style="color:#9fb4c8;font-size:12px">پرداخت از: کیف پول SafirCharge</span>
+        <span style="color:#9fb4c8;font-size:12px">پرداخت از: کیف پول QUAD EV</span>
         <span style="color:#fff;font-weight:700;font-size:12px" class="tnum">موجودی: {{ Persian::money($walletBalance) }}</span>
     </div>
     <form method="POST" action="{{ route('app.charging.stop') }}" id="stopForm" style="margin:0">

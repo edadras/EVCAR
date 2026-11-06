@@ -4,7 +4,8 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>SafirCharge — نتیجهٔ پرداخت</title>
+    <title>QUAD EV — نتیجهٔ پرداخت</title>
+    <link rel="icon" type="image/png" href="/assets/brand/quad-icon-256.png">
     <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;700;800&display=swap" rel="stylesheet">
     <style>
         body{margin:0;min-height:100vh;display:grid;place-items:center;background:#F3F6FA;font-family:Vazirmatn,system-ui,sans-serif;color:#0F1E2E}
@@ -25,7 +26,7 @@
             مبلغی به کیف پول اضافه نشد. اگر از حساب شما کسر شده، حداکثر تا ۷۲ ساعت بازگردانده می‌شود.
         @endif
     </p>
-    <a href="safircharge://payment?uuid={{ $payment->uuid }}">بازگشت به اپ SafirCharge</a>
+    <a href="safircharge://payment?uuid={{ $payment->uuid }}">بازگشت به اپ QUAD EV</a>
 </div>
 </body>
 </html>

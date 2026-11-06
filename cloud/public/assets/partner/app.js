@@ -1,5 +1,5 @@
 /* ============================================================
-   SafirCharge — پنل شرکا (مالکان شارژر)
+   QUAD EV — پنل شرکا (مالکان شارژر)
    چرم مشترک: سایدبار سبک، توربار
    ============================================================ */
 (function () {
@@ -67,8 +67,7 @@
     var sidebar =
       '<aside class="sidebar" id="sidebar">' +
         '<div class="brand">' +
-          '<div class="brand-mark">' + svg("bolt") + '</div>' +
-          '<div><div class="brand-name">SafirCharge</div><div class="brand-sub">پنل شرکا</div></div>' +
+          '<div><img class="brand-logo" src="/assets/brand/quad-logo-white.png" alt="QUAD EV"><div class="brand-sub">QUAD EV · پنل شرکا</div></div>' +
         '</div>' +
         '<nav class="nav"><div class="nav-group">' + navHTML + '</div></nav>' +
         '<div class="sidebar-foot">' +

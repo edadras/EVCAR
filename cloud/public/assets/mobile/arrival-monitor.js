@@ -1,4 +1,4 @@
-/* SafirCharge — باز کردن خودکار صفحه تأیید ورود (ANPR pending) */
+/* QUAD EV — باز کردن خودکار صفحه تأیید ورود (ANPR pending) */
 (function () {
   'use strict';
 

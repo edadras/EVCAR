@@ -1,6 +1,6 @@
 @extends('app.layouts.mobile', ['noTab' => true])
 
-@section('title', 'SafirCharge — دستیار هوشمند')
+@section('title', 'QUAD EV — دستیار هوشمند')
 
 @section('phone')
 <div class="appbar chat-bar" style="padding-top:2px">
@@ -8,7 +8,7 @@
     <div class="chat-agent">
         <span class="ca-av ai-av">✦</span>
         <div>
-            <div class="fw7 fs13">دستیار هوشمند SafirCharge</div>
+            <div class="fw7 fs13">دستیار هوشمند QUAD EV</div>
             <div class="fs12" style="color:var(--green)"><span class="onl"></span><span id="aiState">{{ $initial['ai_enabled'] ? 'پاسخ فوری ۲۴ ساعته' : 'پاسخ از پرسش‌های متداول' }}</span></div>
         </div>
     </div>
@@ -73,7 +73,7 @@
   function render(){
     var html='';
     if(!state.messages.length){
-      html+='<div class="msg bot"><div class="bub">سلام! من دستیار هوشمند SafirCharge هستم ✦\nدربارهٔ شارژ، کیف پول، ایستگاه‌ها یا هر مشکلی بپرسید؛ اطلاعات حساب شما را هم بررسی می‌کنم.</div></div>';
+      html+='<div class="msg bot"><div class="bub">سلام! من دستیار هوشمند QUAD EV هستم ✦\nدربارهٔ شارژ، کیف پول، ایستگاه‌ها یا هر مشکلی بپرسید؛ اطلاعات حساب شما را هم بررسی می‌کنم.</div></div>';
       html+='<div class="quick">'+state.suggestions.map(function(s){return '<button type="button">'+esc(s)+'</button>';}).join('')+'</div>';
     }
     state.messages.forEach(function(m){

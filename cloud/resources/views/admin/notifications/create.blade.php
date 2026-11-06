@@ -66,11 +66,11 @@
           <div class="card-head"><h3>پیش‌نمایش زنده</h3></div>
           <div class="card-pad" style="display:flex;justify-content:center">
             <div class="mini-phone">
-              <div class="mp-status"><span class="tnum">۹:۴۱</span><span>SafirCharge</span></div>
+              <div class="mp-status"><span class="tnum">۹:۴۱</span><span>QUAD EV</span></div>
               <div class="mp-notif">
                 <div class="mp-ic" id="pvIc"></div>
                 <div style="flex:1;min-width:0">
-                  <div class="mp-app">SafirCharge · اکنون</div>
+                  <div class="mp-app">QUAD EV · اکنون</div>
                   <div class="mp-title" id="pvTitle">شارژرهای جدید در شهر شما!</div>
                   <div class="mp-body" id="pvBody">۴ ایستگاه شارژ سریع جدید در تهران افتتاح شد.</div>
                 </div>

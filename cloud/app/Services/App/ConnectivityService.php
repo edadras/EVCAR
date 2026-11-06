@@ -51,7 +51,7 @@ class ConnectivityService
             [
                 'id' => 'cloud',
                 'kind' => 'cloud',
-                'label' => 'مرکز ابری SafirCharge',
+                'label' => 'مرکز ابری QUAD EV',
                 'base' => $cloudBase,
                 'healthPath' => '/up',
             ],

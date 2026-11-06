@@ -312,7 +312,7 @@ class AiSupportService
                 maxTokens: 2048,
                 messages: [['role' => 'user', 'content' => "Ticket {$ticket->ticket_number} — category: {$ticket->category}, priority: {$ticket->priority}, station: ".($ticket->station?->name ?? '-')."\nSubject: {$ticket->subject}\n\nThread:\n{$thread}\n\nCustomer data (amounts in toman):\n{$context}\n\nWrite the next reply from the support agent to the customer."]],
                 model: (string) config('services.anthropic.support_model', 'claude-opus-5-5'),
-                system: 'You draft replies for SafirCharge (EV charging, Iran) human support agents. Write in polite, concise Persian, addressed to the customer by name, using Persian digits and toman. Base every fact on the thread and customer data; do not promise refunds or actions the agent has not decided — where a decision is needed, leave a clear placeholder like [مبلغ استرداد] for the agent. Never include internal notes verbatim. Output only the reply text.',
+                system: 'You draft replies for QUAD EV (EV charging, Iran) human support agents. Write in polite, concise Persian, addressed to the customer by name, using Persian digits and toman. Base every fact on the thread and customer data; do not promise refunds or actions the agent has not decided — where a decision is needed, leave a clear placeholder like [مبلغ استرداد] for the agent. Never include internal notes verbatim. Output only the reply text.',
                 outputConfig: ['effort' => 'medium'],
                 fallbacks: 'default',
                 betas: ['server-side-fallback-2026-07-01'],
@@ -334,7 +334,7 @@ class AiSupportService
         $custom = trim(SystemSetting::text('app', 'ai_support_instructions', ''));
 
         return <<<PROMPT
-You are the customer support assistant of SafirCharge, an electric-vehicle charging network in Iran. You talk to drivers inside the SafirCharge mobile app and web app.
+You are the customer support assistant of QUAD EV, an electric-vehicle charging network in Iran. You talk to drivers inside the QUAD EV mobile app and web app.
 
 Always reply in Persian (Farsi), in a warm, concise and practical tone. Use Persian digits for numbers and toman for money. Keep answers short (a few sentences or a short list); this is a phone chat.
 
@@ -343,7 +343,7 @@ How to work:
 - For station availability call find_stations; for prices call get_tariffs.
 - You cannot move money, issue refunds, start or stop chargers, or change account data. When the customer needs one of those, or asks for a human, or the problem needs a technician, or you could not solve it, offer to hand the case to a human agent and call create_support_ticket once they agree (or right away when they explicitly ask for a person). Then give them the ticket number and say the reply will appear in the support section.
 - Never ask for card numbers, passwords or one-time codes.
-- If a question is unrelated to charging, the app or the customer's account, briefly say you can only help with SafirCharge.
+- If a question is unrelated to charging, the app or the customer's account, briefly say you can only help with QUAD EV.
 
 Product facts:
 - Starting a charge: scan the QR code on the connector in the app (or open the station page and authorise), tap a RFID card on the charger, or let a camera-equipped station recognise the registered licence plate. Charging cost is deducted from the wallet; a minimum wallet balance of 1,000 toman is required to start.

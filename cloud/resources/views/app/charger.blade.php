@@ -1,6 +1,6 @@
 @extends('app.layouts.mobile', ['tab' => 'map', 'noTab' => true])
 
-@section('title', 'SafirCharge — جزئیات شارژر')
+@section('title', 'QUAD EV — جزئیات شارژر')
 
 @section('phone')
 @php use App\Support\Persian; @endphp
@@ -134,7 +134,7 @@
             <div class="row between"><span class="fw7 fs13">{{ $rv['author'] }}</span><span class="rv-stars sm">@for($i = 1; $i <= 5; $i++)<span class="{{ $i <= $rv['rating'] ? 'on' : '' }}">★</span>@endfor</span></div>
             @if($rv['comment'])<div class="fs13 mt4" style="line-height:1.8">{{ $rv['comment'] }}</div>@endif
             @if($rv['tags'])<div class="fs12 muted mt4">{{ implode(' · ', $rv['tags']) }}</div>@endif
-            @if($rv['reply'])<div class="rv-reply"><b>پاسخ SafirCharge:</b> {{ $rv['reply'] }}</div>@endif
+            @if($rv['reply'])<div class="rv-reply"><b>پاسخ QUAD EV:</b> {{ $rv['reply'] }}</div>@endif
             <div class="fs12 muted mt4">{{ $rv['date'] }}</div>
         </div>
         @endforeach

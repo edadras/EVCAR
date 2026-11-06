@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>SafirCharge</title>
+    <title>QUAD EV</title>
     <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         body{font-family:Vazirmatn,system-ui;margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#0b1f33;color:#fff}
@@ -18,7 +18,7 @@
 </head>
 <body>
 <div class="box">
-    <h1>SafirCharge</h1>
+    <h1>QUAD EV</h1>
     <p>سامانه مدیریت شارژ خودرو برقی — انتخاب پنل</p>
     <div class="links">
         <a class="primary" href="/admin/login">پنل مدیریت (ادمین)</a>
