@@ -132,6 +132,10 @@ class ChargePlanner
                 }
                 $departSoc = 100;
             }
+            if ($departSoc < 100 && ! $this->canProgress($chargers, $used + [$best['uuid'] => true], $km, $batteryKwh * $departSoc / 100 - $detour, $batteryKwh, $reserveSoc, $totalKm)) {
+                // با سقف chargeToSoc به ایستگاه بعدی یا مقصد نمی‌رسیم؛ شارژ کامل.
+                $departSoc = 100;
+            }
             $departKwh = $batteryKwh * $departSoc / 100;
 
             $arriveSoc = $bestArrive / $batteryKwh * 100;
@@ -226,6 +230,28 @@ class ChargePlanner
     private function energyBetween(float $fromKm, float $toKm): float
     {
         return $this->energyAt($toKm) - $this->energyAt($fromKm);
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $chargers
+     * @param  array<string, bool>  $used
+     */
+    private function canProgress(array $chargers, array $used, float $pos, float $energy, float $batteryKwh, int $reserveSoc, float $totalKm): bool
+    {
+        if ($energy - $this->energyBetween($pos, $totalKm) >= $batteryKwh * $reserveSoc / 100) {
+            return true;
+        }
+        foreach ($chargers as $ch) {
+            $km = (float) $ch['route_km'];
+            if ($km <= $pos + 1 || $km >= $totalKm || isset($used[$ch['uuid']])) {
+                continue;
+            }
+            if ($energy - $this->energyBetween($pos, $km) - $this->detourKwh($ch) >= $batteryKwh * self::ARRIVAL_BUFFER_SOC / 100) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /** @param array<string, mixed> $charger */
